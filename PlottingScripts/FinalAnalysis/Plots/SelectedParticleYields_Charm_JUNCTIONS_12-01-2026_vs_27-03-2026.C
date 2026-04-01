@@ -4,7 +4,7 @@
 void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
 {
 //=========Macro generated from canvas: cYield_Charm_JUNCTIONS/Charm JUNCTIONS yields
-//=========  (Wed Apr  1 13:39:34 2026) by ROOT version 6.30/01
+//=========  (Wed Apr  1 16:36:56 2026) by ROOT version 6.30/01
    TCanvas *cYield_Charm_JUNCTIONS = new TCanvas("cYield_Charm_JUNCTIONS", "Charm JUNCTIONS yields",0,0,1540,780);
    gStyle->SetOptStat(0);
    cYield_Charm_JUNCTIONS->Range(0,0,1,1);
@@ -20,7 +20,7 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    TPad *pYield_Charm_JUNCTIONS__9 = new TPad("pYield_Charm_JUNCTIONS", "",0,0.1,0.39,0.9);
    pYield_Charm_JUNCTIONS__9->Draw();
    pYield_Charm_JUNCTIONS__9->cd();
-   pYield_Charm_JUNCTIONS__9->Range(-0.09999998,-2.082335,3.65,0.1330921);
+   pYield_Charm_JUNCTIONS__9->Range(-0.09999998,-1.965363,3.65,0.249998);
    pYield_Charm_JUNCTIONS__9->SetFillColor(0);
    pYield_Charm_JUNCTIONS__9->SetBorderMode(0);
    pYield_Charm_JUNCTIONS__9->SetBorderSize(2);
@@ -35,8 +35,8 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    pYield_Charm_JUNCTIONS__9->SetFrameBorderMode(0);
    
    TH1D *hFrame_Charm_JUNCTIONS__7 = new TH1D("hFrame_Charm_JUNCTIONS__7","",3,0.5,3.5);
-   hFrame_Charm_JUNCTIONS__7->SetMinimum(0.02541318);
-   hFrame_Charm_JUNCTIONS__7->SetMaximum(0.9506315);
+   hFrame_Charm_JUNCTIONS__7->SetMinimum(0.03326719);
+   hFrame_Charm_JUNCTIONS__7->SetMaximum(1.244293);
    hFrame_Charm_JUNCTIONS__7->SetStats(0);
 
    Int_t ci;      // for color index setting
@@ -65,9 +65,9 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    hFrame_Charm_JUNCTIONS__7->Draw("");
    
    Double_t gYield_12-01-2026_Charm_JUNCTIONS_fx1010[3] = { 1, 2, 3 };
-   Double_t gYield_12-01-2026_Charm_JUNCTIONS_fy1010[3] = { 0.3678084, 0.7038789, 0.05082637 };
+   Double_t gYield_12-01-2026_Charm_JUNCTIONS_fy1010[3] = { 0.4814804, 0.9214143, 0.06653437 };
    Double_t gYield_12-01-2026_Charm_JUNCTIONS_fex1010[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYield_12-01-2026_Charm_JUNCTIONS_fey1010[3] = { 0.0001643539, 0.0002925877, 5.288594e-05 };
+   Double_t gYield_12-01-2026_Charm_JUNCTIONS_fey1010[3] = { 0.0001972381, 0.0002842829, 6.281112e-05 };
    TGraphErrors *gre = new TGraphErrors(3,gYield_12-01-2026_Charm_JUNCTIONS_fx1010,gYield_12-01-2026_Charm_JUNCTIONS_fy1010,gYield_12-01-2026_Charm_JUNCTIONS_fex1010,gYield_12-01-2026_Charm_JUNCTIONS_fey1010);
    gre->SetName("gYield_12-01-2026_Charm_JUNCTIONS");
    gre->SetTitle("Graph");
@@ -83,8 +83,8 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010 = new TH1F("Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010","Graph",100,0.2,3.8);
-   Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetMinimum(0.04569613);
-   Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetMaximum(0.7695113);
+   Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetMinimum(0.05982441);
+   Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetMaximum(1.007221);
    Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetDirectory(nullptr);
    Graph_gYield_12mI01mI2026_Charm_JUNCTIONS1010->SetStats(0);
 
@@ -107,9 +107,9 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->Draw("p ");
    
    Double_t gYield_27-03-2026_Charm_JUNCTIONS_fx1011[3] = { 1, 2, 3 };
-   Double_t gYield_27-03-2026_Charm_JUNCTIONS_fy1011[3] = { 0.3285109, 0.6277996, 0.1614274 };
+   Double_t gYield_27-03-2026_Charm_JUNCTIONS_fy1011[3] = { 0.4585081, 0.8762303, 0.2253069 };
    Double_t gYield_27-03-2026_Charm_JUNCTIONS_fex1011[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYield_27-03-2026_Charm_JUNCTIONS_fey1011[3] = { 0.0001765266, 0.000243953, 0.0001690387 };
+   Double_t gYield_27-03-2026_Charm_JUNCTIONS_fey1011[3] = { 0.0002309429, 0.0002818932, 0.0002064705 };
    gre = new TGraphErrors(3,gYield_27-03-2026_Charm_JUNCTIONS_fx1011,gYield_27-03-2026_Charm_JUNCTIONS_fy1011,gYield_27-03-2026_Charm_JUNCTIONS_fex1011,gYield_27-03-2026_Charm_JUNCTIONS_fey1011);
    gre->SetName("gYield_27-03-2026_Charm_JUNCTIONS");
    gre->SetTitle("Graph");
@@ -125,8 +125,8 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011 = new TH1F("Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011","Graph",100,0.2,3.8);
-   Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetMinimum(0.1145798);
-   Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetMaximum(0.6747221);
+   Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetMinimum(0.1599592);
+   Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetMaximum(0.9416534);
    Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetDirectory(nullptr);
    Graph_gYield_27mI03mI2026_Charm_JUNCTIONS1011->SetStats(0);
 
@@ -160,7 +160,7 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    TPad *pRatio_Charm_JUNCTIONS__10 = new TPad("pRatio_Charm_JUNCTIONS", "",0.41,0.1,0.76,0.9);
    pRatio_Charm_JUNCTIONS__10->Draw();
    pRatio_Charm_JUNCTIONS__10->cd();
-   pRatio_Charm_JUNCTIONS__10->Range(-0.2012987,-0.08768174,3.694805,1.454112);
+   pRatio_Charm_JUNCTIONS__10->Range(-0.2012987,-0.08213944,3.694805,1.363647);
    pRatio_Charm_JUNCTIONS__10->SetFillColor(0);
    pRatio_Charm_JUNCTIONS__10->SetBorderMode(0);
    pRatio_Charm_JUNCTIONS__10->SetBorderSize(2);
@@ -174,8 +174,8 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    pRatio_Charm_JUNCTIONS__10->SetFrameBorderMode(0);
    
    TH1D *hRatioFrame_Charm_JUNCTIONS__8 = new TH1D("hRatioFrame_Charm_JUNCTIONS__8","",3,0.5,3.5);
-   hRatioFrame_Charm_JUNCTIONS__8->SetMinimum(0.2515129);
-   hRatioFrame_Charm_JUNCTIONS__8->SetMaximum(1.346186);
+   hRatioFrame_Charm_JUNCTIONS__8->SetMinimum(0.2359336);
+   hRatioFrame_Charm_JUNCTIONS__8->SetMaximum(1.262442);
    hRatioFrame_Charm_JUNCTIONS__8->SetStats(0);
 
    ci = TColor::GetColor("#000099");
@@ -205,9 +205,9 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    line->Draw();
    
    Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fx1012[3] = { 1, 2, 3 };
-   Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fy1012[3] = { 1.119623, 1.121184, 0.3148559 };
+   Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fy1012[3] = { 1.050102, 1.051566, 0.2953055 };
    Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fex1012[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fey1012[3] = { 0.0007824723, 0.000637979, 0.0004647948 };
+   Double_t gYieldRatio_Charm_JUNCTIONS_12-01-2026_fey1012[3] = { 0.000681766, 0.0004687301, 0.0003885254 };
    gre = new TGraphErrors(3,gYieldRatio_Charm_JUNCTIONS_12-01-2026_fx1012,gYieldRatio_Charm_JUNCTIONS_12-01-2026_fy1012,gYieldRatio_Charm_JUNCTIONS_12-01-2026_fex1012,gYieldRatio_Charm_JUNCTIONS_12-01-2026_fey1012);
    gre->SetName("gYieldRatio_Charm_JUNCTIONS_12-01-2026");
    gre->SetTitle("Graph");
@@ -217,8 +217,8 @@ void SelectedParticleYields_Charm_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012 = new TH1F("Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012","Graph",100,0.2,3.8);
-   Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetMinimum(0.233648);
-   Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetMaximum(1.202565);
+   Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetMinimum(0.2192052);
+   Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetMaximum(1.127747);
    Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetDirectory(nullptr);
    Graph_gYieldRatio_Charm_JUNCTIONS_12mI01mI20261012->SetStats(0);
 

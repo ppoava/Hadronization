@@ -4,7 +4,7 @@
 void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
 {
 //=========Macro generated from canvas: cYield_Beauty_JUNCTIONS/Beauty JUNCTIONS yields
-//=========  (Wed Apr  1 13:39:33 2026) by ROOT version 6.30/01
+//=========  (Wed Apr  1 16:36:55 2026) by ROOT version 6.30/01
    TCanvas *cYield_Beauty_JUNCTIONS = new TCanvas("cYield_Beauty_JUNCTIONS", "Beauty JUNCTIONS yields",0,0,1540,780);
    gStyle->SetOptStat(0);
    cYield_Beauty_JUNCTIONS->Range(0,0,1,1);
@@ -20,7 +20,7 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    TPad *pYield_Beauty_JUNCTIONS__3 = new TPad("pYield_Beauty_JUNCTIONS", "",0,0.1,0.39,0.9);
    pYield_Beauty_JUNCTIONS__3->Draw();
    pYield_Beauty_JUNCTIONS__3->cd();
-   pYield_Beauty_JUNCTIONS__3->Range(-0.09999998,-2.949595,3.65,0.01150744);
+   pYield_Beauty_JUNCTIONS__3->Range(-0.09999998,-1.495973,3.65,-0.03568496);
    pYield_Beauty_JUNCTIONS__3->SetFillColor(0);
    pYield_Beauty_JUNCTIONS__3->SetBorderMode(0);
    pYield_Beauty_JUNCTIONS__3->SetBorderSize(2);
@@ -35,8 +35,8 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    pYield_Beauty_JUNCTIONS__3->SetFrameBorderMode(0);
    
    TH1D *hFrame_Beauty_JUNCTIONS__3 = new TH1D("hFrame_Beauty_JUNCTIONS__3","",3,0.5,3.5);
-   hFrame_Beauty_JUNCTIONS__3->SetMinimum(0.005033239);
-   hFrame_Beauty_JUNCTIONS__3->SetMaximum(0.6371332);
+   hFrame_Beauty_JUNCTIONS__3->SetMinimum(0.06687906);
+   hFrame_Beauty_JUNCTIONS__3->SetMaximum(0.7279388);
    hFrame_Beauty_JUNCTIONS__3->SetStats(0);
 
    Int_t ci;      // for color index setting
@@ -65,9 +65,9 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    hFrame_Beauty_JUNCTIONS__3->Draw("");
    
    Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fx1004[3] = { 1, 2, 3 };
-   Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fy1004[3] = { 0.4717572, 0.4717636, 0.1170713 };
+   Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fy1004[3] = { 0.5389993, 0.5390066, 0.1337581 };
    Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fex1004[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fey1004[3] = { 0.000193343, 0.0001630133, 0.0001574501 };
+   Double_t gYield_12-01-2026_Beauty_JUNCTIONS_fey1004[3] = { 0.0002145907, 0.0001883894, 0.0001806815 };
    TGraphErrors *gre = new TGraphErrors(3,gYield_12-01-2026_Beauty_JUNCTIONS_fx1004,gYield_12-01-2026_Beauty_JUNCTIONS_fy1004,gYield_12-01-2026_Beauty_JUNCTIONS_fex1004,gYield_12-01-2026_Beauty_JUNCTIONS_fey1004);
    gre->SetName("gYield_12-01-2026_Beauty_JUNCTIONS");
    gre->SetTitle("Graph");
@@ -83,8 +83,8 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004 = new TH1F("Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004","Graph",100,0.2,3.8);
-   Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetMinimum(0.08141019);
-   Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetMaximum(0.5074542);
+   Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetMinimum(0.09301379);
+   Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetMaximum(0.5797776);
    Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetDirectory(nullptr);
    Graph_gYield_12mI01mI2026_Beauty_JUNCTIONS1004->SetStats(0);
 
@@ -107,9 +107,9 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->Draw("p ");
    
    Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fx1005[3] = { 1, 2, 3 };
-   Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fy1005[3] = { 0.04037327, 0.04033651, 0.01006648 };
+   Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fy1005[3] = { 0.5382517, 0.5377616, 0.1342051 };
    Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fex1005[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fey1005[3] = { 9.188424e-05, 6.574664e-05, 3.173527e-05 };
+   Double_t gYield_27-03-2026_Beauty_JUNCTIONS_fey1005[3] = { 0.000914781, 0.001034438, 0.0003597698 };
    gre = new TGraphErrors(3,gYield_27-03-2026_Beauty_JUNCTIONS_fx1005,gYield_27-03-2026_Beauty_JUNCTIONS_fy1005,gYield_27-03-2026_Beauty_JUNCTIONS_fex1005,gYield_27-03-2026_Beauty_JUNCTIONS_fey1005);
    gre->SetName("gYield_27-03-2026_Beauty_JUNCTIONS");
    gre->SetTitle("Graph");
@@ -125,8 +125,8 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005 = new TH1F("Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005","Graph",100,0.2,3.8);
-   Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetMinimum(0.006991703);
-   Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetMaximum(0.04350819);
+   Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetMinimum(0.09331324);
+   Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetMaximum(0.5796986);
    Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetDirectory(nullptr);
    Graph_gYield_27mI03mI2026_Beauty_JUNCTIONS1005->SetStats(0);
 
@@ -160,7 +160,7 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    TPad *pRatio_Beauty_JUNCTIONS__4 = new TPad("pRatio_Beauty_JUNCTIONS", "",0.41,0.1,0.76,0.9);
    pRatio_Beauty_JUNCTIONS__4->Draw();
    pRatio_Beauty_JUNCTIONS__4->cd();
-   pRatio_Beauty_JUNCTIONS__4->Range(-0.2012987,-3.072407,3.694805,15.34762);
+   pRatio_Beauty_JUNCTIONS__4->Range(-0.2012987,0.6678415,3.694805,1.245571);
    pRatio_Beauty_JUNCTIONS__4->SetFillColor(0);
    pRatio_Beauty_JUNCTIONS__4->SetBorderMode(0);
    pRatio_Beauty_JUNCTIONS__4->SetBorderSize(2);
@@ -174,8 +174,8 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    pRatio_Beauty_JUNCTIONS__4->SetFrameBorderMode(0);
    
    TH1D *hRatioFrame_Beauty_JUNCTIONS__4 = new TH1D("hRatioFrame_Beauty_JUNCTIONS__4","",3,0.5,3.5);
-   hRatioFrame_Beauty_JUNCTIONS__4->SetMinimum(0.98);
-   hRatioFrame_Beauty_JUNCTIONS__4->SetMaximum(14.05822);
+   hRatioFrame_Beauty_JUNCTIONS__4->SetMinimum(0.794942);
+   hRatioFrame_Beauty_JUNCTIONS__4->SetMaximum(1.20513);
    hRatioFrame_Beauty_JUNCTIONS__4->SetStats(0);
 
    ci = TColor::GetColor("#000099");
@@ -205,9 +205,9 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    line->Draw();
    
    Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fx1006[3] = { 1, 2, 3 };
-   Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fy1006[3] = { 11.68489, 11.6957, 11.62982 };
+   Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fy1006[3] = { 1.001389, 1.002315, 0.9966693 };
    Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fex1006[3] = { 0.5, 0.5, 0.5 };
-   Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fey1006[3] = { 0.02702102, 0.01948711, 0.03986072 };
+   Double_t gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fey1006[3] = { 0.001747975, 0.00195962, 0.002991847 };
    gre = new TGraphErrors(3,gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fx1006,gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fy1006,gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fex1006,gYieldRatio_Beauty_JUNCTIONS_12-01-2026_fey1006);
    gre->SetName("gYieldRatio_Beauty_JUNCTIONS_12-01-2026");
    gre->SetTitle("Graph");
@@ -217,8 +217,8 @@ void SelectedParticleYields_Beauty_JUNCTIONS_12-01-2026_vs_27-03-2026()
    gre->SetMarkerSize(1.2);
    
    TH1F *Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006 = new TH1F("Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006","Graph",100,0.2,3.8);
-   Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetMinimum(11.57743);
-   Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetMaximum(11.72771);
+   Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetMinimum(0.9926177);
+   Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetMaximum(1.005334);
    Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetDirectory(nullptr);
    Graph_gYieldRatio_Beauty_JUNCTIONS_12mI01mI20261006->SetStats(0);
 
