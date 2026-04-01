@@ -643,39 +643,42 @@ void DrawYieldComparison(const TString& independentTag,
   const double yMinCandidate = SmallestPositive(PositiveGraphMinimum(gIndependent),
                                                 PositiveGraphMinimum(gCombined));
   const double yMin = (yMinCandidate > 0.0 ? 0.5 * yMinCandidate : 1.0e-8);
-  const double ratioMax = std::max(1.20, 1.25 * GraphMaximum(gRatio));
+  double ratioMax = std::max(1.05, 1.20 * GraphMaximum(gRatio));
   const double ratioMinCandidate = PositiveGraphMinimumWithErrors(gRatio);
   double ratioMin = (ratioMinCandidate > 0.0 ? 0.80 * ratioMinCandidate : 0.0);
-  ratioMin = std::min(ratioMin, 0.90);
+  ratioMin = std::min(ratioMin, 1.0);
   ratioMin = std::max(0.0, ratioMin);
+  if (ratioMin >= 1.0 - 1.0e-9) ratioMin = 0.98;
+  if (ratioMax <= ratioMin) ratioMax = ratioMin + 0.1;
 
-  const double yieldPadRight = 0.43;
-  const double ratioPadLeft = 0.45;
-  const double ratioPadRight = 0.79;
-  const double legendPadLeft = 0.81;
+  const double padBottom = 0.10;
+  const double padTop = 0.90;
+  const double yieldPadRight = 0.39;
+  const double ratioPadLeft = 0.41;
+  const double ratioPadRight = 0.76;
+  const double legendPadLeft = 0.77;
 
   TCanvas* canvas = new TCanvas(Form("cYield_%s_%s", flavour.Data(), tune.Data()),
                                 Form("%s %s yields", flavour.Data(), tune.Data()),
-                                1500, 760);
+                                1540, 780);
 
   TPad* yieldPad = new TPad(Form("pYield_%s_%s", flavour.Data(), tune.Data()), "",
-                            0.00, 0.00, yieldPadRight, 1.00);
-  yieldPad->SetLeftMargin(0.18);
-  yieldPad->SetRightMargin(0.05);
-  yieldPad->SetBottomMargin(0.32);
-  yieldPad->SetTopMargin(0.12);
+                            0.00, padBottom, yieldPadRight, padTop);
+  yieldPad->SetLeftMargin(0.16);
+  yieldPad->SetRightMargin(0.04);
+  yieldPad->SetBottomMargin(0.22);
+  yieldPad->SetTopMargin(0.07);
   yieldPad->SetTicks(1, 1);
   yieldPad->SetLogy();
   yieldPad->Draw();
   yieldPad->cd();
 
   frame->SetTitle("");
-  frame->GetXaxis()->SetTitle("Particle species");
+  frame->GetXaxis()->SetTitle("");
   frame->GetYaxis()->SetTitle("Per-event yield");
-  frame->GetXaxis()->SetTitleOffset(2.15);
-  frame->GetYaxis()->SetTitleOffset(1.45);
-  frame->GetXaxis()->SetLabelSize(0.058);
-  frame->GetXaxis()->SetLabelOffset(0.010);
+  frame->GetYaxis()->SetTitleOffset(1.25);
+  frame->GetXaxis()->SetLabelSize(0.053);
+  frame->GetXaxis()->SetLabelOffset(0.006);
   frame->GetYaxis()->SetRangeUser(yMin, yMax);
   frame->LabelsOption("v", "X");
   frame->Draw();
@@ -687,17 +690,17 @@ void DrawYieldComparison(const TString& independentTag,
   canvas->cd();
   latex.SetNDC();
   latex.SetTextAlign(22);
-  latex.SetTextSize(0.045);
-  const double titleX = 0.5 * ratioPadRight;
-  latex.DrawLatex(titleX, 0.955,
+  latex.SetTextSize(0.042);
+  const double titleX = 0.5 * legendPadLeft;
+  latex.DrawLatex(titleX, 0.948,
                   Form("%s %s Per-Event Yields", flavour.Data(), tune.Data()));
 
   TPad* ratioPad = new TPad(Form("pRatio_%s_%s", flavour.Data(), tune.Data()), "",
-                            ratioPadLeft, 0.00, ratioPadRight, 1.00);
-  ratioPad->SetLeftMargin(0.16);
-  ratioPad->SetRightMargin(0.06);
-  ratioPad->SetBottomMargin(0.32);
-  ratioPad->SetTopMargin(0.12);
+                            ratioPadLeft, padBottom, ratioPadRight, padTop);
+  ratioPad->SetLeftMargin(0.18);
+  ratioPad->SetRightMargin(0.05);
+  ratioPad->SetBottomMargin(0.22);
+  ratioPad->SetTopMargin(0.07);
   ratioPad->SetTicks(1, 1);
   ratioPad->Draw();
   ratioPad->cd();
@@ -707,12 +710,13 @@ void DrawYieldComparison(const TString& independentTag,
   ratioFrame->SetMinimum(ratioMin);
   ratioFrame->SetMaximum(ratioMax);
   ratioFrame->SetTitle("");
-  ratioFrame->GetXaxis()->SetTitle("Particle species");
+  ratioFrame->GetXaxis()->SetTitle("");
   ratioFrame->GetYaxis()->SetTitle("Independent / Combined");
-  ratioFrame->GetXaxis()->SetTitleOffset(2.15);
-  ratioFrame->GetYaxis()->SetTitleOffset(1.45);
-  ratioFrame->GetXaxis()->SetLabelSize(0.058);
-  ratioFrame->GetXaxis()->SetLabelOffset(0.010);
+  ratioFrame->GetXaxis()->SetLabelSize(0.053);
+  ratioFrame->GetXaxis()->SetLabelOffset(0.006);
+  ratioFrame->GetYaxis()->SetLabelSize(0.048);
+  ratioFrame->GetYaxis()->SetTitleSize(0.050);
+  ratioFrame->GetYaxis()->SetTitleOffset(1.35);
   ratioFrame->LabelsOption("v", "X");
   for (int i = 0; i < nBins; ++i) {
     ratioFrame->GetXaxis()->SetBinLabel(i + 1, speciesDefs[i].label.Data());
@@ -729,11 +733,11 @@ void DrawYieldComparison(const TString& independentTag,
 
   canvas->cd();
   TPad* legendPad = new TPad(Form("pLegend_%s_%s", flavour.Data(), tune.Data()), "",
-                             legendPadLeft, 0.00, 1.00, 1.00);
-  legendPad->SetLeftMargin(0.08);
-  legendPad->SetRightMargin(0.08);
-  legendPad->SetBottomMargin(0.32);
-  legendPad->SetTopMargin(0.12);
+                             legendPadLeft, padBottom, 1.00, padTop);
+  legendPad->SetLeftMargin(0.04);
+  legendPad->SetRightMargin(0.04);
+  legendPad->SetBottomMargin(0.10);
+  legendPad->SetTopMargin(0.07);
   legendPad->SetFillStyle(0);
   legendPad->SetFrameFillStyle(0);
   legendPad->SetFrameLineColor(0);
@@ -741,15 +745,22 @@ void DrawYieldComparison(const TString& independentTag,
   legendPad->Draw();
   legendPad->cd();
 
-  TLegend* legend = new TLegend(0.08, 0.62, 0.96, 0.86);
+  TLegend* legend = new TLegend(0.03, 0.64, 0.99, 0.87);
   legend->SetFillStyle(1001);
   legend->SetFillColor(kWhite);
   legend->SetBorderSize(1);
-  legend->SetTextSize(0.090);
+  legend->SetTextSize(0.062);
   legend->AddEntry(gIndependent, "Independent Sample", "pe");
   legend->AddEntry(gCombined, "Combined Sample", "pe");
   legend->AddEntry(gRatio, "Independent / Combined", "pe");
   legend->Draw();
+
+  canvas->cd();
+  TLatex axisLabel;
+  axisLabel.SetNDC();
+  axisLabel.SetTextAlign(22);
+  axisLabel.SetTextSize(0.038);
+  axisLabel.DrawLatex(titleX, 0.060, "Particle species");
 
   const TString outBase = Form("%s/SelectedParticleYields_%s_%s_%s_vs_%s",
                                GetOutputDir().Data(),
