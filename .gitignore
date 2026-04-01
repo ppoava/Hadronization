@@ -1,6 +1,6 @@
 
 # Large binary outputs
-/RootFiles/**/*.root
+#/RootFiles/**/*.root
 .DS_Store
 .vscode/settings.json
 /logs/*
