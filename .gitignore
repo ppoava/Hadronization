@@ -6,7 +6,7 @@
 /logs/*
 
 # Ignore ROOT files by default
-*.root
+#*.root
 
 # But keep analyzed outputs
 !AnalyzedData/
