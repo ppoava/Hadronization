@@ -462,6 +462,9 @@ TGraphErrors* BuildYieldGraph(const TString& dateTag,
                               Color_t color,
                               Style_t markerStyle)
 {
+  (void)xShift;
+  (void)xError;
+
   const int n = static_cast<int>(speciesDefs.size());
   TGraphErrors* graph = new TGraphErrors(n);
   graph->SetName(Form("gYield_%s_%s_%s", dateTag.Data(), flavour.Data(), tune.Data()));
@@ -473,9 +476,9 @@ TGraphErrors* BuildYieldGraph(const TString& dateTag,
 
   for (int i = 0; i < n; ++i) {
     const YieldStats stats = ComputeYieldStats(dateTag, flavour, tune, speciesDefs[i], nSub);
-    const double x = static_cast<double>(i + 1) + xShift;
+    const double x = static_cast<double>(i + 1);
     graph->SetPoint(i, x, stats.mean);
-    graph->SetPointError(i, xError, stats.error);
+    graph->SetPointError(i, 0.5, stats.error);
   }
 
   return graph;
