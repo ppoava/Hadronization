@@ -44,6 +44,7 @@
 #include "TCollection.h"
 #include "TFile.h"
 #include "TGraphErrors.h"
+#include "TGaxis.h"
 #include "TH1.h"
 #include "TH1D.h"
 #include "TH2.h"
@@ -51,6 +52,8 @@
 #include "TLegend.h"
 #include "TList.h"
 #include "TObject.h"
+#include "TPad.h"
+#include "TLine.h"
 #include "TString.h"
 #include "TStyle.h"
 #include "TSystem.h"
@@ -281,10 +284,10 @@ void ResolveSampleFolders(TString& independentTag, TString& combinedTag)
 void SetStyle()
 {
   gStyle->SetOptStat(0);
-  gStyle->SetPadBottomMargin(0.14);
+  gStyle->SetPadBottomMargin(0.18);
   gStyle->SetPadLeftMargin(0.12);
-  gStyle->SetPadRightMargin(0.22);
-  gStyle->SetPadTopMargin(0.08);
+  gStyle->SetPadRightMargin(0.18);
+  gStyle->SetPadTopMargin(0.10);
   gStyle->SetLegendBorderSize(0);
   gStyle->SetTitleSize(0.05, "XY");
   gStyle->SetLabelSize(0.042, "XY");
@@ -484,6 +487,54 @@ TGraphErrors* BuildYieldGraph(const TString& dateTag,
   return graph;
 }
 
+TGraphErrors* BuildRatioGraph(const TString& independentTag,
+                              const TString& combinedTag,
+                              const TString& flavour,
+                              const TString& tune,
+                              const std::vector<SpeciesDef>& speciesDefs,
+                              int nSub,
+                              Color_t color,
+                              Style_t markerStyle)
+{
+  const int n = static_cast<int>(speciesDefs.size());
+  TGraphErrors* graph = new TGraphErrors(n);
+  graph->SetName(Form("gYieldRatio_%s_%s_%s",
+                      flavour.Data(),
+                      tune.Data(),
+                      independentTag.Data()));
+  graph->SetLineColor(color);
+  graph->SetMarkerColor(color);
+  graph->SetLineWidth(2);
+  graph->SetMarkerStyle(markerStyle);
+  graph->SetMarkerSize(1.2);
+
+  for (int i = 0; i < n; ++i) {
+    const YieldStats independentStats =
+      ComputeYieldStats(independentTag, flavour, tune, speciesDefs[i], nSub);
+    const YieldStats combinedStats =
+      ComputeYieldStats(combinedTag, flavour, tune, speciesDefs[i], nSub);
+
+    double ratio = 0.0;
+    double ratioError = 0.0;
+    if (independentStats.mean > 0.0 && combinedStats.mean > 0.0) {
+      ratio = independentStats.mean / combinedStats.mean;
+
+      const double independentRelError =
+        (independentStats.error > 0.0 ? independentStats.error / independentStats.mean : 0.0);
+      const double combinedRelError =
+        (combinedStats.error > 0.0 ? combinedStats.error / combinedStats.mean : 0.0);
+      ratioError = ratio * std::sqrt(independentRelError * independentRelError +
+                                     combinedRelError * combinedRelError);
+    }
+
+    const double x = static_cast<double>(i + 1);
+    graph->SetPoint(i, x, ratio);
+    graph->SetPointError(i, 0.5, ratioError);
+  }
+
+  return graph;
+}
+
 double PositiveGraphMinimum(TGraphErrors* graph)
 {
   if (!graph) return 0.0;
@@ -494,6 +545,24 @@ double PositiveGraphMinimum(TGraphErrors* graph)
     double x = 0.0;
     double y = 0.0;
     graph->GetPoint(i, x, y);
+    if (y > 0.0 && y < minVal) minVal = y;
+  }
+
+  return (minVal < 1.0e90 ? minVal : 0.0);
+}
+
+double PositiveGraphMinimumWithErrors(TGraphErrors* graph)
+{
+  if (!graph) return 0.0;
+
+  double minVal = 1.0e99;
+  const int n = graph->GetN();
+  for (int i = 0; i < n; ++i) {
+    double x = 0.0;
+    double y = 0.0;
+    graph->GetPoint(i, x, y);
+    const double low = y - graph->GetErrorY(i);
+    if (low > 0.0 && low < minVal) minVal = low;
     if (y > 0.0 && y < minVal) minVal = y;
   }
 
@@ -560,6 +629,8 @@ void DrawYieldComparison(const TString& independentTag,
                                                nSub, -0.10, 0.055, kBlue + 1, 20);
   TGraphErrors* gCombined = BuildYieldGraph(combinedTag, flavour, tune, speciesDefs,
                                             nSub, +0.10, 0.055, kRed + 1, 21);
+  TGraphErrors* gRatio = BuildRatioGraph(independentTag, combinedTag, flavour, tune, speciesDefs,
+                                         nSub, kBlack, 24);
 
   const int nBins = static_cast<int>(speciesDefs.size());
   TH1D* frame = new TH1D(Form("hFrame_%s_%s", flavour.Data(), tune.Data()), "",
@@ -574,18 +645,34 @@ void DrawYieldComparison(const TString& independentTag,
   const double yMinCandidate = SmallestPositive(PositiveGraphMinimum(gIndependent),
                                                 PositiveGraphMinimum(gCombined));
   const double yMin = (yMinCandidate > 0.0 ? 0.5 * yMinCandidate : 1.0e-8);
+  const double ratioMax = std::max(1.20, 1.25 * GraphMaximum(gRatio));
+  const double ratioMinCandidate = PositiveGraphMinimumWithErrors(gRatio);
+  double ratioMin = (ratioMinCandidate > 0.0 ? 0.80 * ratioMinCandidate : 0.0);
+  ratioMin = std::min(ratioMin, 0.90);
+  ratioMin = std::max(0.0, ratioMin);
 
   TCanvas* canvas = new TCanvas(Form("cYield_%s_%s", flavour.Data(), tune.Data()),
                                 Form("%s %s yields", flavour.Data(), tune.Data()),
-                                1100, 700);
-  canvas->SetTicks(1, 1);
-  canvas->SetLogy();
+                                1250, 760);
+
+  TPad* yieldPad = new TPad(Form("pYield_%s_%s", flavour.Data(), tune.Data()), "",
+                            0.0, 0.0, 1.0, 1.0);
+  yieldPad->SetLeftMargin(0.12);
+  yieldPad->SetRightMargin(0.18);
+  yieldPad->SetBottomMargin(0.18);
+  yieldPad->SetTopMargin(0.10);
+  yieldPad->SetTicks(1, 1);
+  yieldPad->SetLogy();
+  yieldPad->Draw();
+  yieldPad->cd();
 
   frame->SetTitle("");
   frame->GetXaxis()->SetTitle("Particle species");
   frame->GetYaxis()->SetTitle("Per-event yield");
   frame->GetXaxis()->SetTitleOffset(1.15);
   frame->GetYaxis()->SetTitleOffset(1.25);
+  frame->GetXaxis()->SetLabelSize(0.048);
+  frame->GetXaxis()->SetLabelOffset(0.012);
   frame->GetYaxis()->SetRangeUser(yMin, yMax);
   frame->LabelsOption("h", "X");
   frame->Draw();
@@ -593,22 +680,68 @@ void DrawYieldComparison(const TString& independentTag,
   gIndependent->Draw("P SAME");
   gCombined->Draw("P SAME");
 
-  TLegend* legend = new TLegend(0.80, 0.73, 0.98, 0.86);
+  TLegend* legend = new TLegend(0.16, 0.71, 0.50, 0.87);
   legend->SetFillStyle(1001);
   legend->SetFillColor(kWhite);
   legend->SetBorderSize(1);
-  legend->SetTextSize(0.030);
+  legend->SetTextSize(0.032);
   legend->AddEntry(gIndependent, "Independent Sample", "pe");
   legend->AddEntry(gCombined, "Combined Sample", "pe");
+  legend->AddEntry(gRatio, "Independent / Combined", "pe");
   legend->Draw();
 
   TLatex latex;
   latex.SetNDC();
   latex.SetTextAlign(22);
   latex.SetTextSize(0.045);
-  const double titleX = 0.5 * (canvas->GetLeftMargin() + 1.0 - canvas->GetRightMargin());
+  const double titleX = 0.5 * (yieldPad->GetLeftMargin() + 1.0 - yieldPad->GetRightMargin());
   latex.DrawLatex(titleX, 0.955,
                   Form("%s %s Per-Event Yields", flavour.Data(), tune.Data()));
+
+  canvas->cd();
+  TPad* ratioPad = new TPad(Form("pRatio_%s_%s", flavour.Data(), tune.Data()), "",
+                            0.0, 0.0, 1.0, 1.0);
+  ratioPad->SetLeftMargin(yieldPad->GetLeftMargin());
+  ratioPad->SetRightMargin(yieldPad->GetRightMargin());
+  ratioPad->SetBottomMargin(yieldPad->GetBottomMargin());
+  ratioPad->SetTopMargin(yieldPad->GetTopMargin());
+  ratioPad->SetFillStyle(4000);
+  ratioPad->SetFrameFillStyle(0);
+  ratioPad->SetFrameLineColor(0);
+  ratioPad->SetFrameBorderMode(0);
+  ratioPad->Draw();
+  ratioPad->cd();
+
+  TH1D* ratioFrame = new TH1D(Form("hRatioFrame_%s_%s", flavour.Data(), tune.Data()), "",
+                              nBins, 0.5, nBins + 0.5);
+  ratioFrame->SetMinimum(ratioMin);
+  ratioFrame->SetMaximum(ratioMax);
+  ratioFrame->GetXaxis()->SetLabelSize(0.0);
+  ratioFrame->GetXaxis()->SetTickLength(0.0);
+  ratioFrame->GetYaxis()->SetLabelSize(0.0);
+  ratioFrame->GetYaxis()->SetTickLength(0.0);
+  ratioFrame->GetYaxis()->SetTitle("");
+  ratioFrame->Draw("AXIS");
+
+  TLine* unityLine = new TLine(0.5, 1.0, nBins + 0.5, 1.0);
+  unityLine->SetLineColor(kBlack);
+  unityLine->SetLineStyle(2);
+  unityLine->SetLineWidth(2);
+  unityLine->Draw();
+
+  gRatio->Draw("P SAME");
+
+  TGaxis* rightAxis = new TGaxis(nBins + 0.5, ratioMin,
+                                 nBins + 0.5, ratioMax,
+                                 ratioMin, ratioMax, 510, "+L");
+  rightAxis->SetLineColor(kBlack);
+  rightAxis->SetLabelColor(kBlack);
+  rightAxis->SetTitleColor(kBlack);
+  rightAxis->SetLabelSize(0.040);
+  rightAxis->SetTitleSize(0.043);
+  rightAxis->SetTitleOffset(1.10);
+  rightAxis->SetTitle("Independent / Combined");
+  rightAxis->Draw();
 
   const TString outBase = Form("%s/SelectedParticleYields_%s_%s_%s_vs_%s",
                                GetOutputDir().Data(),
@@ -618,11 +751,15 @@ void DrawYieldComparison(const TString& independentTag,
                                combinedTag.Data());
   SaveCanvas(canvas, outBase);
 
+  delete rightAxis;
+  delete unityLine;
+  delete ratioFrame;
   delete legend;
-  delete canvas;
   delete frame;
   delete gIndependent;
   delete gCombined;
+  delete gRatio;
+  delete canvas;
 }
 
 } // namespace
