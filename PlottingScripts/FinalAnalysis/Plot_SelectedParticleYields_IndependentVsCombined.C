@@ -25,8 +25,7 @@
 // yields (mean ± SEM).
 //
 // Usage:
-//   root -l -b -q \
-//     'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C'
+//   root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C'
 //
 //   root -l -b -q \
 //     'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
@@ -44,7 +43,6 @@
 #include "TCollection.h"
 #include "TFile.h"
 #include "TGraphErrors.h"
-#include "TGaxis.h"
 #include "TH1.h"
 #include "TH1D.h"
 #include "TH2.h"
@@ -651,16 +649,21 @@ void DrawYieldComparison(const TString& independentTag,
   ratioMin = std::min(ratioMin, 0.90);
   ratioMin = std::max(0.0, ratioMin);
 
+  const double yieldPadRight = 0.43;
+  const double ratioPadLeft = 0.45;
+  const double ratioPadRight = 0.79;
+  const double legendPadLeft = 0.81;
+
   TCanvas* canvas = new TCanvas(Form("cYield_%s_%s", flavour.Data(), tune.Data()),
                                 Form("%s %s yields", flavour.Data(), tune.Data()),
-                                1250, 760);
+                                1500, 760);
 
   TPad* yieldPad = new TPad(Form("pYield_%s_%s", flavour.Data(), tune.Data()), "",
-                            0.0, 0.0, 1.0, 1.0);
-  yieldPad->SetLeftMargin(0.12);
-  yieldPad->SetRightMargin(0.18);
-  yieldPad->SetBottomMargin(0.18);
-  yieldPad->SetTopMargin(0.10);
+                            0.00, 0.00, yieldPadRight, 1.00);
+  yieldPad->SetLeftMargin(0.18);
+  yieldPad->SetRightMargin(0.05);
+  yieldPad->SetBottomMargin(0.32);
+  yieldPad->SetTopMargin(0.12);
   yieldPad->SetTicks(1, 1);
   yieldPad->SetLogy();
   yieldPad->Draw();
@@ -669,46 +672,33 @@ void DrawYieldComparison(const TString& independentTag,
   frame->SetTitle("");
   frame->GetXaxis()->SetTitle("Particle species");
   frame->GetYaxis()->SetTitle("Per-event yield");
-  frame->GetXaxis()->SetTitleOffset(1.15);
-  frame->GetYaxis()->SetTitleOffset(1.25);
-  frame->GetXaxis()->SetLabelSize(0.048);
-  frame->GetXaxis()->SetLabelOffset(0.012);
+  frame->GetXaxis()->SetTitleOffset(2.15);
+  frame->GetYaxis()->SetTitleOffset(1.45);
+  frame->GetXaxis()->SetLabelSize(0.058);
+  frame->GetXaxis()->SetLabelOffset(0.010);
   frame->GetYaxis()->SetRangeUser(yMin, yMax);
-  frame->LabelsOption("h", "X");
+  frame->LabelsOption("v", "X");
   frame->Draw();
 
   gIndependent->Draw("P SAME");
   gCombined->Draw("P SAME");
 
-  TLegend* legend = new TLegend(0.16, 0.71, 0.50, 0.87);
-  legend->SetFillStyle(1001);
-  legend->SetFillColor(kWhite);
-  legend->SetBorderSize(1);
-  legend->SetTextSize(0.032);
-  legend->AddEntry(gIndependent, "Independent Sample", "pe");
-  legend->AddEntry(gCombined, "Combined Sample", "pe");
-  legend->AddEntry(gRatio, "Independent / Combined", "pe");
-  legend->Draw();
-
   TLatex latex;
+  canvas->cd();
   latex.SetNDC();
   latex.SetTextAlign(22);
   latex.SetTextSize(0.045);
-  const double titleX = 0.5 * (yieldPad->GetLeftMargin() + 1.0 - yieldPad->GetRightMargin());
+  const double titleX = 0.5 * ratioPadRight;
   latex.DrawLatex(titleX, 0.955,
                   Form("%s %s Per-Event Yields", flavour.Data(), tune.Data()));
 
-  canvas->cd();
   TPad* ratioPad = new TPad(Form("pRatio_%s_%s", flavour.Data(), tune.Data()), "",
-                            0.0, 0.0, 1.0, 1.0);
-  ratioPad->SetLeftMargin(yieldPad->GetLeftMargin());
-  ratioPad->SetRightMargin(yieldPad->GetRightMargin());
-  ratioPad->SetBottomMargin(yieldPad->GetBottomMargin());
-  ratioPad->SetTopMargin(yieldPad->GetTopMargin());
-  ratioPad->SetFillStyle(4000);
-  ratioPad->SetFrameFillStyle(0);
-  ratioPad->SetFrameLineColor(0);
-  ratioPad->SetFrameBorderMode(0);
+                            ratioPadLeft, 0.00, ratioPadRight, 1.00);
+  ratioPad->SetLeftMargin(0.16);
+  ratioPad->SetRightMargin(0.06);
+  ratioPad->SetBottomMargin(0.32);
+  ratioPad->SetTopMargin(0.12);
+  ratioPad->SetTicks(1, 1);
   ratioPad->Draw();
   ratioPad->cd();
 
@@ -716,12 +706,18 @@ void DrawYieldComparison(const TString& independentTag,
                               nBins, 0.5, nBins + 0.5);
   ratioFrame->SetMinimum(ratioMin);
   ratioFrame->SetMaximum(ratioMax);
-  ratioFrame->GetXaxis()->SetLabelSize(0.0);
-  ratioFrame->GetXaxis()->SetTickLength(0.0);
-  ratioFrame->GetYaxis()->SetLabelSize(0.0);
-  ratioFrame->GetYaxis()->SetTickLength(0.0);
-  ratioFrame->GetYaxis()->SetTitle("");
-  ratioFrame->Draw("AXIS");
+  ratioFrame->SetTitle("");
+  ratioFrame->GetXaxis()->SetTitle("Particle species");
+  ratioFrame->GetYaxis()->SetTitle("Independent / Combined");
+  ratioFrame->GetXaxis()->SetTitleOffset(2.15);
+  ratioFrame->GetYaxis()->SetTitleOffset(1.45);
+  ratioFrame->GetXaxis()->SetLabelSize(0.058);
+  ratioFrame->GetXaxis()->SetLabelOffset(0.010);
+  ratioFrame->LabelsOption("v", "X");
+  for (int i = 0; i < nBins; ++i) {
+    ratioFrame->GetXaxis()->SetBinLabel(i + 1, speciesDefs[i].label.Data());
+  }
+  ratioFrame->Draw();
 
   TLine* unityLine = new TLine(0.5, 1.0, nBins + 0.5, 1.0);
   unityLine->SetLineColor(kBlack);
@@ -731,17 +727,29 @@ void DrawYieldComparison(const TString& independentTag,
 
   gRatio->Draw("P SAME");
 
-  TGaxis* rightAxis = new TGaxis(nBins + 0.5, ratioMin,
-                                 nBins + 0.5, ratioMax,
-                                 ratioMin, ratioMax, 510, "+L");
-  rightAxis->SetLineColor(kBlack);
-  rightAxis->SetLabelColor(kBlack);
-  rightAxis->SetTitleColor(kBlack);
-  rightAxis->SetLabelSize(0.040);
-  rightAxis->SetTitleSize(0.043);
-  rightAxis->SetTitleOffset(1.10);
-  rightAxis->SetTitle("Independent / Combined");
-  rightAxis->Draw();
+  canvas->cd();
+  TPad* legendPad = new TPad(Form("pLegend_%s_%s", flavour.Data(), tune.Data()), "",
+                             legendPadLeft, 0.00, 1.00, 1.00);
+  legendPad->SetLeftMargin(0.08);
+  legendPad->SetRightMargin(0.08);
+  legendPad->SetBottomMargin(0.32);
+  legendPad->SetTopMargin(0.12);
+  legendPad->SetFillStyle(0);
+  legendPad->SetFrameFillStyle(0);
+  legendPad->SetFrameLineColor(0);
+  legendPad->SetFrameBorderMode(0);
+  legendPad->Draw();
+  legendPad->cd();
+
+  TLegend* legend = new TLegend(0.08, 0.62, 0.96, 0.86);
+  legend->SetFillStyle(1001);
+  legend->SetFillColor(kWhite);
+  legend->SetBorderSize(1);
+  legend->SetTextSize(0.090);
+  legend->AddEntry(gIndependent, "Independent Sample", "pe");
+  legend->AddEntry(gCombined, "Combined Sample", "pe");
+  legend->AddEntry(gRatio, "Independent / Combined", "pe");
+  legend->Draw();
 
   const TString outBase = Form("%s/SelectedParticleYields_%s_%s_%s_vs_%s",
                                GetOutputDir().Data(),
@@ -751,7 +759,6 @@ void DrawYieldComparison(const TString& independentTag,
                                combinedTag.Data());
   SaveCanvas(canvas, outBase);
 
-  delete rightAxis;
   delete unityLine;
   delete ratioFrame;
   delete legend;
