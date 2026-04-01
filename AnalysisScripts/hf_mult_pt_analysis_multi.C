@@ -130,6 +130,24 @@ namespace {
     return h;
   }
 
+  TH1D* CreateTaggedEventCountHist(const char* binLabel)
+  {
+    TH1D* h = new TH1D("fHistTaggedEventCount",
+                       "Flavor-tagged event count;Counter;Events",
+                       1, 0.5, 1.5);
+    h->GetXaxis()->SetBinLabel(1, (binLabel && binLabel[0] != '\0') ? binLabel : "tagged events");
+    return h;
+  }
+
+  TH1D* CreateTaggedMultiplicityHist(const char* histTitle)
+  {
+    return new TH1D("fHistTaggedMultiplicity",
+                    (histTitle && histTitle[0] != '\0')
+                      ? histTitle
+                      : "Flavor-tagged multiplicity;N_{ch};Events",
+                    300, 0.0, 300.0);
+  }
+
   void InitChargeSplitHistPair(TH2D*& particleHist,
                                TH2D*& barHist,
                                bool enable,
@@ -243,7 +261,9 @@ namespace {
 
   struct BBHistSet {
     TH1D* fHistEventCount;
+    TH1D* fHistTaggedEventCount;
     TH1D* fHistMultiplicity;
+    TH1D* fHistTaggedMultiplicity;
     TH2D* fHistPDGMult;
 
     TH2D* fHistPtBeautyMesons;
@@ -303,9 +323,13 @@ namespace {
     BBHistSet* h = new BBHistSet;
 
     h->fHistEventCount = CreateEventCountHist();
+    h->fHistTaggedEventCount = CreateTaggedEventCountHist("beauty-tagged events");
 
     h->fHistMultiplicity = new TH1D("fHistMultiplicity", "Multiplicity;N_{ch};Events",
                                     nMultBins, multMin, multMax);
+    h->fHistTaggedMultiplicity = CreateTaggedMultiplicityHist(
+      "Beauty-tagged multiplicity;N_{ch};Events"
+    );
 
     h->fHistPDGMult = new TH2D("fHistPDGMult", "PDG code vs multiplicity;PDG code;Multiplicity",
                                8000, -4000.0, 4000.0,
@@ -455,7 +479,9 @@ namespace {
     }
 
     hset->fHistEventCount->Write();
+    hset->fHistTaggedEventCount->Write();
     hset->fHistMultiplicity->Write();
+    hset->fHistTaggedMultiplicity->Write();
     hset->fHistPDGMult->Write();
 
     hset->fHistPtBeautyMesons->Write();
@@ -510,7 +536,9 @@ namespace {
 
   struct CCHistSet {
     TH1D* fHistEventCount;
+    TH1D* fHistTaggedEventCount;
     TH1D* fHistMultiplicity;
+    TH1D* fHistTaggedMultiplicity;
     TH2D* fHistPDGMult;
 
     TH2D* fHistPtCharmMesons;
@@ -548,9 +576,13 @@ namespace {
     CCHistSet* h = new CCHistSet;
 
     h->fHistEventCount = CreateEventCountHist();
+    h->fHistTaggedEventCount = CreateTaggedEventCountHist("charm-tagged events");
 
     h->fHistMultiplicity = new TH1D("fHistMultiplicity", "Multiplicity;N_{ch};Events",
                                     nMultBins, multMin, multMax);
+    h->fHistTaggedMultiplicity = CreateTaggedMultiplicityHist(
+      "Charm-tagged multiplicity;N_{ch};Events"
+    );
 
     h->fHistPDGMult = new TH2D("fHistPDGMult", "PDG code vs multiplicity;PDG code;Multiplicity",
                                8000, -4000.0, 4000.0,
@@ -637,7 +669,9 @@ namespace {
     }
 
     hset->fHistEventCount->Write();
+    hset->fHistTaggedEventCount->Write();
     hset->fHistMultiplicity->Write();
+    hset->fHistTaggedMultiplicity->Write();
     hset->fHistPDGMult->Write();
 
     hset->fHistPtCharmMesons->Write();
@@ -679,7 +713,9 @@ namespace {
   {
     if (!hs) return;
     delete hs->fHistEventCount;
+    delete hs->fHistTaggedEventCount;
     delete hs->fHistMultiplicity;
+    delete hs->fHistTaggedMultiplicity;
     delete hs->fHistPDGMult;
     delete hs->fHistPtBeautyMesons;
     delete hs->fHistPtBeautyBaryons;
@@ -727,7 +763,9 @@ namespace {
   {
     if (!hs) return;
     delete hs->fHistEventCount;
+    delete hs->fHistTaggedEventCount;
     delete hs->fHistMultiplicity;
+    delete hs->fHistTaggedMultiplicity;
     delete hs->fHistPDGMult;
     delete hs->fHistPtCharmMesons;
     delete hs->fHistPtCharmBaryons;
@@ -816,12 +854,18 @@ namespace {
       if (PT->size() != nParts) continue;
       if (HFCLASS && HFCLASS->size() != nParts) continue;
 
+      bool hasBeautyTag = false;
+      bool hasCharmTag = false;
+
       for (std::size_t j = 0; j < nParts; ++j) {
         const int pdg   = ID->at(j);
         const int apdg  = std::abs(pdg);
         const double pt = PT->at(j);
 
         int hf = HFCLASS ? HFCLASS->at(j) : HFClassFromPDG(pdg);
+
+        if (hf == 5 || hf == 45) hasBeautyTag = true;
+        if (hf == 4) hasCharmTag = true;
 
         bset->fHistPDGMult->Fill(pdg, MULTIPLICITY);
         cset->fHistPDGMult->Fill(pdg, MULTIPLICITY);
@@ -931,6 +975,15 @@ namespace {
                                  pdg, pt, MULTIPLICITY);
           }
         }
+      }
+
+      if (hasBeautyTag) {
+        bset->fHistTaggedEventCount->Fill(1.0);
+        bset->fHistTaggedMultiplicity->Fill(MULTIPLICITY);
+      }
+      if (hasCharmTag)  {
+        cset->fHistTaggedEventCount->Fill(1.0);
+        cset->fHistTaggedMultiplicity->Fill(MULTIPLICITY);
       }
     }
 

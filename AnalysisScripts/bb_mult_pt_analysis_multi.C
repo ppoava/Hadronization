@@ -160,6 +160,24 @@ namespace {
     return h;
   }
 
+  TH1D* CreateTaggedEventCountHist(const char* binLabel)
+  {
+    TH1D* h = new TH1D("fHistTaggedEventCount",
+                       "Flavor-tagged event count;Counter;Events",
+                       1, 0.5, 1.5);
+    h->GetXaxis()->SetBinLabel(1, (binLabel && binLabel[0] != '\0') ? binLabel : "tagged events");
+    return h;
+  }
+
+  TH1D* CreateTaggedMultiplicityHist(const char* histTitle)
+  {
+    return new TH1D("fHistTaggedMultiplicity",
+                    (histTitle && histTitle[0] != '\0')
+                      ? histTitle
+                      : "Flavor-tagged multiplicity;N_{ch};Events",
+                    300, 0.0, 300.0);
+  }
+
   void InitChargeSplitHistPair(TH2D*& particleHist,
                                TH2D*& barHist,
                                bool enable,
@@ -210,7 +228,9 @@ namespace {
   struct BBHistSet {
     // event-level
     TH1D* fHistEventCount;
+    TH1D* fHistTaggedEventCount;
     TH1D* fHistMultiplicity;
+    TH1D* fHistTaggedMultiplicity;
 
     // debugging / QA
     TH2D* fHistPDGMult;
@@ -277,11 +297,15 @@ namespace {
     BBHistSet* h = new BBHistSet;
 
     h->fHistEventCount = CreateEventCountHist();
+    h->fHistTaggedEventCount = CreateTaggedEventCountHist("beauty-tagged events");
 
     h->fHistMultiplicity = new TH1D(
       "fHistMultiplicity",
       "Multiplicity;N_{ch};Events",
       nMultBins, multMin, multMax
+    );
+    h->fHistTaggedMultiplicity = CreateTaggedMultiplicityHist(
+      "Beauty-tagged multiplicity;N_{ch};Events"
     );
 
     h->fHistPDGMult = new TH2D(
@@ -474,7 +498,9 @@ namespace {
     }
 
     hset->fHistEventCount->Write();
+    hset->fHistTaggedEventCount->Write();
     hset->fHistMultiplicity->Write();
+    hset->fHistTaggedMultiplicity->Write();
     hset->fHistPDGMult->Write();
 
     hset->fHistPtBeautyMesons->Write();
@@ -575,6 +601,8 @@ namespace {
       BBHistSet* hset = hsets[subIndex];
       if (!hset) continue;
 
+      bool hasBeautyTag = false;
+
       hset->fHistEventCount->Fill(1.0);
       hset->fHistMultiplicity->Fill(MULTIPLICITY);
 
@@ -604,9 +632,11 @@ namespace {
 
         // --------- beauty global ---------
         if (IsBeautyMeson(pdg)) {
+          hasBeautyTag = true;
           hset->fHistPtBeautyMesons->Fill(pt, MULTIPLICITY);
         }
         if (IsBeautyBaryon(pdg)) {
+          hasBeautyTag = true;
           hset->fHistPtBeautyBaryons->Fill(pt, MULTIPLICITY);
         }
 
@@ -660,6 +690,11 @@ namespace {
           FillChargeSplitHists(hset->fHistPtOmegabMinusParticle, hset->fHistPtOmegabMinusBar,
                                pdg, pt, MULTIPLICITY);
         }
+      }
+
+      if (hasBeautyTag) {
+        hset->fHistTaggedEventCount->Fill(1.0);
+        hset->fHistTaggedMultiplicity->Fill(MULTIPLICITY);
       }
     }
 
@@ -758,7 +793,9 @@ namespace {
     for (auto* hs : hsets) {
       if (!hs) continue;
       delete hs->fHistEventCount;
+      delete hs->fHistTaggedEventCount;
       delete hs->fHistMultiplicity;
+      delete hs->fHistTaggedMultiplicity;
       delete hs->fHistPDGMult;
 
       delete hs->fHistPtBeautyMesons;

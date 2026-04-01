@@ -154,6 +154,24 @@ namespace {
     return h;
   }
 
+  TH1D* CreateTaggedEventCountHist(const char* binLabel)
+  {
+    TH1D* h = new TH1D("fHistTaggedEventCount",
+                       "Flavor-tagged event count;Counter;Events",
+                       1, 0.5, 1.5);
+    h->GetXaxis()->SetBinLabel(1, (binLabel && binLabel[0] != '\0') ? binLabel : "tagged events");
+    return h;
+  }
+
+  TH1D* CreateTaggedMultiplicityHist(const char* histTitle)
+  {
+    return new TH1D("fHistTaggedMultiplicity",
+                    (histTitle && histTitle[0] != '\0')
+                      ? histTitle
+                      : "Flavor-tagged multiplicity;N_{ch};Events",
+                    300, 0.0, 300.0);
+  }
+
   void InitChargeSplitHistPair(TH2D*& particleHist,
                                TH2D*& barHist,
                                bool enable,
@@ -203,7 +221,9 @@ namespace {
 
   struct CCHistSet {
     TH1D* fHistEventCount;
+    TH1D* fHistTaggedEventCount;
     TH1D* fHistMultiplicity;
+    TH1D* fHistTaggedMultiplicity;
     TH2D* fHistPDGMult;
 
     TH2D* fHistPtCharmMesons;
@@ -263,11 +283,15 @@ namespace {
     CCHistSet* h = new CCHistSet;
 
     h->fHistEventCount = CreateEventCountHist();
+    h->fHistTaggedEventCount = CreateTaggedEventCountHist("charm-tagged events");
 
     h->fHistMultiplicity = new TH1D(
       "fHistMultiplicity",
       "Multiplicity;N_{ch};Events",
       nMultBins, multMin, multMax
+    );
+    h->fHistTaggedMultiplicity = CreateTaggedMultiplicityHist(
+      "Charm-tagged multiplicity;N_{ch};Events"
     );
 
     h->fHistPDGMult = new TH2D(
@@ -449,7 +473,9 @@ namespace {
     }
 
     hset->fHistEventCount->Write();
+    hset->fHistTaggedEventCount->Write();
     hset->fHistMultiplicity->Write();
+    hset->fHistTaggedMultiplicity->Write();
     hset->fHistPDGMult->Write();
 
     hset->fHistPtCharmMesons->Write();
@@ -554,6 +580,8 @@ namespace {
       CCHistSet* hset = hsets[subIndex];
       if (!hset) continue;
 
+      bool hasCharmTag = false;
+
       hset->fHistEventCount->Fill(1.0);
       hset->fHistMultiplicity->Fill(MULTIPLICITY);
 
@@ -583,9 +611,11 @@ namespace {
 
         // --------- charm global ---------
         if (IsCharmMeson(pdg)) {
+          hasCharmTag = true;
           hset->fHistPtCharmMesons->Fill(pt, MULTIPLICITY);
         }
         if (IsCharmBaryon(pdg)) {
+          hasCharmTag = true;
           hset->fHistPtCharmBaryons->Fill(pt, MULTIPLICITY);
         }
 
@@ -635,6 +665,11 @@ namespace {
           FillChargeSplitHists(hset->fHistPtOmegacZeroParticle, hset->fHistPtOmegacZeroBar,
                                pdg, pt, MULTIPLICITY);
         }
+      }
+
+      if (hasCharmTag) {
+        hset->fHistTaggedEventCount->Fill(1.0);
+        hset->fHistTaggedMultiplicity->Fill(MULTIPLICITY);
       }
     }
 
@@ -733,7 +768,9 @@ namespace {
       if (!hs) continue;
 
       delete hs->fHistEventCount;
+      delete hs->fHistTaggedEventCount;
       delete hs->fHistMultiplicity;
+      delete hs->fHistTaggedMultiplicity;
       delete hs->fHistPDGMult;
 
       delete hs->fHistPtCharmMesons;

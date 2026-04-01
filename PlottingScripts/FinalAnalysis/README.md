@@ -11,6 +11,7 @@ At the moment, the main macros in this directory are:
 ```text
 Plot_MultiplicityDistributions_TwoSamples.C
 Plot_SelectedParticleYields_IndependentVsCombined.C
+Plot_SelectedParticleYieldRatios_IndependentVsCombined.C
 ```
 
 ## What the macro does
@@ -30,6 +31,7 @@ For each plot, the macro overlays two samples:
 The plot title is centered and the output is written in multiple formats.
 
 When the normalized multiplicity-shape option is enabled, the macro normalizes each subsample histogram first and then uses the mean and SEM across subsamples for the plotted bin contents and uncertainties.
+For new analyzed files it uses flavor-tagged multiplicity histograms so the split-vs-unified comparison is built from beauty-tagged or charm-tagged events rather than from all unified heavy-flavour events.
 
 ## Automatic sample selection
 
@@ -138,7 +140,13 @@ hf_MONASH_sub0.root
 hf_JUNCTIONS_sub0.root
 ```
 
-For both schemes, the macro reads the histogram:
+For both schemes, the macro prefers the histogram:
+
+```text
+fHistTaggedMultiplicity
+```
+
+and falls back to:
 
 ```text
 fHistMultiplicity
@@ -265,7 +273,8 @@ The macro therefore uses the full combined analyzed histogram yield:
 histogram integral / N_events
 ```
 
-It takes `N_events` from `fHistEventCount` when that histogram is available and falls back to the multiplicity integral for older analyzed files.
+It prefers `fHistTaggedEventCount` when that histogram is available, then falls back to `fHistEventCount`, and finally to the multiplicity integral for older analyzed files.
+For the unified `hf_*` analysis outputs, `fHistTaggedEventCount` stores the number of flavor-tagged events for that output flavor, which makes the independent-vs-combined yield comparison closer to an apples-to-apples hadronization comparison.
 The plotted yield uncertainties are taken from the spread of the per-subsample yields, reported as SEM across the available subsamples.
 
 ### Input histogram mapping
@@ -300,6 +309,51 @@ Example interactive ROOT session:
 .L "PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C"
 runSelectedParticleYieldPlots();
 runSelectedParticleYieldPlots("12-01-2026", "27-03-2026", 10);
+```
+
+## Selected particle yield ratios
+
+This directory also provides:
+
+```text
+Plot_SelectedParticleYieldRatios_IndependentVsCombined.C
+```
+
+It uses the same species list, sample-folder resolution, histogram lookup, and charge-conjugate handling as the yield macro, but it plots:
+
+```text
+Independent yield / Combined yield
+```
+
+for each species instead of the two absolute yields separately.
+
+The macro produces four plots:
+
+- Beauty MONASH
+- Beauty JUNCTIONS
+- Charm MONASH
+- Charm JUNCTIONS
+
+It propagates the independent and combined yield uncertainties into the ratio, using the same per-subsample SEM-based yield errors as the yield macro.
+
+Default usage:
+
+```bash
+root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C'
+```
+
+Explicit folders:
+
+```bash
+root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
+```
+
+Wrapper function:
+
+```cpp
+.L "PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C"
+runSelectedParticleYieldRatioPlots();
+runSelectedParticleYieldRatioPlots("12-01-2026", "27-03-2026", 10);
 ```
 
 ## Notes

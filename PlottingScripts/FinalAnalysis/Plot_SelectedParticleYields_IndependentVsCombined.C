@@ -361,6 +361,10 @@ double GetEventCount(TFile* file)
 {
   if (!file) return 0.0;
 
+  if (TH1* hTaggedEventCount = dynamic_cast<TH1*>(file->Get("fHistTaggedEventCount"))) {
+    return hTaggedEventCount->Integral(1, hTaggedEventCount->GetNbinsX());
+  }
+
   if (TH1* hEventCount = dynamic_cast<TH1*>(file->Get("fHistEventCount"))) {
     return hEventCount->Integral(1, hEventCount->GetNbinsX());
   }

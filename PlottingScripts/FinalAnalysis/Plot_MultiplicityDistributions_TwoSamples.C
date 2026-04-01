@@ -27,6 +27,12 @@
 //   root -l -b -q \
 //     'PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C("12-01-2026","27-03-2026",10,true)'
 //
+// The macro prefers the flavor-tagged multiplicity histogram
+//   fHistTaggedMultiplicity
+// and falls back to
+//   fHistMultiplicity
+// for older analyzed files.
+//
 // When normalization is enabled, the plotted bin uncertainties are taken from
 // the spread across normalized subsamples (mean ± SEM).
 // ---------------------------------------------------------------------------
@@ -329,9 +335,14 @@ TH1D* LoadMultiplicityWithSubsampleErrors(const TString& dateTag,
       continue;
     }
 
-    TH1D* hMult = dynamic_cast<TH1D*>(inputFile->Get("fHistMultiplicity"));
+    TH1D* hMult = dynamic_cast<TH1D*>(inputFile->Get("fHistTaggedMultiplicity"));
+    const char* histNameUsed = "fHistTaggedMultiplicity";
     if (!hMult) {
-      std::cerr << "Warning: histogram fHistMultiplicity not found in "
+      hMult = dynamic_cast<TH1D*>(inputFile->Get("fHistMultiplicity"));
+      histNameUsed = "fHistMultiplicity";
+    }
+    if (!hMult) {
+      std::cerr << "Warning: histogram fHistTaggedMultiplicity or fHistMultiplicity not found in "
                 << filePath << "\n";
       inputFile->Close();
       delete inputFile;
@@ -343,6 +354,9 @@ TH1D* LoadMultiplicityWithSubsampleErrors(const TString& dateTag,
     ));
     if (hSub) {
       hSub->SetDirectory(nullptr);
+      hSub->SetName(Form("hMult_%s_%s_%s_%s_sub%d",
+                         dateTag.Data(), flavour.Data(), tune.Data(),
+                         histNameUsed, iSub));
       PlotErrorUtils::EnsureSumw2(hSub);
       if (normalize) NormalizeToUnity(hSub);
       subHists.push_back(hSub);

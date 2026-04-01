@@ -64,6 +64,8 @@ This structure is designed so that:
 
 All three `*_mult_pt_analysis_multi.C` macros now also write:
 - `fHistEventCount` for explicit event normalization
+- `fHistTaggedEventCount` for flavor-tagged event normalization
+- `fHistTaggedMultiplicity` for flavor-tagged multiplicity comparisons
 - histogram bin uncertainties with `Sumw2` enabled by default, so downstream plotting macros can propagate statistical errors explicitly
 
 By default, species-resolved histograms are charge-conjugate combined. The macros can also optionally write additional `Particle` and `Bar` split histograms while keeping the combined histogram names for compatibility.
@@ -99,7 +101,9 @@ The legacy beauty macro expects the input `tree` to contain:
 ### Main output histograms
 Examples of histograms written by the beauty macro:
 - `fHistEventCount`
+- `fHistTaggedEventCount`
 - `fHistMultiplicity`
+- `fHistTaggedMultiplicity`
 - `fHistPDGMult`
 - `fHistPtBeautyMesons`
 - `fHistPtBeautyBaryons`
@@ -146,7 +150,9 @@ The legacy charm macro expects the input `tree` to contain:
 ### Main output histograms
 Examples of histograms written by the charm macro:
 - `fHistEventCount`
+- `fHistTaggedEventCount`
 - `fHistMultiplicity`
+- `fHistTaggedMultiplicity`
 - `fHistPDGMult`
 - `fHistPtCharmMesons`
 - `fHistPtCharmBaryons`
@@ -299,7 +305,9 @@ AnalyzedData/<OUTPUT_TAG>/Charm/hf_JUNCTIONS_sub0.root
 ### Main Beauty histograms written
 Examples:
 - `fHistEventCount`
+- `fHistTaggedEventCount`
 - `fHistMultiplicity`
+- `fHistTaggedMultiplicity`
 - `fHistPDGMult`
 - `fHistPtBeautyMesons`
 - `fHistPtBeautyBaryons`
@@ -319,7 +327,9 @@ Examples:
 ### Main Charm histograms written
 Examples:
 - `fHistEventCount`
+- `fHistTaggedEventCount`
 - `fHistMultiplicity`
+- `fHistTaggedMultiplicity`
 - `fHistPDGMult`
 - `fHistPtCharmMesons`
 - `fHistPtCharmBaryons`
