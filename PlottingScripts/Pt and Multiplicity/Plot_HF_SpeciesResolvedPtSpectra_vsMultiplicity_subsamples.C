@@ -681,28 +681,41 @@ std::vector<PlotEntry> BuildRequestedEntriesForFlavor(const std::vector<SpeciesD
     std::vector<PlotEntry> entries;
 
     if (flavorTag == "Charm") {
-        AppendRequestedEntry(entries, speciesDefs, "Dzero", kDrawSingle);
+        AppendRequestedEntry(entries, speciesDefs, "Dzero", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "Dzero", kDrawBar);
         AppendRequestedEntry(entries, speciesDefs, "Dplus", kDrawParticle);
         AppendRequestedEntry(entries, speciesDefs, "Dplus", kDrawBar);
-        AppendRequestedEntry(entries, speciesDefs, "Dsplus", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "Lambdac", kDrawSingle);
+        AppendRequestedEntry(entries, speciesDefs, "Dsplus", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "Dsplus", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "Lambdac", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "Lambdac", kDrawBar);
         return entries;
     }
 
     AppendRequestedEntry(entries, speciesDefs, "Bplus", kDrawParticle);
     AppendRequestedEntry(entries, speciesDefs, "Bplus", kDrawBar);
-    AppendRequestedEntry(entries, speciesDefs, "Bzero", kDrawSingle);
-    AppendRequestedEntry(entries, speciesDefs, "Bs0", kDrawSingle);
-    AppendRequestedEntry(entries, speciesDefs, "Bcplus", kDrawSingle);
-    AppendRequestedEntry(entries, speciesDefs, "Lambdab", kDrawSingle);
+    AppendRequestedEntry(entries, speciesDefs, "Bzero", kDrawParticle);
+    AppendRequestedEntry(entries, speciesDefs, "Bzero", kDrawBar);
+    AppendRequestedEntry(entries, speciesDefs, "Bs0", kDrawParticle);
+    AppendRequestedEntry(entries, speciesDefs, "Bs0", kDrawBar);
+    AppendRequestedEntry(entries, speciesDefs, "Bcplus", kDrawParticle);
+    AppendRequestedEntry(entries, speciesDefs, "Bcplus", kDrawBar);
+    AppendRequestedEntry(entries, speciesDefs, "Lambdab", kDrawParticle);
+    AppendRequestedEntry(entries, speciesDefs, "Lambdab", kDrawBar);
 
     if (includeHeavyBeautyExtras) {
-        AppendRequestedEntry(entries, speciesDefs, "SigmabPlus", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "SigmabZero", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "SigmabMinus", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "XibZero", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "XibMinus", kDrawSingle);
-        AppendRequestedEntry(entries, speciesDefs, "OmegabMinus", kDrawSingle);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabPlus", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabPlus", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabZero", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabZero", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabMinus", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "SigmabMinus", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "XibZero", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "XibZero", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "XibMinus", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "XibMinus", kDrawBar);
+        AppendRequestedEntry(entries, speciesDefs, "OmegabMinus", kDrawParticle);
+        AppendRequestedEntry(entries, speciesDefs, "OmegabMinus", kDrawBar);
     }
 
     return entries;

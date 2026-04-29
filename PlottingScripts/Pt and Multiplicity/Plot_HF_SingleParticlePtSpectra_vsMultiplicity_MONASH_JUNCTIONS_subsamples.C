@@ -571,29 +571,42 @@ std::vector<ResolvedParticleRequest> BuildFlavorRequests(const TString& flavorTa
     std::vector<ParticleDef>& defs = PersistentParticleDefs();
 
     if (flavorTag == "Charm") {
-        AppendFlavorRequest(requests, defs, "Dzero", kPreferDirect, "Dzero");
+        AppendFlavorRequest(requests, defs, "Dzero", kPreferParticle, "Dzero");
+        AppendFlavorRequest(requests, defs, "Dzero", kPreferBar, "Dbar0");
         AppendFlavorRequest(requests, defs, "Dplus", kPreferParticle, "Dplus");
         AppendFlavorRequest(requests, defs, "Dplus", kPreferBar, "Dminus");
-        AppendFlavorRequest(requests, defs, "Dsplus", kPreferDirect, "Dsplus");
-        AppendFlavorRequest(requests, defs, "Lambdac", kPreferDirect, "Lambdac");
+        AppendFlavorRequest(requests, defs, "Dsplus", kPreferParticle, "Dsplus");
+        AppendFlavorRequest(requests, defs, "Dsplus", kPreferBar, "Dsminus");
+        AppendFlavorRequest(requests, defs, "Lambdac", kPreferParticle, "Lambdac");
+        AppendFlavorRequest(requests, defs, "Lambdac", kPreferBar, "barLambdac");
         return requests;
     }
 
     if (flavorTag == "Beauty") {
         AppendFlavorRequest(requests, defs, "Bplus", kPreferParticle, "Bplus");
         AppendFlavorRequest(requests, defs, "Bplus", kPreferBar, "Bminus");
-        AppendFlavorRequest(requests, defs, "Bzero", kPreferDirect, "Bzero");
-        AppendFlavorRequest(requests, defs, "Bs0", kPreferDirect, "Bs0");
-        AppendFlavorRequest(requests, defs, "Bcplus", kPreferDirect, "Bcplus");
-        AppendFlavorRequest(requests, defs, "Lambdab", kPreferDirect, "Lambdab");
+        AppendFlavorRequest(requests, defs, "Bzero", kPreferParticle, "Bzero");
+        AppendFlavorRequest(requests, defs, "Bzero", kPreferBar, "barB0");
+        AppendFlavorRequest(requests, defs, "Bs0", kPreferParticle, "Bs0");
+        AppendFlavorRequest(requests, defs, "Bs0", kPreferBar, "barBs0");
+        AppendFlavorRequest(requests, defs, "Bcplus", kPreferParticle, "Bcplus");
+        AppendFlavorRequest(requests, defs, "Bcplus", kPreferBar, "Bcminus");
+        AppendFlavorRequest(requests, defs, "Lambdab", kPreferParticle, "Lambdab");
+        AppendFlavorRequest(requests, defs, "Lambdab", kPreferBar, "barLambdab");
 
         if (includeHeavyBeautyExtras) {
-            AppendFlavorRequest(requests, defs, "SigmabPlus", kPreferDirect, "SigmabPlus");
-            AppendFlavorRequest(requests, defs, "SigmabZero", kPreferDirect, "SigmabZero");
-            AppendFlavorRequest(requests, defs, "SigmabMinus", kPreferDirect, "SigmabMinus");
-            AppendFlavorRequest(requests, defs, "XibZero", kPreferDirect, "XibZero");
-            AppendFlavorRequest(requests, defs, "XibMinus", kPreferDirect, "XibMinus");
-            AppendFlavorRequest(requests, defs, "OmegabMinus", kPreferDirect, "OmegabMinus");
+            AppendFlavorRequest(requests, defs, "SigmabPlus", kPreferParticle, "SigmabPlus");
+            AppendFlavorRequest(requests, defs, "SigmabPlus", kPreferBar, "barSigmabMinus");
+            AppendFlavorRequest(requests, defs, "SigmabZero", kPreferParticle, "SigmabZero");
+            AppendFlavorRequest(requests, defs, "SigmabZero", kPreferBar, "barSigmabZero");
+            AppendFlavorRequest(requests, defs, "SigmabMinus", kPreferParticle, "SigmabMinus");
+            AppendFlavorRequest(requests, defs, "SigmabMinus", kPreferBar, "barSigmabPlus");
+            AppendFlavorRequest(requests, defs, "XibZero", kPreferParticle, "XibZero");
+            AppendFlavorRequest(requests, defs, "XibZero", kPreferBar, "barXibZero");
+            AppendFlavorRequest(requests, defs, "XibMinus", kPreferParticle, "XibMinus");
+            AppendFlavorRequest(requests, defs, "XibMinus", kPreferBar, "barXibPlus");
+            AppendFlavorRequest(requests, defs, "OmegabMinus", kPreferParticle, "OmegabMinus");
+            AppendFlavorRequest(requests, defs, "OmegabMinus", kPreferBar, "barOmegabPlus");
         }
     }
 
@@ -614,8 +627,8 @@ void PrintAvailableSelectors()
 {
     std::cout << "Flavor selectors: Charm, Beauty\n"
               << "Default flavor loops use:\n"
-              << "  Charm  : D0, D+, D-, Ds, Lambdac\n"
-              << "  Beauty : B+, B-, B0, Bs, Bc, Lambdab\n"
+              << "  Charm  : D0, #bar{D}0, D+, D-, Ds+, Ds-, #Lambda_c+, #bar{#Lambda}_c-\n"
+              << "  Beauty : B+, B-, B0, #bar{B}0, Bs0, #bar{B}s0, Bc+, Bc-, #Lambda_b0, #bar{#Lambda}_b0\n"
               << "Heavier beauty baryons can be re-enabled with includeHeavyBeautyExtras = true.\n";
     PrintAvailableParticles();
 }
