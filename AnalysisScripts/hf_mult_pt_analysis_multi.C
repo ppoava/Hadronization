@@ -2,7 +2,7 @@
 // hf_mult_pt_analysis_multi.C
 //
 // Combined analysis for the unified heavy-flavour sample.
-// Reads:
+// Reads all ROOT files found in:
 //   RootFiles/HF/MONASH/*.root
 //   RootFiles/HF/JUNCTIONS/*.root
 //
@@ -14,6 +14,14 @@
 //
 // Usage:
 //   root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+(10, "27-03-2026", "combined")'
+//
+// For a 100M production split across 100 raw ROOT files, the same macro works
+// unchanged because it scans the whole directory. A convenience wrapper is
+// provided at the bottom:
+//   root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+(10, "01-04-2026_100M", "combined")'
+// or
+//   root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+g'
+//   root [0] hf_mult_pt_analysis_multi_100M(10, "01-04-2026_100M", "combined");
 //
 // Notes:
 // - Uses round-robin event assignment into N subsamples
@@ -1124,4 +1132,15 @@ void hf_mult_pt_analysis_multi(int nSubSamples = 10,
                      (charmDir  + "/hf_JUNCTIONS_sub").Data(),
                      nSubSamples,
                      writeSeparateChargeHists);
+}
+
+// Convenience entry point for the larger 100M campaign.
+// The implementation is identical; the only recommended convention is to keep
+// the default number of subsamples at 10 unless downstream error studies
+// specifically need a different split.
+void hf_mult_pt_analysis_multi_100M(int nSubSamples = 10,
+                                    const char* outputTag = "100M",
+                                    const char* chargeMode = "combined")
+{
+  hf_mult_pt_analysis_multi(nSubSamples, outputTag, chargeMode);
 }

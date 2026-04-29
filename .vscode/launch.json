@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/wax/Documents/Research/projects/Hadronization/PlottingScripts/FinalAnalysis",
+      "program": "/Users/wax/Documents/Research/projects/Hadronization/PlottingScripts/FinalAnalysis/build/Debug/outDebug"
+    }
+  ]
+}

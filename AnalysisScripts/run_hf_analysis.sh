@@ -52,25 +52,25 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "${SCRIPT_DIR}/../base_path.txt" ]; then
-  BASEDIR="$(cat "${SCRIPT_DIR}/../base_path.txt")"
+  PROJECT_BASE="$(cat "${SCRIPT_DIR}/../base_path.txt")"
 else
-  BASEDIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+  PROJECT_BASE="$(cd "${SCRIPT_DIR}/.." && pwd)"
 fi
-BASEDIR="${BASEDIR%/}"
-export HADRONIZATION_BASE="${BASEDIR}"
+PROJECT_BASE="${PROJECT_BASE%/}"
+export HADRONIZATION_BASE="${PROJECT_BASE}"
 
-cd "${BASEDIR}" || exit 1
+cd "${PROJECT_BASE}" || exit 1
 
-if [ ! -f "${BASEDIR}/setupEnv.sh" ]; then
-  echo "ERROR: setupEnv.sh not found at ${BASEDIR}/setupEnv.sh"
+if [ ! -f "${PROJECT_BASE}/setupEnv.sh" ]; then
+  echo "ERROR: setupEnv.sh not found at ${PROJECT_BASE}/setupEnv.sh"
   exit 1
 fi
 
 export SETUPENV_QUIET=1
-source "${BASEDIR}/setupEnv.sh"
+source "${PROJECT_BASE}/setupEnv.sh"
 
-MONASH_DIR="${BASEDIR}/RootFiles/HF/MONASH"
-JUNCTIONS_DIR="${BASEDIR}/RootFiles/HF/JUNCTIONS"
+MONASH_DIR="${PROJECT_BASE}/RootFiles/HF/MONASH"
+JUNCTIONS_DIR="${PROJECT_BASE}/RootFiles/HF/JUNCTIONS"
 
 if [ ! -d "${MONASH_DIR}" ]; then
   echo "ERROR: Expected combined HF input directory not found: ${MONASH_DIR}"
