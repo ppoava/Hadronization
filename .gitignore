@@ -1,6 +1,6 @@
 
 # Large binary outputs
-#/RootFiles/**/*.root
+/RootFiles/**/*.root
 .DS_Store
 .vscode/settings.json
 /logs/*
@@ -14,6 +14,7 @@
 
 # Ignore job outputs and logs
 logs/
+Jobs/
 compile_hf.log
 Jobs/HF/**/hf_*.root
 
@@ -24,3 +25,6 @@ Jobs/HF/**/hf_*.root
 
 # Ignore built executables
 SimulationScripts/heavyflavourcorrelations_status
+SimulationScripts/bbbarcorrelations_status
+SimulationScripts/bbbarcorrelations_status_JUNCTIONS
+SimulationScripts/ccbarcorrelations_status_JUNCTIONS

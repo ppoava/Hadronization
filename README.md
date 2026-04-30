@@ -1,0 +1,136 @@
+# Hadronization
+
+This repository is the working code base for heavy-flavour hadronization studies in proton-proton collisions with PYTHIA 8 and ROOT. We now use it as a complete local and Stoomboot workflow: it can generate MONASH and JUNCTIONS samples, reduce the raw ROOT trees into subsampled analysis histograms, and make the present comparison plots for multiplicity, pT spectra, selected-particle yields, and baryon-to-meson ratios.
+
+The present chain is centered on a unified heavy-flavour production. In that production charm and beauty are allowed in the same PYTHIA run, and the output tree keeps charm hadrons, beauty hadrons, Bc hadrons, pions, event multiplicity, process code, and per-event heavy-flavour counters. The older split production, where bbbar and ccbar are generated and analyzed independently, is still kept because it is needed for reference samples and for comparisons to earlier productions. In practice, we now make new combined HF samples with `SimulationScripts/heavyflavourcorrelations_status.cpp`, analyze them with `AnalysisScripts/hf_mult_pt_analysis_multi.C`, and compare them to the independent samples through the plotting macros under `PlottingScripts`.
+
+## Repository Map
+
+`SimulationScripts` contains the PYTHIA producers, settings cards, and Makefile. The important executable for current work is `heavyflavourcorrelations_status`, while `bbbarcorrelations_status`, `bbbarcorrelations_status_JUNCTIONS`, `ccbarcorrelations_status`, and `ccbarcorrelations_status_JUNCTIONS` are the split legacy producers. The `pythiasettings_Hard_Low_ccbb_MONASH.cmnd` and `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd` cards are the current combined-HF cards. The split cards remain available as `pythiasettings_Hard_Low_bb*.cmnd` and `pythiasettings_Hard_Low_cc*.cmnd`.
+
+`AnalysisScripts` contains the ROOT reduction macros and shell wrappers. The current macro `hf_mult_pt_analysis_multi.C` reads `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`, splits the events into subsamples, and writes charm and beauty histogram files into `AnalyzedData/<tag>/Charm` and `AnalyzedData/<tag>/Beauty`. The split macros `bb_mult_pt_analysis_multi.C` and `cc_mult_pt_analysis_multi.C` do the same for the independent old samples.
+
+`PlottingScripts/Pt and Multiplicity` contains the current physics plotting macros for pT spectra, multiplicity-dependent spectra, baryon-to-meson ratios, species-resolved spectra, single-particle spectra, and minimum-bias spectra. These macros read the reduced `AnalyzedData` files rather than the raw simulation trees. They prefer the `hf_` file naming scheme and fall back to `bbbar_` or `ccbar_` when an older split sample is being plotted.
+
+`PlottingScripts/FinalAnalysis` contains the final comparison layer. It now has two source macros. `Plot_MultiplicityDistributions_TwoSamples.C` compares multiplicity distributions between two analyzed samples. `Plot_SelectedParticleYields_IndependentVsCombined.C` compares selected charm and beauty yields and draws the independent-over-combined ratio inside the same output canvas.
+
+The top level of `PlottingScripts` also keeps the older angular-correlation and configurable plotting machinery. `improvedPlotting.C` reads the JSON configuration files for the older yield and tune-comparison plotting system. `combinedCanvasPlots.C`, `B_Balancing_GeneralPlotting.C`, and `PlottingWizard.C` are earlier plotting macros for balancing and angular-correlation studies. `ListHistos.C` is the small inspection tool used to list objects inside a ROOT file. The `DpDmBpBm_ComparisonStudy` subdirectory keeps the D+/D- and B+/B- origin, same-mother, different-mother, decay-only, and decay-plus-hadronisation comparison macros.
+
+`Balancing_and_Sampling` keeps the older balancing, yield, sampling, and uncertainty machinery. This part of the repository is still useful for reproducing the earlier balancing plots and for batch-yield error studies, but it is not the primary entry point for the current combined-HF production. The scripts under `Balancing_and_Sampling/CalculateErrors` still use the sampling directories from the older `/data/alice/pveen/ProductionsPythia` layout unless those base paths are overridden in the environment.
+
+`RootFiles` is the intended place for raw simulation products. The current local checkout does not contain the large raw ROOT productions, except for descriptive text files and old-production notes. The actual raw ROOT files should be treated as external data and should not be forced into Git. `AnalyzedData`, in contrast, currently stores reduced ROOT outputs for dated samples such as `10-09-2025`, `12-01-2026`, `27-03-2026`, `08-04-2026_100M_Combined`, and `08-04-2026_100M_Separate`.
+
+`Jobs` and `logs` are the Condor work and log areas. They are produced by `runCondorJob.sh` and the submit files. They are not physics inputs by themselves, but they matter for diagnosing Stoomboot submissions.
+
+`Literature` stores the reference bibliography and thesis PDF used for context. It is not part of the executable workflow, but it keeps the project references close to the analysis code.
+
+`Other` is an archival holding area. It currently keeps an older copy of the general balancing plotting macro from before the present documentation pass. It should be read as provenance rather than as the preferred current entry point.
+
+## Environment
+
+The repository expects ROOT and PYTHIA 8 from the ALICE CVMFS environment. We now use `setupEnv.sh` as the shared entry point. It resolves `HADRONIZATION_BASE` from the environment first, then from `base_path.txt`, and otherwise from the repository location. It then loads `VO_ALICE@ROOT::v6-30-01-alice5-2` and `VO_ALICE@pythia::v8311-3`.
+
+```bash
+source ./setupEnv.sh
+```
+
+On the Nikhef/Stoomboot filesystem, `base_path.txt` currently points to:
+
+```text
+/data/alice/ipardoza/Hadronization
+```
+
+If the repository is moved, you update that file and then refresh the Condor submit paths:
+
+```bash
+echo "/new/absolute/path/to/Hadronization" > base_path.txt
+./update_submit_paths.sh
+```
+
+## Current Production Workflow
+
+You build the simulation executables from the repository base after loading the environment.
+
+```bash
+source ./setupEnv.sh
+make -C SimulationScripts
+```
+
+For a local combined-HF test, you run the unified producer with a tune mode, an output file, and two seed modifiers.
+
+```bash
+./SimulationScripts/heavyflavourcorrelations_status monash RootFiles/HF/MONASH/hf_MONASH_test.root 123 456
+./SimulationScripts/heavyflavourcorrelations_status junctions RootFiles/HF/JUNCTIONS/hf_JUNCTIONS_test.root 123 456
+```
+
+The unified output tree is named `tree`. It writes `ID`, `HFCLASS`, `PT`, `ETA`, `Y`, `PHI`, `CHARGE`, `STATUS`, `MOTHER`, `MOTHERID`, `MULTIPLICITY`, `PROCESSCODE`, `NCHARM`, `NBEAUTY`, and `NBC`. The `HFCLASS` convention is simple: `5` means beauty, `4` means charm, `45` means Bc, and `0` means pion.
+
+The current combined-HF cards use proton-proton collisions at 14 TeV, `Tune:pp = 14`, `PhaseSpace:pTHatMin = 1.`, and `ParticleDecays:tau0Max = 0.01`. The MONASH card enables `HardQCD:hardccbar` and `HardQCD:hardbbbar`. The JUNCTIONS card uses the same hard processes and adds the QCD-based color-reconnection, junction, fragmentation, and beam-remnant settings.
+
+## Analysis Workflow
+
+The current analysis wrapper reads all raw combined-HF files for both tunes and writes reduced subsample outputs. The default is ten subsamples and charge-conjugate-combined species histograms.
+
+```bash
+./AnalysisScripts/run_hf_analysis.sh 27-03-2026
+```
+
+You can choose the number of subsamples and ask the analysis to write extra particle and antiparticle histograms while keeping the combined names for compatibility.
+
+```bash
+./AnalysisScripts/run_hf_analysis.sh 27-03-2026 20 separate
+```
+
+The output layout is:
+
+```text
+AnalyzedData/<tag>/Beauty/hf_MONASH_sub0.root
+AnalyzedData/<tag>/Beauty/hf_JUNCTIONS_sub0.root
+AnalyzedData/<tag>/Charm/hf_MONASH_sub0.root
+AnalyzedData/<tag>/Charm/hf_JUNCTIONS_sub0.root
+```
+
+Each output file contains event-count histograms, tagged-event-count histograms, multiplicity histograms, tagged multiplicity histograms, PDG-versus-multiplicity histograms, aggregate charm or beauty meson and baryon histograms, species-resolved pT-versus-multiplicity histograms, and pion pT histograms. The macros enable `Sumw2` so the plotting layer can propagate statistical errors.
+
+The split analysis wrappers are still available for old independent samples.
+
+```bash
+./AnalysisScripts/run_bb_analysis.sh 12-01-2026 10 combined
+./AnalysisScripts/run_cc_analysis.sh 12-01-2026 10 combined
+```
+
+## Plotting Workflow
+
+The current pT and multiplicity plots are made from `AnalyzedData`, not from `RootFiles`. If no date is passed, the plotting helpers search for the latest dated folder under `AnalyzedData`. In ordinary use, we pass the date explicitly so that no older production is selected by accident.
+
+```bash
+root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
+root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Charm",10)'
+root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Beauty",10)'
+```
+
+The final-analysis comparisons are similarly run from the repository base.
+
+```bash
+root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C("12-01-2026","27-03-2026",10,true)'
+root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
+```
+
+The pT and multiplicity plots are written to `PlottingScripts/Pt and Multiplicity/Plots`. The final-analysis plots are written to `PlottingScripts/FinalAnalysis/Plots`. Several macros write both PNG and PDF, while older ratio macros still write only PNG.
+
+## Condor Workflow
+
+The Condor entry point is `runCondorJob.sh`. It supports both the current combined-HF workflow and the older split workflow. The submit files use the shared filesystem and do not transfer files through Condor.
+
+```bash
+./update_submit_paths.sh
+condor_submit submitCondor_hf_10M.sub
+```
+
+`submitCondor_hf_10M.sub` submits ten one-million-event jobs per tune. `submitCondor_hf_90M.sub` submits ninety one-million-event jobs per tune. `submitCondor_10M.sub` submits the old split bbbar and ccbar production for MONASH and JUNCTIONS. The wrapper names output files with the Condor cluster and job id, writes the ROOT file inside the job work directory, and moves the completed file to `RootFiles/...` only after a successful run.
+
+## Data and Versioning
+
+Raw ROOT files are large production artifacts. They belong under `RootFiles` on the machine that runs the production, but they should be excluded from ordinary source synchronization unless the task explicitly concerns data transfer. Reduced analysis ROOT files in `AnalyzedData` are tracked in this working branch because they are the compact products used by the plotting layer.
+
+The local branch used for this work is `Iñaki`. When synchronizing with the Nikhef copy over `ssh stbc`, the safe rule is that code, scripts, documentation, plots, submit files, and reduced analysis outputs should match, while raw `.root` files under `RootFiles` may differ or remain only on the cluster. This keeps the branch reproducible without moving the heavy raw productions unnecessarily.

@@ -1,363 +1,112 @@
-# FinalAnalysis Plotting
+# Final Analysis Plotting
 
-This directory contains the final-analysis plotting macro(s) that compare analyzed heavy-flavour outputs stored in:
+This directory contains the final comparison macros that read the reduced analysis outputs under `AnalyzedData` and write the summary plots under `PlottingScripts/FinalAnalysis/Plots`. The current directory has two source macros. `Plot_MultiplicityDistributions_TwoSamples.C` compares multiplicity distributions between two analyzed samples. `Plot_SelectedParticleYields_IndependentVsCombined.C` compares selected per-event particle yields and draws the independent-over-combined ratio in the same canvas.
 
-```text
-Hadronization/AnalyzedData/<DATE>/
-```
+## Inputs
 
-At the moment, the main macros in this directory are:
+Both macros read the same analyzed directory structure:
 
 ```text
-Plot_MultiplicityDistributions_TwoSamples.C
-Plot_SelectedParticleYields_IndependentVsCombined.C
-Plot_SelectedParticleYieldRatios_IndependentVsCombined.C
+AnalyzedData/<DATE>/Charm
+AnalyzedData/<DATE>/Beauty
 ```
 
-## What the macro does
+They support the split independent naming scheme:
 
-`Plot_MultiplicityDistributions_TwoSamples.C` compares the multiplicity distributions of two analyzed samples and produces four plots:
-
-- Charm MONASH
-- Charm JUNCTIONS
-- Beauty MONASH
-- Beauty JUNCTIONS
-
-For each plot, the macro overlays two samples:
-
-- `Independent Sample`
-- `Combined Sample`
-
-The plot title is centered and the output is written in multiple formats.
-
-When the normalized multiplicity-shape option is enabled, the macro normalizes each subsample histogram first and then uses the mean and SEM across subsamples for the plotted bin contents and uncertainties.
-For new analyzed files it uses flavor-tagged multiplicity histograms so the split-vs-unified comparison is built from beauty-tagged or charm-tagged events rather than from all unified heavy-flavour events.
-
-## Automatic sample selection
-
-If the macro is run with no date arguments, it automatically:
-
-1. scans `AnalyzedData/`
-2. finds dated folders matching the format `DD-MM-YYYY`
-3. sorts them by date
-4. picks the two most recent folders
-
-This means the default behavior is:
-
-```bash
-root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C'
+```text
+ccbar_MONASH_sub0.root
+ccbar_JUNCTIONS_sub0.root
+bbbar_MONASH_sub0.root
+bbbar_JUNCTIONS_sub0.root
 ```
 
-and the macro will compare the latest two dated analysis folders automatically.
+They also support the combined-HF naming scheme:
 
-## Explicit sample selection
+```text
+hf_MONASH_sub0.root
+hf_JUNCTIONS_sub0.root
+```
 
-If you want to compare two specific folders instead, pass both date tags explicitly:
+Sample kind is inferred from the file names. A folder with `hf_` files is treated as a combined sample. A folder with `bbbar_` or `ccbar_` files is treated as an independent sample. The current checkout contains independent samples dated `10-09-2025` and `12-01-2026`, a combined-HF sample dated `27-03-2026`, and reduced 100M outputs named `08-04-2026_100M_Combined` and `08-04-2026_100M_Separate`.
+
+## Multiplicity Comparison
+
+`Plot_MultiplicityDistributions_TwoSamples.C` produces four comparisons: charm MONASH, charm JUNCTIONS, beauty MONASH, and beauty JUNCTIONS. Each plot overlays two analyzed folders. The macro prefers `fHistTaggedMultiplicity`, because that histogram describes the flavor-tagged event population. If it is absent, the macro falls back to `fHistMultiplicity` for older files.
+
+When normalization is enabled, each subsample multiplicity histogram is normalized to unit integral first. The plotted bin content is the mean across subsamples and the plotted uncertainty is the standard error of that mean. When normalization is disabled, the macro uses the same subsample spread method but scales back to the summed-event convention.
+
+The fully explicit call is:
 
 ```bash
 root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C("12-01-2026","27-03-2026",10,true)'
 ```
 
-Arguments are:
-
-- `dateA`: first analysis folder name inside `AnalyzedData`
-- `dateB`: second analysis folder name inside `AnalyzedData`
-- `nSub`: number of subsamples to read
-- `normalize`: if `true`, normalize each summed multiplicity histogram to unit integral before plotting
-
-If only one date is given and the other is omitted, the macro stops with an error. You should provide either:
-
-- both dates, or
-- no dates
-
-## How sample type detection works
-
-The macro determines whether a folder corresponds to an independent or combined sample from the file names it finds.
-
-### Independent sample
-
-Legacy split analyses are detected through files such as:
-
-```text
-AnalyzedData/<DATE>/Charm/ccbar_MONASH_sub0.root
-AnalyzedData/<DATE>/Beauty/bbbar_MONASH_sub0.root
-```
-
-If these are found, the folder is labeled:
-
-```text
-Independent Sample
-```
-
-### Combined sample
-
-Unified heavy-flavour analyses are detected through files such as:
-
-```text
-AnalyzedData/<DATE>/Charm/hf_MONASH_sub0.root
-AnalyzedData/<DATE>/Beauty/hf_MONASH_sub0.root
-```
-
-If these are found, the folder is labeled:
-
-```text
-Combined Sample
-```
-
-## Supported input naming schemes
-
-The macro supports both the older split analysis output and the newer unified heavy-flavour output.
-
-### Legacy split files
-
-Charm:
-
-```text
-ccbar_MONASH_sub0.root
-ccbar_JUNCTIONS_sub0.root
-```
-
-Beauty:
-
-```text
-bbbar_MONASH_sub0.root
-bbbar_JUNCTIONS_sub0.root
-```
-
-### Unified heavy-flavour files
-
-Charm:
-
-```text
-hf_MONASH_sub0.root
-hf_JUNCTIONS_sub0.root
-```
-
-Beauty:
-
-```text
-hf_MONASH_sub0.root
-hf_JUNCTIONS_sub0.root
-```
-
-For both schemes, the macro prefers the histogram:
-
-```text
-fHistTaggedMultiplicity
-```
-
-and falls back to:
-
-```text
-fHistMultiplicity
-```
-
-from each subsample ROOT file. For normalized shape plots it normalizes each subsample first and then uses the mean and SEM across subsamples when drawing the final histogram.
-
-## Output files
-
-The macro writes plots to:
-
-```text
-Hadronization/PlottingScripts/FinalAnalysis/Plots/
-```
-
-For each of the four comparisons, it saves:
-
-- `.png`
-- `.pdf`
-- `.C`
-
-The `.C` file is a ROOT canvas macro created by `SaveAs`, not the source plotting macro itself.
-
-Typical output names look like:
-
-```text
-MultiplicityComparison_Charm_MONASH_<DATEA>_vs_<DATEB>.png
-MultiplicityComparison_Charm_MONASH_<DATEA>_vs_<DATEB>.pdf
-MultiplicityComparison_Charm_MONASH_<DATEA>_vs_<DATEB>.C
-```
-
-## Wrapper function
-
-The macro also provides a small wrapper function:
-
-```cpp
-runFinalMultiplicityComparison(const char* dateA = "",
-                               const char* dateB = "",
-                               int nSub = 10,
-                               bool normalize = true);
-```
-
-Example interactive ROOT session:
-
-```bash
-root -l
-```
+The interactive wrapper is:
 
 ```cpp
 .L "PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C"
-runFinalMultiplicityComparison();
 runFinalMultiplicityComparison("12-01-2026", "27-03-2026", 10, true);
 ```
 
-## Selected particle yields
+If both date arguments are empty, the macro scans `AnalyzedData` for folders whose names begin with a parsable `DD-MM-YYYY` date, sorts them by calendar date, and compares the two newest dated folders. Tags such as `08-04-2026_100M_Combined` are therefore date-like for the automatic resolver even though they carry extra descriptive text. If only one date is given, the macro stops because a one-sided comparison is ambiguous.
 
-The second macro in this directory is:
-
-```text
-Plot_SelectedParticleYields_IndependentVsCombined.C
-```
-
-It plots per-event yields for the following charge-conjugate-combined species:
-
-- `B±`
-- `B0 / anti-B0`
-- `lambda b / anti-lambda b`
-- `D±`
-- `D0 / anti-D0`
-- `lambda c / anti-lambda c`
-
-The macro produces four plots:
-
-- Beauty MONASH
-- Beauty JUNCTIONS
-- Charm MONASH
-- Charm JUNCTIONS
-
-Each plot compares:
-
-- `Independent Sample`
-- `Combined Sample`
-
-### Default folder resolution
-
-If no folder names are passed, the macro automatically looks for:
-
-- the latest independent analyzed folder
-- the latest combined analyzed folder
-
-under:
+The output names are:
 
 ```text
-AnalyzedData/
+MultiplicityComparison_Charm_MONASH_<DATEA>_vs_<DATEB>.png
+MultiplicityComparison_Charm_JUNCTIONS_<DATEA>_vs_<DATEB>.png
+MultiplicityComparison_Beauty_MONASH_<DATEA>_vs_<DATEB>.png
+MultiplicityComparison_Beauty_JUNCTIONS_<DATEA>_vs_<DATEB>.png
 ```
 
-### Explicit folder selection
+The same base names are also saved as PDF and ROOT canvas macro files.
 
-You can also choose the two folders explicitly:
+## Selected Particle Yields
+
+`Plot_SelectedParticleYields_IndependentVsCombined.C` compares selected charge-conjugate-combined yields between an independent sample and a combined sample. The macro resolves the latest independent and latest combined dated folders automatically when no arguments are given, but in normal analysis we pass both folders explicitly.
 
 ```bash
 root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
 ```
 
-Arguments are:
-
-- `independentTag`: independent sample folder name in `AnalyzedData`
-- `combinedTag`: combined sample folder name in `AnalyzedData`
-- `nSub`: number of subsamples
-
-### Important note on charge-conjugate states
-
-The analyzed ROOT files store these species using charge-conjugate-combined histograms because the analysis macros fill with `abs(PDG)`.
-
-This means:
-
-- `B±` is read from `fHistPtBplus`
-- `D±` is read from `fHistPtDplus`
-- `B0 / anti-B0`, `D0 / anti-D0`, `Lambdab / anti-Lambdab`, and `Lambdac / anti-Lambdac` are also charge-conjugate combined
-
-The macro therefore uses the full combined analyzed histogram yield:
-
-```text
-histogram integral / N_events
-```
-
-It prefers `fHistTaggedEventCount` when that histogram is available, then falls back to `fHistEventCount`, and finally to the multiplicity integral for older analyzed files.
-For the unified `hf_*` analysis outputs, `fHistTaggedEventCount` stores the number of flavor-tagged events for that output flavor, which makes the independent-vs-combined yield comparison closer to an apples-to-apples hadronization comparison.
-The plotted yield uncertainties are taken from the spread of the per-subsample yields, reported as SEM across the available subsamples.
-
-### Input histogram mapping
-
-The macro reads from the analyzed species histograms written by the analysis macros:
-
-- Beauty:
-  - `fHistPtBplus`
-  - `fHistPtBzero`
-  - `fHistPtLambdab`
-- Charm:
-  - `fHistPtDplus`
-  - `fHistPtDzero`
-  - `fHistPtLambdac` as the canonical charge-conjugate-combined histogram name
-  - `fHistPtLambdacPlus` as a legacy compatibility fallback
-
-If the combined species histogram is not found, the macro also looks for the split `Particle` and `Bar` histograms and combines them internally.
-
-### Wrapper function
-
-The macro also provides:
-
-```cpp
-runSelectedParticleYieldPlots(const char* independentTag = "",
-                              const char* combinedTag = "",
-                              int nSub = 10);
-```
-
-Example interactive ROOT session:
+The interactive wrapper is:
 
 ```cpp
 .L "PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C"
-runSelectedParticleYieldPlots();
 runSelectedParticleYieldPlots("12-01-2026", "27-03-2026", 10);
 ```
 
-## Selected particle yield ratios
+The beauty species are `Bpm`, `B0/barB0`, and `Lambdab/barLambdab`. The charm species are `Dpm`, `D0/barD0`, and `Lambdac/barLambdac`. The macro reads `fHistPtBplus`, `fHistPtBzero`, `fHistPtLambdab`, `fHistPtDplus`, `fHistPtDzero`, and `fHistPtLambdac`, with `fHistPtLambdacPlus` kept as a compatibility fallback.
 
-This directory also provides:
+The per-event yield is the integral of the species histogram divided by the event count. The preferred normalization is `fHistTaggedEventCount`, then `fHistEventCount`, and finally the multiplicity integral for old files that do not contain event-count histograms. For combined-HF outputs, the tagged event count gives the number of flavor-tagged events in the corresponding charm or beauty file, which is the intended normalization for the independent-versus-combined comparison.
 
-```text
-Plot_SelectedParticleYieldRatios_IndependentVsCombined.C
-```
+The macro computes one yield per subsample and reports the mean and standard error across the loaded subsamples. It also computes the independent-over-combined ratio and propagates the independent and combined SEM uncertainties into the ratio error. This ratio is drawn in the right-hand pad of the same output canvas; there is no separate source file named `Plot_SelectedParticleYieldRatios_IndependentVsCombined.C` in the current repository.
 
-It uses the same species list, sample-folder resolution, histogram lookup, and charge-conjugate handling as the yield macro, but it plots:
+The output names are:
 
 ```text
-Independent yield / Combined yield
+SelectedParticleYields_Beauty_MONASH_<INDEPENDENT>_vs_<COMBINED>.png
+SelectedParticleYields_Beauty_JUNCTIONS_<INDEPENDENT>_vs_<COMBINED>.png
+SelectedParticleYields_Charm_MONASH_<INDEPENDENT>_vs_<COMBINED>.png
+SelectedParticleYields_Charm_JUNCTIONS_<INDEPENDENT>_vs_<COMBINED>.png
 ```
 
-for each species instead of the two absolute yields separately.
+The same base names are also saved as PDF and ROOT canvas macro files.
 
-The macro produces four plots:
+## Output Directory
 
-- Beauty MONASH
-- Beauty JUNCTIONS
-- Charm MONASH
-- Charm JUNCTIONS
+Both macros create the output directory when needed:
 
-It propagates the independent and combined yield uncertainties into the ratio, using the same per-subsample SEM-based yield errors as the yield macro.
+```text
+PlottingScripts/FinalAnalysis/Plots
+```
 
-Default usage:
+The current repository already contains final-analysis plots comparing `12-01-2026` with `27-03-2026`. Re-running a macro with the same date pair overwrites plots with the same names.
+
+## Practical Checks
+
+If automatic sample selection picks the wrong folders, pass both tags explicitly. If a macro cannot resolve a prefix, check that the requested flavor and tune have a `sub0.root` file in the selected date folder. If a yield point is zero or missing, inspect the corresponding analyzed file and confirm that the expected species histogram exists. The helper `PlottingScripts/ListHistos.C` is the fastest way to inspect one file.
 
 ```bash
-root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C'
+root -l -b -q 'PlottingScripts/ListHistos.C("AnalyzedData/27-03-2026/Beauty/hf_MONASH_sub0.root")'
 ```
-
-Explicit folders:
-
-```bash
-root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
-```
-
-Wrapper function:
-
-```cpp
-.L "PlottingScripts/FinalAnalysis/Plot_SelectedParticleYieldRatios_IndependentVsCombined.C"
-runSelectedParticleYieldRatioPlots();
-runSelectedParticleYieldRatioPlots("12-01-2026", "27-03-2026", 10);
-```
-
-## Notes
-
-- The macro resolves the Hadronization base path from `HADRONIZATION_BASE`, the macro location, `base_path.txt`, or the current working directory.
-- If fewer than two dated folders exist in `AnalyzedData/`, the automatic mode cannot run.
-- If the `Plots/` directory does not exist, the macro creates it automatically.

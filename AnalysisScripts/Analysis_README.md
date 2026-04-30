@@ -1,684 +1,129 @@
-# AnalysisScripts (Multiplicity vs pT / unified heavy-flavour analysis)
+# Analysis Scripts
 
-This directory contains the analysis macros and wrapper scripts used to process the ROOT files produced by the simulation jobs. The main purpose of these scripts is to build **pT vs multiplicity histograms** for heavy-flavour hadrons and pions, split the total statistics into **subsamples**, and write the resulting histograms to organized output files for later ratio, uncertainty, and comparison studies.
+This directory contains the ROOT macros and shell wrappers that reduce simulation ROOT trees into the subsampled histogram files used by the plotting layer. We now treat the unified heavy-flavour analysis as the normal path and the split bbbar/ccbar analysis as the reference path for older independent samples.
 
-The directory currently supports **two analysis workflows**:
+## Base Path and Environment
 
-1. **Legacy split-channel analysis**
-   - separate analysis for **bbbar** and **ccbar** production
-   - input files come from the old split simulation layout
-   - useful for continuity with older analyses
-
-2. **Unified heavy-flavour analysis**
-   - a single analysis pass over the new combined heavy-flavour sample
-   - reads ROOT files that contain **both charm and beauty** in the same `tree`
-   - writes Beauty and Charm outputs separately, but fills them in one pass
-   - this is the recommended workflow for the current balancing and hadronization studies
-
-All scripts resolve the Hadronization base path from:
-- `HADRONIZATION_BASE` if set
-- otherwise `base_path.txt` at the project root
-- otherwise the local directory structure
-
----
-
-## Directory overview
-
-The main files in this directory are:
-
-### Legacy split analysis
-- `bb_mult_pt_analysis_multi.C`
-- `cc_mult_pt_analysis_multi.C`
-- `run_bb_analysis.sh`
-- `run_cc_analysis.sh`
-
-### Unified heavy-flavour analysis
-- `hf_mult_pt_analysis_multi.C`
-- `run_hf_analysis.sh`
-
-### Utilities
-- `CountEvents/`
-- any additional helper scripts/macros placed in subdirectories
-
----
-
-## Analysis concepts
-
-All analysis macros in this directory follow the same broad logic:
-
-1. Read many simulation ROOT files from one or more input directories.
-2. Access the `tree` in each file.
-3. Read event-level multiplicity and per-particle kinematics / IDs.
-4. Split all events into `N` subsamples using **round-robin assignment**:
-   - event 0 → subsample 0
-   - event 1 → subsample 1
-   - ...
-   - event `N` → subsample 0 again
-5. Fill histograms separately for each subsample.
-6. Write one ROOT output file per subsample and per tune.
-
-This structure is designed so that:
-- the total statistics are distributed evenly across subsamples
-- the subsamples can be used later for statistical comparisons and uncertainty propagation
-- MONASH and JUNCTIONS can be analyzed with the same code path
-
-All three `*_mult_pt_analysis_multi.C` macros now also write:
-- `fHistEventCount` for explicit event normalization
-- `fHistTaggedEventCount` for flavor-tagged event normalization
-- `fHistTaggedMultiplicity` for flavor-tagged multiplicity comparisons
-- histogram bin uncertainties with `Sumw2` enabled by default, so downstream plotting macros can propagate statistical errors explicitly
-
-By default, species-resolved histograms are charge-conjugate combined. The macros can also optionally write additional `Particle` and `Bar` split histograms while keeping the combined histogram names for compatibility.
-
----
-
-## Legacy split analysis scripts
-
-These scripts analyze the older **split simulation output**, where beauty and charm were generated in separate jobs.
-
-## `bb_mult_pt_analysis_multi.C`
-
-This macro:
-- reads all ROOT files from:
-  - `RootFiles/bbbar/MONASH/*.root`
-  - `RootFiles/bbbar/JUNCTIONS/*.root`
-- expects each file to contain a TTree named `tree`
-- builds multiplicity and pT histograms for:
-  - beauty mesons
-  - beauty baryons
-  - specific beauty species
-  - pions
-- splits the full event sample into `N` subsamples using round-robin event assignment
-- writes one ROOT file per subsample and per tune into:
-  - `AnalyzedData/<OUTPUT_TAG>/Beauty/`
-
-### Expected input branches
-The legacy beauty macro expects the input `tree` to contain:
-- `vector<int> ID`
-- `vector<double> PT`
-- `int MULTIPLICITY`
-
-### Main output histograms
-Examples of histograms written by the beauty macro:
-- `fHistEventCount`
-- `fHistTaggedEventCount`
-- `fHistMultiplicity`
-- `fHistTaggedMultiplicity`
-- `fHistPDGMult`
-- `fHistPtBeautyMesons`
-- `fHistPtBeautyBaryons`
-- `fHistPtBplus`
-- `fHistPtBzero`
-- `fHistPtBs0`
-- `fHistPtBcplus`
-- `fHistPtLambdab`
-- `fHistPtSigmabPlus`
-- `fHistPtSigmabZero`
-- `fHistPtSigmabMinus`
-- `fHistPtXibZero`
-- `fHistPtXibMinus`
-- `fHistPtOmegabMinus`
-- `fHistPtPionsCharged`
-- `fHistPtPiPlus`
-- `fHistPtPiMinus`
-- `fHistPtPi0`
-
----
-
-## `cc_mult_pt_analysis_multi.C`
-
-This macro:
-- reads all ROOT files from:
-  - `RootFiles/ccbar/MONASH/*.root`
-  - `RootFiles/ccbar/JUNCTIONS/*.root`
-- expects each file to contain a TTree named `tree`
-- builds multiplicity and pT histograms for:
-  - charm mesons
-  - charm baryons
-  - specific charm species
-  - pions
-- splits the full event sample into `N` subsamples using round-robin event assignment
-- writes one ROOT file per subsample and per tune into:
-  - `AnalyzedData/<OUTPUT_TAG>/Charm/`
-
-### Expected input branches
-The legacy charm macro expects the input `tree` to contain:
-- `vector<int> ID`
-- `vector<double> PT`
-- `int MULTIPLICITY`
-
-### Main output histograms
-Examples of histograms written by the charm macro:
-- `fHistEventCount`
-- `fHistTaggedEventCount`
-- `fHistMultiplicity`
-- `fHistTaggedMultiplicity`
-- `fHistPDGMult`
-- `fHistPtCharmMesons`
-- `fHistPtCharmBaryons`
-- `fHistPtDplus`
-- `fHistPtDzero`
-- `fHistPtDsplus`
-- `fHistPtLambdac`
-- `fHistPtPionsCharged`
-- `fHistPtPiPlus`
-- `fHistPtPiMinus`
-- `fHistPtPi0`
-
----
-
-## Legacy wrapper scripts
-
-## `run_bb_analysis.sh`
-
-This is a shell wrapper for `bb_mult_pt_analysis_multi.C`.
-
-It:
-- resolves the Hadronization base path
-- exports `HADRONIZATION_BASE`
-- moves to the Hadronization base directory
-- sources `setupEnv.sh` so that `root` is available
-- calls the ROOT macro with the requested number of subsamples and charge mode
-
-### Usage
-```bash
-./AnalysisScripts/run_bb_analysis.sh OUTPUT_TAG [NSUB] [CHARGE_MODE]
-./AnalysisScripts/run_bb_analysis.sh OUTPUT_TAG [CHARGE_MODE] [NSUB]
-```
-
-Example:
-```bash
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026 20
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026 20 separate
-```
-
----
-
-## `run_cc_analysis.sh`
-
-This is a shell wrapper for `cc_mult_pt_analysis_multi.C`.
-
-It:
-- resolves the Hadronization base path
-- exports `HADRONIZATION_BASE`
-- moves to the Hadronization base directory
-- sources `setupEnv.sh` so that `root` is available
-- calls the ROOT macro with the requested number of subsamples and charge mode
-
-### Usage
-```bash
-./AnalysisScripts/run_cc_analysis.sh OUTPUT_TAG [NSUB] [CHARGE_MODE]
-./AnalysisScripts/run_cc_analysis.sh OUTPUT_TAG [CHARGE_MODE] [NSUB]
-```
-
-Example:
-```bash
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026 20
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026 20 separate
-```
-
----
-
-## Unified heavy-flavour analysis scripts
-
-These scripts analyze the newer **combined heavy-flavour simulation output**, where charm and beauty are stored in the same `tree`.
-
-This is the preferred workflow for the current heavy-flavour balancing and hadronization studies.
-
-## `hf_mult_pt_analysis_multi.C`
-
-This macro:
-- reads all ROOT files from:
-  - `RootFiles/HF/MONASH/*.root`
-  - `RootFiles/HF/JUNCTIONS/*.root`
-- reads each input file only once
-- fills **both Beauty and Charm histogram sets in the same pass**
-- writes Beauty and Charm outputs separately
-- splits the total event sample into `N` subsamples using round-robin event assignment
-
-### Why this macro is preferred
-Compared with separate charm/beauty macros, the unified macro:
-- reads each file only once
-- keeps charm and beauty subsample assignment perfectly aligned
-- avoids duplicated file traversal
-- matches the new unified simulation format directly
-
-### Expected input branches
-The unified macro expects the input `tree` to contain:
-- `vector<int> ID`
-- `vector<int> HFCLASS`
-- `vector<double> PT`
-- `int MULTIPLICITY`
-
-It can also fall back to PDG-based classification if needed in some parts of the logic, but the intended classification comes from `HFCLASS`.
-
-### Meaning of `HFCLASS`
-- `5`  = beauty hadron only
-- `4`  = charm hadron only
-- `45` = `Bc` hadron
-- `0`  = pion
-
-### Default treatment of `Bc`
-By default:
-- Beauty output includes `HFCLASS == 5` and `HFCLASS == 45`
-- Charm output includes only `HFCLASS == 4`
-
-So `Bc` hadrons are counted with Beauty only by default, to avoid double counting.
-
-If you want `Bc` included in Charm too, this can be changed in the macro logic.
-
-### Input directories
-The unified macro reads from:
-```text
-RootFiles/HF/MONASH/
-RootFiles/HF/JUNCTIONS/
-```
-
-### Output directories
-The unified macro writes to:
-```text
-AnalyzedData/<OUTPUT_TAG>/Beauty/
-AnalyzedData/<OUTPUT_TAG>/Charm/
-```
-
-### Output filenames
-Beauty outputs:
-```text
-AnalyzedData/<OUTPUT_TAG>/Beauty/hf_MONASH_sub0.root
-AnalyzedData/<OUTPUT_TAG>/Beauty/hf_MONASH_sub1.root
-...
-AnalyzedData/<OUTPUT_TAG>/Beauty/hf_JUNCTIONS_sub0.root
-...
-```
-
-Charm outputs:
-```text
-AnalyzedData/<OUTPUT_TAG>/Charm/hf_MONASH_sub0.root
-AnalyzedData/<OUTPUT_TAG>/Charm/hf_MONASH_sub1.root
-...
-AnalyzedData/<OUTPUT_TAG>/Charm/hf_JUNCTIONS_sub0.root
-...
-```
-
-### Main Beauty histograms written
-Examples:
-- `fHistEventCount`
-- `fHistTaggedEventCount`
-- `fHistMultiplicity`
-- `fHistTaggedMultiplicity`
-- `fHistPDGMult`
-- `fHistPtBeautyMesons`
-- `fHistPtBeautyBaryons`
-- `fHistPtBplus`
-- `fHistPtBzero`
-- `fHistPtBs0`
-- `fHistPtBcplus`
-- `fHistPtLambdab`
-- `fHistPtSigmabPlus`
-- `fHistPtSigmabZero`
-- `fHistPtSigmabMinus`
-- `fHistPtXibZero`
-- `fHistPtXibMinus`
-- `fHistPtOmegabMinus`
-- pion histograms
-
-### Main Charm histograms written
-Examples:
-- `fHistEventCount`
-- `fHistTaggedEventCount`
-- `fHistMultiplicity`
-- `fHistTaggedMultiplicity`
-- `fHistPDGMult`
-- `fHistPtCharmMesons`
-- `fHistPtCharmBaryons`
-- `fHistPtDplus`
-- `fHistPtDzero`
-- `fHistPtDsplus`
-- `fHistPtLambdac`
-- pion histograms
-
----
-
-## Unified wrapper script
-
-## `run_hf_analysis.sh`
-
-This is the wrapper for the unified heavy-flavour analysis macro.
-
-It:
-- resolves the Hadronization base path
-- exports `HADRONIZATION_BASE`
-- changes into the Hadronization base directory
-- sources `setupEnv.sh` so that `root` is available
-- runs:
-  - `AnalysisScripts/hf_mult_pt_analysis_multi.C`
-- accepts an optional charge mode for writing extra split `Particle` and `Bar` histograms
-
-### Usage
-```bash
-./AnalysisScripts/run_hf_analysis.sh OUTPUT_TAG [NSUB] [CHARGE_MODE]
-./AnalysisScripts/run_hf_analysis.sh OUTPUT_TAG [CHARGE_MODE] [NSUB]
-```
-
-### Examples
-```bash
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026 20
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026 20 separate
-```
-
-### Meaning of `OUTPUT_TAG`
-`OUTPUT_TAG` is simply the output folder name under `AnalyzedData/`.
-
-For example:
+The wrappers resolve the repository base from `base_path.txt` when it exists and otherwise from the local directory structure. They export `HADRONIZATION_BASE`, move to the repository base, source `setupEnv.sh`, and then call ROOT with ACLiC compilation. This means that in ordinary use you run the wrappers from the repository base and do not need to load ROOT separately, although direct ROOT calls still require the environment to be available.
 
 ```bash
 ./AnalysisScripts/run_hf_analysis.sh 27-03-2026
 ```
 
-creates outputs in:
-
-```text
-AnalyzedData/27-03-2026/Beauty/
-AnalyzedData/27-03-2026/Charm/
-```
-
-You can also use more descriptive tags, e.g.
+The wrappers accept the output tag, the number of subsamples, and the charge mode. The number of subsamples defaults to ten. The charge mode defaults to `combined`. The order of the last two arguments is intentionally flexible.
 
 ```bash
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026_HF_10M
+./AnalysisScripts/run_hf_analysis.sh 27-03-2026 10 combined
+./AnalysisScripts/run_hf_analysis.sh 27-03-2026 combined 10
+./AnalysisScripts/run_hf_analysis.sh 27-03-2026 10 separate
 ```
 
-which creates:
+The `separate` mode writes additional `Particle` and `Bar` histograms for charge-separated plotting while keeping the charge-conjugate-combined histograms. The `combined` mode writes only the combined names. The plotting layer always prefers the combined names and only sums split histograms when a combined histogram is absent.
 
-```text
-AnalyzedData/27-03-2026_HF_10M/Beauty/
-AnalyzedData/27-03-2026_HF_10M/Charm/
-```
+## Unified Heavy-Flavour Analysis
 
----
-
-## How to run the analyses
-
-## Legacy split analyses
-
-From the Hadronization base:
-
-```bash
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026
-```
-
-To choose a different number of subsamples:
-
-```bash
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026 20
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026 20
-```
-
-To also write split charge-conjugate histograms:
-
-```bash
-./AnalysisScripts/run_bb_analysis.sh 12-01-2026 20 separate
-./AnalysisScripts/run_cc_analysis.sh 12-01-2026 20 separate
-```
-
----
-
-## Unified heavy-flavour analysis
-
-From the Hadronization base:
-
-```bash
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026
-```
-
-With a different number of subsamples:
-
-```bash
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026 20
-```
-
-To also write split charge-conjugate histograms:
-
-```bash
-./AnalysisScripts/run_hf_analysis.sh 27-03-2026 20 separate
-```
-
----
-
-## Direct ROOT usage
-
-## Legacy split macros
-From the Hadronization base:
-
-```bash
-root -l -b -q 'AnalysisScripts/bb_mult_pt_analysis_multi.C+(10, "12-01-2026", "combined")'
-root -l -b -q 'AnalysisScripts/cc_mult_pt_analysis_multi.C+(10, "12-01-2026", "combined")'
-```
-
-## Unified heavy-flavour macro
-From the Hadronization base:
-
-```bash
-root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+(10, "27-03-2026", "combined")'
-```
-
----
-
-## Input requirements
-
-## Legacy split inputs
-
-The legacy split analysis expects simulation outputs in:
-
-```text
-RootFiles/bbbar/MONASH/
-RootFiles/bbbar/JUNCTIONS/
-RootFiles/ccbar/MONASH/
-RootFiles/ccbar/JUNCTIONS/
-```
-
-Each `.root` file must contain a `tree` with at least:
-- `ID`
-- `PT`
-- `MULTIPLICITY`
-
-## Unified heavy-flavour inputs
-
-The unified analysis expects simulation outputs in:
-
-```text
-RootFiles/HF/MONASH/
-RootFiles/HF/JUNCTIONS/
-```
-
-Each `.root` file must contain a `tree` with at least:
-- `ID`
-- `PT`
-- `MULTIPLICITY`
-
-and ideally:
-- `HFCLASS`
-
----
-
-## Output structure
-
-If `AnalyzedData/<OUTPUT_TAG>/` does not exist, the macros create the needed directories automatically.
-
-Typical structure:
-
-```text
-AnalyzedData/<OUTPUT_TAG>/
-AnalyzedData/<OUTPUT_TAG>/Beauty/
-AnalyzedData/<OUTPUT_TAG>/Charm/
-```
-
-### Legacy split outputs
-- Beauty outputs are written to:
-  ```text
-  AnalyzedData/<OUTPUT_TAG>/Beauty/
-  ```
-- Charm outputs are written to:
-  ```text
-  AnalyzedData/<OUTPUT_TAG>/Charm/
-  ```
-
-### Unified outputs
-- Beauty outputs are written to:
-  ```text
-  AnalyzedData/<OUTPUT_TAG>/Beauty/
-  ```
-- Charm outputs are written to:
-  ```text
-  AnalyzedData/<OUTPUT_TAG>/Charm/
-  ```
-
-The directory layout is the same; only the input source and analysis logic differ.
-
----
-
-## Subsamples and round-robin assignment
-
-All macros in this directory use **round-robin subsample assignment**.
-
-If `NSUB = 10`, then:
-- event 0 goes to subsample 0
-- event 1 goes to subsample 1
-- ...
-- event 9 goes to subsample 9
-- event 10 goes to subsample 0 again
-
-This ensures:
-- nearly equal event counts per subsample
-- deterministic splitting
-- reproducibility independent of file boundaries
-
-This is useful when later building:
-- statistical uncertainties
-- subsample-based ratios
-- significance estimates
-- tune comparisons
-
----
-
-## Common warnings and notes
-
-## ROOT histogram replacement warnings
-When many histogram sets are created in a single ROOT session with identical histogram names, ROOT may print warnings like:
-
-```text
-Warning in <TROOT::Append>: Replacing existing TH1: ...
-```
-
-These warnings are usually harmless in this workflow, because:
-- the histogram sets belong to different subsamples and/or different output files
-- the actual output files are written separately
-
-They can be avoided by disabling automatic histogram registration in memory:
-
-```cpp
-TH1::AddDirectory(kFALSE);
-```
-
-This is recommended for large batch analyses.
-
-## Missing `root` command
-If a wrapper script fails with:
-
-```text
-root: command not found
-```
-
-then the environment was not loaded. The wrappers in this repo now source `setupEnv.sh` automatically, but for direct ROOT usage you should still do:
-
-```bash
-source ./setupEnv.sh
-```
-
-before running the wrapper manually.
-
-## Empty input directory
-If no `.root` files are found in the expected input directory, the macro will not produce outputs. Always check that the corresponding `RootFiles/...` directory exists and contains finished simulation outputs before running the analysis.
-
-## Pion checks
-Some macros include warnings if zero pion entries are found in the input TTrees. This typically indicates that the producer did not save pions in the particle branches.
-
----
-
-## Count events utilities
-
-The event-count scripts are in:
-
-```text
-AnalysisScripts/CountEvents/
-```
-
-Run them with:
-
-```bash
-./AnalysisScripts/CountEvents/count_events.sh
-```
-
-The legacy count scripts are typically organized for the old split layout:
-- `RootFiles/bbbar/MONASH`
-- `RootFiles/bbbar/JUNCTIONS`
-- `RootFiles/ccbar/MONASH`
-- `RootFiles/ccbar/JUNCTIONS`
-
-If you are working with the new unified heavy-flavour production, adapt the count scripts or create a new one for:
+The current macro is `hf_mult_pt_analysis_multi.C`. It reads the combined-HF simulation files from:
 
 ```text
 RootFiles/HF/MONASH
 RootFiles/HF/JUNCTIONS
 ```
 
----
+It expects a `tree` with at least `ID`, `PT`, `MULTIPLICITY`, and preferably `HFCLASS`. The intended classification comes from `HFCLASS`, where beauty is `5`, charm is `4`, Bc is `45`, and pions are `0`. The macro can still use PDG information in parts of the logic, but the unified tree format is the correct input format for new productions.
 
-## Recommended workflow
+The macro reads each raw ROOT file once. During that pass it fills beauty and charm histogram sets separately, assigns each event to a subsample by deterministic round-robin event index, and writes one output file per tune, flavor, and subsample. For the default ten-subsample run, the output layout is:
 
-## Use the legacy split analysis when:
-- you are processing older `bbbar` / `ccbar` samples
-- you need direct continuity with previous analyses
-- you want separate single-channel studies
+```text
+AnalyzedData/<OUTPUT_TAG>/Beauty/hf_MONASH_sub0.root
+AnalyzedData/<OUTPUT_TAG>/Beauty/hf_MONASH_sub1.root
+AnalyzedData/<OUTPUT_TAG>/Beauty/hf_JUNCTIONS_sub0.root
+AnalyzedData/<OUTPUT_TAG>/Charm/hf_MONASH_sub0.root
+AnalyzedData/<OUTPUT_TAG>/Charm/hf_JUNCTIONS_sub0.root
+```
 
-## Use the unified heavy-flavour analysis when:
-- you are processing the new `HF` production
-- you want charm and beauty analyzed in one consistent pass
-- you want the same subsample assignment for both sectors
-- you are doing balancing and hadronization studies with the new unified sample
-
-For the current combined charm+beauty production, the recommended entry point is:
+The wrapper call is:
 
 ```bash
 ./AnalysisScripts/run_hf_analysis.sh <OUTPUT_TAG> [NSUB] [CHARGE_MODE]
 ```
 
----
+The direct ROOT call is:
 
-## Summary
+```bash
+root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+(10,"27-03-2026","combined")'
+```
 
-### Legacy split analysis
-- Inputs:
-  - `RootFiles/bbbar/...`
-  - `RootFiles/ccbar/...`
-- Wrappers:
-  - `run_bb_analysis.sh`
-  - `run_cc_analysis.sh`
-- Macros:
-  - `bb_mult_pt_analysis_multi.C`
-  - `cc_mult_pt_analysis_multi.C`
+There is also `hf_mult_pt_analysis_multi_100M` inside the macro as a convenience entry point. It uses the same analysis logic and only changes the intended tag convention.
 
-### Unified heavy-flavour analysis
-- Inputs:
-  - `RootFiles/HF/MONASH`
-  - `RootFiles/HF/JUNCTIONS`
-- Wrapper:
-  - `run_hf_analysis.sh`
-- Macro:
-  - `hf_mult_pt_analysis_multi.C`
+The unified macro counts Bc hadrons with the beauty output by default and does not also count them in charm. This avoids double counting when charm and beauty summaries are later compared. If a later study needs Bc to contribute to charm as well, that is a physics choice and must be changed deliberately in the macro.
 
-The unified heavy-flavour analysis is the preferred workflow for the current generation setup.
+## Split Analysis
+
+The split macros are `bb_mult_pt_analysis_multi.C` and `cc_mult_pt_analysis_multi.C`. They read the old independent production layout:
+
+```text
+RootFiles/bbbar/MONASH
+RootFiles/bbbar/JUNCTIONS
+RootFiles/ccbar/MONASH
+RootFiles/ccbar/JUNCTIONS
+```
+
+The beauty wrapper is:
+
+```bash
+./AnalysisScripts/run_bb_analysis.sh 12-01-2026 10 combined
+```
+
+The charm wrapper is:
+
+```bash
+./AnalysisScripts/run_cc_analysis.sh 12-01-2026 10 combined
+```
+
+The split input tree is expected to contain `ID`, `PT`, and `MULTIPLICITY`, with the other kinematic and ancestry branches available from the producer. Since the split files do not have `HFCLASS`, the macros classify particles from the absolute PDG id. They write `bbbar_<TUNE>_sub<i>.root` into `AnalyzedData/<OUTPUT_TAG>/Beauty` and `ccbar_<TUNE>_sub<i>.root` into `AnalyzedData/<OUTPUT_TAG>/Charm`.
+
+## Status Analysis Macros
+
+`status_analysis_bb.C`, `status_analysis_cc.C`, and `status_analysis_qq.C` are older status-code and ancestry inspection macros. They work closer to the angular-correlation studies than to the current pT-versus-multiplicity reduction. The bb and cc versions inspect the split beauty and charm style inputs. The qq version includes broader ancestry tracing and sphericity-related helper logic. These macros are useful when the question is about production origin, mother relationships, status codes, and older correlation objects rather than the reduced `AnalyzedData` files used by the current plotting layer.
+
+## Subsamples
+
+All three analysis macros use round-robin event assignment. With ten subsamples, event zero goes to subsample zero, event one to subsample one, and event ten returns to subsample zero. This keeps event counts nearly equal and makes the split reproducible without depending on file boundaries.
+
+The subsamples are the statistical unit used later by the plotting macros. Spectra are usually built once per subsample, normalized at the subsample level, and then combined as a mean with a standard error of the mean. Ratio plots follow the same principle by constructing a ratio per subsample before computing the plotted mean and error.
+
+## Histograms Written
+
+Every current analysis output writes `fHistEventCount`, `fHistTaggedEventCount`, `fHistMultiplicity`, `fHistTaggedMultiplicity`, and `fHistPDGMult`. The event count is the total number of events processed for that subsample. The tagged event count is the number of events relevant for the output flavor. The tagged multiplicity histogram is what the final-analysis multiplicity comparison prefers, because it compares charm-tagged or beauty-tagged event multiplicities rather than all events in a combined-HF file.
+
+Beauty outputs write aggregate histograms called `fHistPtBeautyMesons` and `fHistPtBeautyBaryons`. The main species histograms are `fHistPtBplus`, `fHistPtBzero`, `fHistPtBs0`, `fHistPtBcplus`, `fHistPtLambdab`, `fHistPtSigmabPlus`, `fHistPtSigmabZero`, `fHistPtSigmabMinus`, `fHistPtXibZero`, `fHistPtXibMinus`, and `fHistPtOmegabMinus`. Pion histograms are `fHistPtPionsCharged`, `fHistPtPiPlus`, `fHistPtPiMinus`, and `fHistPtPi0`.
+
+Charm outputs write aggregate histograms called `fHistPtCharmMesons` and `fHistPtCharmBaryons`. The main species histograms are `fHistPtDplus`, `fHistPtDzero`, `fHistPtDsplus`, `fHistPtLambdac`, `fHistPtLambdacPlus`, `fHistPtSigmacPlusPlus`, `fHistPtSigmacPlus`, `fHistPtSigmacZero`, `fHistPtXicPlus`, `fHistPtXicZero`, and `fHistPtOmegacZero`. The macro writes `fHistPtLambdac` as the canonical current name and keeps `fHistPtLambdacPlus` for compatibility with older plotting code.
+
+In `separate` charge mode, the species histograms acquire additional names with `Particle` and `Bar` suffixes. For example, `fHistPtDplusParticle` and `fHistPtDplusBar` are written alongside `fHistPtDplus`. The same pattern is used for the supported beauty and charm species.
+
+## Output Tags and Present Samples
+
+The `OUTPUT_TAG` is simply the directory name under `AnalyzedData`. The current checkout includes older independent split samples dated `10-09-2025` and `12-01-2026`, a combined-HF sample dated `27-03-2026`, and the larger `08-04-2026_100M_Combined` and `08-04-2026_100M_Separate` reduced outputs. Pure date tags are interpreted by downstream plotting helpers when they sort folders of the form `DD-MM-YYYY`; descriptive tags remain valid analysis directories but are not part of the automatic latest-date ordering unless the plotting helper explicitly accepts them.
+
+```text
+AnalyzedData/10-09-2025
+AnalyzedData/12-01-2026
+AnalyzedData/27-03-2026
+AnalyzedData/08-04-2026_100M_Combined
+AnalyzedData/08-04-2026_100M_Separate
+```
+
+## Count Events Utility
+
+`AnalysisScripts/CountEvents/count_events.sh` runs `count_events_bb_cc.C` from the repository base and then removes the ACLiC artifacts produced by that macro. It is written for the old split bbbar and ccbar layout. If you need the same count for the combined-HF raw files, it should be adapted to inspect `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`.
+
+```bash
+./AnalysisScripts/CountEvents/count_events.sh
+```
+
+## Failure Modes
+
+If a wrapper reports that `root` is missing, `setupEnv.sh` either could not be sourced or the ALICE CVMFS environment is unavailable on that machine. If a wrapper reports that an input directory is missing, check whether the raw production files are present under `RootFiles` on that host. If ROOT prints histogram replacement warnings during a large run, they are usually in-memory name reuse warnings and not output-file overwrites; the current macros use `TH1::AddDirectory(kFALSE)` style handling where needed and write each subsample to a separate file.
+
+If a plotting macro later reports missing histograms, first check whether the analysis was run with the same `NSUB` that the plot is trying to read, and then check whether the sample is an `hf_` combined sample or a `bbbar_`/`ccbar_` split sample. The plotting layer can handle both naming schemes, but the files must be present for every requested subsample.
