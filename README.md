@@ -10,7 +10,7 @@ The present chain is centered on a unified heavy-flavour production. In that pro
 
 `AnalysisScripts` contains the ROOT reduction macros and shell wrappers. The current macro `hf_mult_pt_analysis_multi.C` reads `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`, splits the events into subsamples, and writes charm and beauty histogram files into `AnalyzedData/<tag>/Charm` and `AnalyzedData/<tag>/Beauty`. The split macros `bb_mult_pt_analysis_multi.C` and `cc_mult_pt_analysis_multi.C` do the same for the independent old samples.
 
-`PlottingScripts/Pt and Multiplicity` contains the current physics plotting macros for pT spectra, multiplicity-dependent spectra, baryon-to-meson ratios, species-resolved spectra, single-particle spectra, and minimum-bias spectra. These macros read the reduced `AnalyzedData` files rather than the raw simulation trees. They prefer the `hf_` file naming scheme and fall back to `bbbar_` or `ccbar_` when an older split sample is being plotted.
+`PlottingScripts/PtMultiplicity` contains the current physics plotting macros for pT spectra, multiplicity-dependent spectra, baryon-to-meson ratios, species-resolved spectra, single-particle spectra, and minimum-bias spectra. These macros read the reduced `AnalyzedData` files rather than the raw simulation trees. They prefer the `hf_` file naming scheme and fall back to `bbbar_` or `ccbar_` when an older split sample is being plotted.
 
 `PlottingScripts/FinalAnalysis` contains the final comparison layer. It now has two source macros. `Plot_MultiplicityDistributions_TwoSamples.C` compares multiplicity distributions between two analyzed samples. `Plot_SelectedParticleYields_IndependentVsCombined.C` compares selected charm and beauty yields and draws the independent-over-combined ratio inside the same output canvas.
 
@@ -104,9 +104,9 @@ The split analysis wrappers are still available for old independent samples.
 The current pT and multiplicity plots are made from `AnalyzedData`, not from `RootFiles`. If no date is passed, the plotting helpers search for the latest dated folder under `AnalyzedData`. In ordinary use, we pass the date explicitly so that no older production is selected by accident.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Charm",10)'
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Beauty",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Charm",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Beauty",10)'
 ```
 
 The final-analysis comparisons are similarly run from the repository base.
@@ -116,7 +116,7 @@ root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoS
 root -l -b -q 'PlottingScripts/FinalAnalysis/Plot_SelectedParticleYields_IndependentVsCombined.C("12-01-2026","27-03-2026",10)'
 ```
 
-The pT and multiplicity plots are written to `PlottingScripts/Pt and Multiplicity/Plots`. The final-analysis plots are written to `PlottingScripts/FinalAnalysis/Plots`. Several macros write both PNG and PDF, while older ratio macros still write only PNG.
+The pT and multiplicity plots are written to `PlottingScripts/PtMultiplicity/Plots`. The final-analysis plots are written to `PlottingScripts/FinalAnalysis/Plots`. Several macros write both PNG and PDF, while older ratio macros still write only PNG.
 
 ## Condor Workflow
 

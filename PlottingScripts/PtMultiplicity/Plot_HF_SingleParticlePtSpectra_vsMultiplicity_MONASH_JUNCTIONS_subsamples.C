@@ -24,7 +24,7 @@
 // that flavor and produces one side-by-side comparison canvas for each particle.
 //
 // Example usage:
-//   .L "PlottingScripts/Pt and Multiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
+//   .L "PlottingScripts/PtMultiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
 //   runHFSingleParticleSpectra("27-03-2026", "Dzero", 10);
 //   runHFSingleParticleSpectra("27-03-2026", "Bplus", 10);
 //   runHFSingleParticleSpectra("27-03-2026", "Dminus", 10);

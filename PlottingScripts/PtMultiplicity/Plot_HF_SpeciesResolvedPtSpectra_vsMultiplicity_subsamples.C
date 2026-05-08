@@ -26,7 +26,7 @@
 //     takes the pad label directly from that histogram title
 //
 // Usage:
-//   .L "PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C"
+//   .L "PlottingScripts/PtMultiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C"
 //   runHFSpeciesResolvedSpectra("27-03-2026", "Charm", 10);   // 5 canvases
 //   runHFSpeciesResolvedSpectra("27-03-2026", "Beauty", 10);  // 5 canvases
 //   runHFSpeciesResolvedSpectra("27-03-2026", "MONASH", 10);    // legacy mode

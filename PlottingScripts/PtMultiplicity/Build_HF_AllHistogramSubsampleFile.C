@@ -32,14 +32,11 @@
 //
 // Usage (from the repo root):
 //
-//   Shell one-liner (no compilation):
-//     root -l -b -q 'PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C; runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10)'
-//
-//   Shell one-liner (ACLiC compiled, faster on repeat runs):
-//     root -l -b -q 'PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C+; runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10)'
+//   Shell one-liner (ACLiC compiled):
+//     root -l -b -q 'PlottingScripts/PtMultiplicity/Build_HF_AllHistogramSubsampleFile.C+("08-04-2026_100M_Separate",10)'
 //
 //   Interactive ROOT session:
-//     .L "PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C"
+//     .L "PlottingScripts/PtMultiplicity/Build_HF_AllHistogramSubsampleFile.C"
 //     runHFAllHistogramSubsampleFile("08-04-2026_100M_Combined", 10);
 //     runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10);
 //     runHFAllHistogramSubsampleFile("27-03-2026", 10,
@@ -676,4 +673,13 @@ void runHFAllHistogramSubsampleFile(const char* dateTag = "",
     } else {
         std::cout << "No content was written to " << outPath << "\n";
     }
+}
+
+// Filename-matching entry point so ACLiC + syntax works from the shell:
+//   root -l -b -q 'PlottingScripts/PtMultiplicity/Build_HF_AllHistogramSubsampleFile.C+("08-04-2026_100M_Separate",10)'
+void Build_HF_AllHistogramSubsampleFile(const char* dateTag = "",
+                                        int nSub = 10,
+                                        const char* outPath = "")
+{
+    runHFAllHistogramSubsampleFile(dateTag, nSub, outPath);
 }

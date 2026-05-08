@@ -29,7 +29,7 @@
 // includeHeavyBeautyExtras = true.
 //
 // Usage:
-//   .L "PlottingScripts/Pt and Multiplicity/Build_HF_CombinedSubsamplesFile.C"
+//   .L "PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C"
 //   runHFCombinedSubsamplesFile("27-03-2026", 10);
 //   runHFCombinedSubsamplesFile("27-03-2026", 10, true);
 //   runHFCombinedSubsamplesFile("27-03-2026", 10, false,

@@ -34,7 +34,7 @@ For date-based calls, the macros prefer `hf_` files when they exist and otherwis
 The plots are written to:
 
 ```text
-PlottingScripts/Pt and Multiplicity/Plots
+PlottingScripts/PtMultiplicity/Plots
 ```
 
 Several output names do not include the date. If you run the same macro on several productions, move or rename the outputs between runs or use a separate worktree.
@@ -46,7 +46,7 @@ The shared helper `PlottingPathUtils.h` resolves the repository base in a machin
 We normally run plotting macros from the repository base and pass the date explicitly:
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
 ```
 
 ## Error Convention
@@ -60,39 +60,39 @@ The macros use `fHistTaggedMultiplicity` when a flavor-tagged multiplicity distr
 `Plot_Beauty_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C` compares MONASH and JUNCTIONS for beauty baryon-to-meson ratios in five multiplicity percentile classes. It writes the inclusive beauty baryon-over-meson ratio and the `Lambdab/Bpm` ratio.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_Beauty_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_Beauty_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
 ```
 
 The interactive wrapper is:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_Beauty_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_Beauty_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C"
 runBeautyRatios("27-03-2026", 10, 2);
 ```
 
 `Plot_Charm_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C` does the same for charm and writes the inclusive charm baryon-over-meson ratio and the `Lambdac/Dpm` ratio.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_Charm_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_Charm_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
 ```
 
 The interactive wrapper is:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_Charm_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_Charm_BaryonMesonRatio_MONASH_vs_JUNCTIONS_subsamples.C"
 runCharmRatios("27-03-2026", 10, 2);
 ```
 
 `Plot_BaryonMesonRatio_CharmBeauty_MONASH_vs_JUNCTIONS_subsamples.C` draws charm and beauty baryon-to-meson ratios together for each multiplicity class. It is useful when the question is not only the tune dependence but also the relative charm-versus-beauty behavior.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_BaryonMesonRatio_CharmBeauty_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_BaryonMesonRatio_CharmBeauty_MONASH_vs_JUNCTIONS_subsamples.C("27-03-2026",10,2)'
 ```
 
 The interactive wrappers are:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_BaryonMesonRatio_CharmBeauty_MONASH_vs_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_BaryonMesonRatio_CharmBeauty_MONASH_vs_JUNCTIONS_subsamples.C"
 runCharmBeautyRatios("27-03-2026", 10, 2);
 runBaryonMesonCharmBeauty("27-03-2026", 10, 2);
 ```
@@ -100,13 +100,13 @@ runBaryonMesonCharmBeauty("27-03-2026", 10, 2);
 `Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C` integrates over pT and plots `Lambdac/Dpm` and `Lambdab/Bpm` as functions of multiplicity percentile. If `ptMax <= ptMin`, the macro integrates the full pT range.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C("27-03-2026",10,0.0,-1.0)'
 ```
 
 The wrapper is:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_HF_Ratios_vsMultiplicityPercentile_subsamples.C"
 runHFRatios("27-03-2026", 10, 0.0, -1.0);
 ```
 
@@ -115,27 +115,27 @@ runHFRatios("27-03-2026", 10, 0.0, -1.0);
 `Plot_HF_PtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C` makes the older focused spectra plots for `Lambdac`, `Dpm`, `Lambdab`, and `Bpm`, separated by tune and multiplicity percentile.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_PtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_PtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026",10)'
 ```
 
 The wrapper is:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_HF_PtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_HF_PtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
 runHFSpectra("27-03-2026", 10);
 ```
 
 `Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C` is the broad species-resolved plotting macro. A selector of `Charm` or `Beauty` compares MONASH and JUNCTIONS for that flavor. A selector of `MONASH` or `JUNCTIONS` gives the older single-tune view. The default charm set is D0, D+, D-, Ds, and Lambdac. The default beauty set is B+, B-, B0, Bs, Bc, and Lambdab. The heavier beauty baryons Sigmab, Xib, and Omegab are available when `includeHeavyBeautyExtras` is true.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Charm",10)'
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Beauty",10,true)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Charm",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C("27-03-2026","Beauty",10,true)'
 ```
 
 The common wrappers are:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples.C"
 runHFSpeciesResolvedSpectraCharm("27-03-2026", 10);
 runHFSpeciesResolvedSpectraBeauty("27-03-2026", 10, true);
 runHFSpeciesResolvedSpectraBothTunes("27-03-2026", 10);
@@ -146,14 +146,14 @@ runHFSpeciesResolvedSpectraJunctions("27-03-2026", 10);
 `Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C` draws the five multiplicity percentile spectra for one selected particle, with MONASH and JUNCTIONS side by side. If the selector is `Charm` or `Beauty`, it loops over the default particle set for that flavor. It understands particle selectors such as `Dzero`, `Dplus`, `Dminus`, `Dsplus`, `Dsminus`, `Lambdac`, `barLambdac`, `Bplus`, `Bminus`, `Bzero`, `barB0`, `Bs0`, `barBs0`, `Bcplus`, `Bcminus`, `Lambdab`, and `barLambdab`, with additional heavy beauty baryons available when the extra switch is enabled.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Dzero",10)'
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Charm",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Dzero",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Charm",10)'
 ```
 
 The wrappers are:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_HF_SingleParticlePtSpectra_vsMultiplicity_MONASH_JUNCTIONS_subsamples.C"
 runHFSingleParticleSpectra("27-03-2026", "Dzero", 10);
 runHFSingleParticleSpectraCharm("27-03-2026", 10);
 runHFSingleParticleSpectraBeauty("27-03-2026", 10, true);
@@ -162,14 +162,14 @@ runHFSingleParticleSpectraBeauty("27-03-2026", 10, true);
 `Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C` integrates over the full multiplicity axis and draws minimum-bias spectra. A flavor selector makes the species-overlay comparison and also the single-particle side-by-side canvases. A particle selector makes only that particle.
 
 ```bash
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Charm",10)'
-root -l -b -q 'PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Bplus",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Charm",10)'
+root -l -b -q 'PlottingScripts/PtMultiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C("27-03-2026","Bplus",10)'
 ```
 
 The wrappers are:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C"
+.L "PlottingScripts/PtMultiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C"
 runHFMinimumBiasSpectraCharm("27-03-2026", 10);
 runHFMinimumBiasSpectraBeauty("27-03-2026", 10, true);
 runHFMinimumBiasSpectraBoth("27-03-2026", 10);
@@ -188,7 +188,7 @@ AnalyzedData/<DATE>/hf_combined_plot_histograms.root
 The call is:
 
 ```cpp
-.L "PlottingScripts/Pt and Multiplicity/Build_HF_CombinedSubsamplesFile.C"
+.L "PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C"
 runHFCombinedSubsamplesFile("27-03-2026", 10);
 runHFCombinedSubsamplesFile("27-03-2026", 10, true);
 runHFCombinedSubsamplesFile("27-03-2026", 10, false, "AnalyzedData/27-03-2026/custom.root");

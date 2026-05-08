@@ -23,7 +23,7 @@
 // can be re-enabled with includeHeavyBeautyExtras = true.
 //
 // Usage:
-//   .L "PlottingScripts/Pt and Multiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C"
+//   .L "PlottingScripts/PtMultiplicity/Plot_HF_MinimumBiasPtSpectra_MONASH_JUNCTIONS_subsamples.C"
 //   runHFMinimumBiasSpectra("27-03-2026", "Charm", 10);
 //   runHFMinimumBiasSpectra("27-03-2026", "Beauty", 10);
 //   runHFMinimumBiasSpectra("27-03-2026", "Beauty", 10, true);
