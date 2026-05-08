@@ -28,3 +28,6 @@ SimulationScripts/heavyflavourcorrelations_status
 SimulationScripts/bbbarcorrelations_status
 SimulationScripts/bbbarcorrelations_status_JUNCTIONS
 SimulationScripts/ccbarcorrelations_status_JUNCTIONS
+
+# Scratch/tooling directories
+.codex-tmp/
