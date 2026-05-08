@@ -2,7 +2,7 @@
 # Large binary outputs
 /RootFiles/**/*.root
 .DS_Store
-.vscode/settings.json
+.vscode/
 /logs/*
 
 # Ignore ROOT files by default
