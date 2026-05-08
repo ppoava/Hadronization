@@ -5,17 +5,16 @@
 # set -e would exit the parent shell on any error, and ALICE login.sh expects
 # some vars to be unset.
 
-# Resolve and export HADRONIZATION_BASE from base_path.txt if not already set
-if [ -z "${HADRONIZATION_BASE:-}" ]; then
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [ -f "${SCRIPT_DIR}/base_path.txt" ]; then
-    HADRONIZATION_BASE="$(cat "${SCRIPT_DIR}/base_path.txt")"
-  else
-    HADRONIZATION_BASE="${SCRIPT_DIR}"
-  fi
-  HADRONIZATION_BASE="${HADRONIZATION_BASE%/}"
-  export HADRONIZATION_BASE
+# Always resolve HADRONIZATION_BASE from base_path.txt so re-sourcing this
+# script picks up the correct path even if a stale value was already exported.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "${SCRIPT_DIR}/base_path.txt" ]; then
+  HADRONIZATION_BASE="$(cat "${SCRIPT_DIR}/base_path.txt")"
+else
+  HADRONIZATION_BASE="${SCRIPT_DIR}"
 fi
+HADRONIZATION_BASE="${HADRONIZATION_BASE%/}"
+export HADRONIZATION_BASE
 
 # 1. Get alienv from ALICE CVMFS (only available on the cluster)
 if [ -f /cvmfs/alice.cern.ch/etc/login.sh ]; then
