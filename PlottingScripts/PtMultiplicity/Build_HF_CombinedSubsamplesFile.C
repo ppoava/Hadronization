@@ -28,12 +28,17 @@
 // Heavier beauty baryons are disabled by default and can be re-enabled with
 // includeHeavyBeautyExtras = true.
 //
-// Usage:
-//   .L "PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C"
-//   runHFCombinedSubsamplesFile("27-03-2026", 10);
-//   runHFCombinedSubsamplesFile("27-03-2026", 10, true);
-//   runHFCombinedSubsamplesFile("27-03-2026", 10, false,
-//                               "AnalyzedData/27-03-2026/custom.root");
+// Usage (from the repo root):
+//
+//   Shell one-liner (ACLiC compiled):
+//     root -l -b -q 'PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C+("08-04-2026_100M_Separate",10)'
+//
+//   Interactive ROOT session:
+//     .L "PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C"
+//     runHFCombinedSubsamplesFile("27-03-2026", 10);
+//     runHFCombinedSubsamplesFile("27-03-2026", 10, true);
+//     runHFCombinedSubsamplesFile("27-03-2026", 10, false,
+//                                 "AnalyzedData/27-03-2026/custom.root");
 // ---------------------------------------------------------------------------
 
 #include <algorithm>
@@ -1276,4 +1281,14 @@ void runHFCombinedSubsamplesFile(const char* dateTag = "",
     } else {
         std::cout << "No content was written to " << outPath << "\n";
     }
+}
+
+// Filename-matching entry point so ACLiC + syntax works from the shell:
+//   root -l -b -q 'PlottingScripts/PtMultiplicity/Build_HF_CombinedSubsamplesFile.C+("08-04-2026_100M_Separate",10)'
+void Build_HF_CombinedSubsamplesFile(const char* dateTag = "",
+                                     int nSub = 10,
+                                     bool includeHeavyBeautyExtras = false,
+                                     const char* outputPath = "")
+{
+    runHFCombinedSubsamplesFile(dateTag, nSub, includeHeavyBeautyExtras, outputPath);
 }
