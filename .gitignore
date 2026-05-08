@@ -31,3 +31,6 @@ SimulationScripts/ccbarcorrelations_status_JUNCTIONS
 
 # Scratch/tooling directories
 .codex-tmp/
+
+# Machine-specific base path (each machine keeps its own copy)
+base_path.txt
