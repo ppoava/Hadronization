@@ -30,12 +30,20 @@
 // but do not yet contain Delta-y/Delta-phi or Delta-eta/Delta-phi pairs, so the
 // macro records that absence in metadata instead of fabricating correlations.
 //
-// Usage:
-//   .L "PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C"
-//   runHFAllHistogramSubsampleFile("08-04-2026_100M_Combined", 10);
-//   runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10);
-//   runHFAllHistogramSubsampleFile("27-03-2026", 10,
-//                                  "AnalyzedData/27-03-2026/custom.root");
+// Usage (from the repo root):
+//
+//   Shell one-liner (no compilation):
+//     root -l -b -q 'PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C; runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10)'
+//
+//   Shell one-liner (ACLiC compiled, faster on repeat runs):
+//     root -l -b -q 'PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C+; runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10)'
+//
+//   Interactive ROOT session:
+//     .L "PlottingScripts/Pt and Multiplicity/Build_HF_AllHistogramSubsampleFile.C"
+//     runHFAllHistogramSubsampleFile("08-04-2026_100M_Combined", 10);
+//     runHFAllHistogramSubsampleFile("08-04-2026_100M_Separate", 10);
+//     runHFAllHistogramSubsampleFile("27-03-2026", 10,
+//                                    "AnalyzedData/27-03-2026/custom.root");
 // ---------------------------------------------------------------------------
 
 #include <algorithm>
