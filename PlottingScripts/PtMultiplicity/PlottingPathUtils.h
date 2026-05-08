@@ -41,7 +41,7 @@ inline TString BaseDirFromMacroPath(const char* macroPath)
     TString resolved = ResolveAbsolutePath(macroPath);
     if (resolved.Length() == 0) return TString("");
 
-    TString level1 = gSystem->DirName(resolved.Data()); // Pt and Multiplicity
+    TString level1 = gSystem->DirName(resolved.Data()); // PtMultiplicity
     TString level2 = gSystem->DirName(level1.Data());   // PlottingScripts
     TString level3 = gSystem->DirName(level2.Data());   // Hadronization
     return gSystem->UnixPathName(level3);
@@ -180,7 +180,7 @@ inline TString ResolveAnalyzedPrefix(const TString& dateTag,
 
 inline TString GetPtMultiplicityPlotsDir()
 {
-    TString plotsDir = GetHadronizationBaseDir() + "/PlottingScripts/Pt and Multiplicity/Plots";
+    TString plotsDir = GetHadronizationBaseDir() + "/PlottingScripts/PtMultiplicity/Plots";
     gSystem->mkdir(plotsDir, true);
     return plotsDir;
 }
