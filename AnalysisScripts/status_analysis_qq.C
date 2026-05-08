@@ -342,7 +342,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	TH2D *hTrPtEta = new TH2D("hPtEta", Form("pT and pseudorapidity trigger pT for trigger %s;p_{T};#eta;Counts", title), 100, 0, 50, 100, -4, 4);
 	TH2D *hTrPtY = new TH2D("hPtY", Form("pT and rapidity trigger pT for trigger %s;p_{T};y;Counts", title), 100, 0, 50, 100, -4, 4);
 	TH2D *hTrEtaPhi = new TH2D("hTrEtaPhi", Form("#eta #phi for trigger %s;#eta;#phi;Counts", title), 100, -4, 4, 100, -PI / 2, 3 * PI / 2);
-	TH2D *hDPhiDEta = new TH2D("hDPhiDEta", Form("%s #Delta#eta #Delta#phi;#Delta#phi;#Delta#eta;Counts", title), 100, -8, 8, 100, -PI / 2, 3 * PI / 2);
+	TH2D *hDPhiDEta = new TH2D("hDPhiDEta", Form("%s #Delta#phi #Delta#eta;#Delta#phi;#Delta#eta;Counts", title), 100, -PI / 2, 3 * PI / 2, 100, -8, 8);
 
 	// No trigger-associate pT constraints
 	TH1D *hTrPt = new TH1D("hTrPt", Form("Trigger Transverse Momentum for %s;p_{T} GeV/c;Counts", title), 100, 0, 50);
