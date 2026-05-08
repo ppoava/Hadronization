@@ -1,9 +1,9 @@
 #!/bin/bash
 # Global setupEnv.sh for Hadronization
 
-# IMPORTANT: do NOT use 'set -u' here; ALICE login.sh expects some vars to be unset.
-set -e
-set -o pipefail
+# IMPORTANT: do NOT use 'set -e' or 'set -u' here; this script is sourced, so
+# set -e would exit the parent shell on any error, and ALICE login.sh expects
+# some vars to be unset.
 
 # Resolve and export HADRONIZATION_BASE from base_path.txt if not already set
 if [ -z "${HADRONIZATION_BASE:-}" ]; then
@@ -25,7 +25,7 @@ if [ -f /cvmfs/alice.cern.ch/etc/login.sh ]; then
   source /cvmfs/alice.cern.ch/etc/login.sh
 else
   echo "ERROR: /cvmfs/alice.cern.ch/etc/login.sh not found."
-  exit 1
+  return 1
 fi
 
 # 2. Load ROOT and PYTHIA into THIS shell (no subshells)
