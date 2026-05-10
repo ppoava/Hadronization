@@ -344,6 +344,14 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	TH2D *hTrEtaPhi = new TH2D("hTrEtaPhi", Form("#eta #phi for trigger %s;#eta;#phi;Counts", title), 100, -4, 4, 100, -PI / 2, 3 * PI / 2);
 	TH2D *hDPhiDEta = new TH2D("hDPhiDEta", Form("%s #Delta#phi #Delta#eta;#Delta#phi;#Delta#eta;Counts", title), 100, -PI / 2, 3 * PI / 2, 100, -8, 8);
 
+	// 2-dimensional histograms with multiplicity splitting
+	TH2D *hDPhiDEtaM60_100 = new TH2D("hDPhiDEtaM60_100", Form("%s #Delta#phi #Delta#eta correlation for 60-100 centrality bin (0 < MULT < %g);#Delta#phi (rad);Counts", title, multCrit60), 100, -PI / 2, 3 * PI / 2, 100, -8, 8);
+	TH1D *hTrPtM60_100 = new TH1D("hTrPtM60_100", Form("Trigger Transverse Momentum for %s with 60-100 centrality bin (0 < MULT < %g);p_{T} GeV/c;Counts", title, multCrit60), 100, 0, 50);
+	TH2D *hDPhiDEtaM20_60 = new TH2D("hDPhiDEtaM20_60", Form("%s #Delta#phi #Delta#eta correlation for 20-60 centrality bin (%g < MULT < %g);#Delta#phi (rad);Counts", title, multCrit60, multCrit20), 100, -PI / 2, 3 * PI / 2, 100, -8, 8);
+	TH1D *hTrPtM20_60 = new TH1D("hTrPtM20_60", Form("Trigger Transverse Momentum for %s with 20-60 centrality bin (%g < MULT < %g);p_{T} GeV/c;Counts", title, multCrit60, multCrit20), 100, 0, 50);
+	TH2D *hDPhiDEtaM00_20 = new TH2D("hDPhiDEtaM00_20", Form("%s #Delta#phi #Delta#eta correlation for 00-20 centrality bin (MULT > %g);#Delta#phi (rad);Counts", title, multCrit20), 100, -PI / 2, 3 * PI / 2, 100, -8, 8);
+	TH1D *hTrPtM00_20 = new TH1D("hTrPtM00_20", Form("Trigger Transverse Momentum for %s with 00-20 centrality bin (MULT > %g);p_{T} GeV/c;Counts", title, multCrit20), 100, 0, 50);
+
 	// No trigger-associate pT constraints
 	TH1D *hTrPt = new TH1D("hTrPt", Form("Trigger Transverse Momentum for %s;p_{T} GeV/c;Counts", title), 100, 0, 50);
 	TH1D *hTrPtPr = new TH1D("hTrPtPr", Form("Trigger Transverse Momentum for %s from %.1f;p_{T} GeV/c;Counts", title, primary_status), 100, 0, 50);
@@ -426,6 +434,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 
 	// The following histograms are used for combined mother ID and angular correlation studies
 	// Delta phi of trigger, associate and mother IDs
+	/*
 	TH2D *hDPhiTrMother = new TH2D("hDPhiTrMother", Form("%s #Delta#phi and trigger mother IDs for all p_{T};#Delta#Phi (rad);trigger mother", title), 100, -PI / 2, 3 * PI / 2, 12001, -6000.5, 6000.5);
 	TH2D *hDPhiAsMother = new TH2D("hDPhiAsMother", Form("%s #Delta#phi and associate mother IDs for all p_{T};#Delta#Phi (rad);associate mother", title), 100, -PI / 2, 3 * PI / 2, 12001, -6000.5, 6000.5);
 	TH2D *hDPhiTrMotherLL = new TH2D("hDPhiTrMotherLL", Form("%s #Delta#phi and trigger mother IDs for low-low p_{T};#Delta#Phi (rad);trigger mother", title), 100, -PI / 2, 3 * PI / 2, 12001, -6000.5, 6000.5);
@@ -451,6 +460,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	TH1D *hTrPtHHPr = new TH1D("hTrPtHHPr", Form("Trigger Transverse Momentum for %s from %.1f for high-high p_{T};p_{T} GeV/c;Counts", title, primary_status), 100, 0, 50);
 	TH1D *hTrPtHHSc = new TH1D("hTrPtHHSc", Form("Trigger Transverse Momentum for %s from %.1f for high-high p_{T};p_{T} GeV/c;Counts", title, secondary_status), 100, 0, 50);
 	TH1D *hTrPtHHPrSc = new TH1D("hTrPtHHPrSc", Form("Trigger Transverse Momentum for %s from %.1f and %.1f for high-high p_{T};p_{T} GeV/c;Counts", title, primary_status, secondary_status), 100, 0, 50);
+	*/
 
 	// EVENT CLASSIFICATION STUDY
 	/*
@@ -612,6 +622,22 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 					hTrPtM1->Fill(pPt);
 				} // End of top 1% of centrality bins
 
+				// Multiplicity selections below are only used for the 2D correlation plots
+				if (MULTIPLICITY <= multCrit60)
+				{
+					hTrPtM60_100->Fill(pPt);
+				} // End of 60-100 % centrality bin
+
+				if (multCrit60 < MULTIPLICITY && MULTIPLICITY <= multCrit20)
+				{
+					hTrPtM20_60->Fill(pPt);
+				} // End of 20-60 % centrality bin
+
+				if (MULTIPLICITY >= multCrit20)
+				{
+					hTrPtM00_20->Fill(pPt);
+				} // End of top 20% of centrality bins
+
 				// *** --------- *** //
 
 				// Filling trigger spectra for triger momentum range correlations
@@ -689,9 +715,10 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 						// hStatusAs->Fill(aStatus);
 						hDPhi->Fill(DeltaPhi(pPhi, aPhi));
 						hDPhiDEta->Fill(DeltaPhi(pPhi, aPhi), (pEta-aEta));
-						hDPhiTrMother->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
-						hDPhiAsMother->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
+						// hDPhiTrMother->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
+						// hDPhiAsMother->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
 
+						/*
 						if (81 <= pStatus && pStatus <= 89 && 81 <= aStatus && aStatus <= 89)
 						{						// Hadronisation production mechanism
 							hTrPtPr->Fill(pPt); // normalisation method inconsistent with other trigger pT !!! (kept like this for consistency with former plots, but needs to be addressed)
@@ -726,6 +753,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 							hDPhiPrSc->Fill(DeltaPhi(pPhi, aPhi));
 							hTrPtPrSc->Fill(pPt);
 						}
+						*/
 
 						// *** --------- *** //
 
@@ -765,14 +793,31 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 							hDPhiM1->Fill(DeltaPhi(pPhi, aPhi));
 						} // End of top 1% of centrality bins
 
+						// Multiplicity selections below are only used for the 2D correlation plots
+						if (MULTIPLICITY <= multCrit60)
+						{
+							hDPhiDEtaM60_100->Fill(DeltaPhi(pPhi, aPhi), (pEta-aEta));
+						} // End of 60-100 % centrality bin
+
+						if (multCrit60 < MULTIPLICITY && MULTIPLICITY <= multCrit20)
+						{
+							hDPhiDEtaM20_60->Fill(DeltaPhi(pPhi, aPhi), (pEta-aEta));
+						} // End of 20-60 % centrality bin
+
+						if (MULTIPLICITY >= multCrit20)
+						{
+							hDPhiDEtaM00_20->Fill(DeltaPhi(pPhi, aPhi), (pEta-aEta));
+						} // End of top 20% of centrality bins
+
 						// *** --------- *** //
 
 						// Filling triger momentum range correlations
 						if (pPt >= 1. && pPt < 3. && aPt > 1. && aPt < 3.)
 						{
 							hDPhiLL->Fill(DeltaPhi(pPhi, aPhi));
-							hDPhiTrMotherLL->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
-							hDPhiAsMotherLL->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
+							// hDPhiTrMotherLL->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
+							// hDPhiAsMotherLL->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
+							/*
 							if (81 <= pStatus && pStatus <= 89 && 81 <= aStatus && aStatus <= 89)
 							{
 								hDPhiLLPr->Fill(DeltaPhi(pPhi, aPhi));
@@ -793,6 +838,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 								hDPhiLLPrSc->Fill(DeltaPhi(pPhi, aPhi));
 								hTrPtLLPrSc->Fill(pPt);
 							} // non-prompt/prompt
+							*/
 						} // End of low-low transverse momentum
 
 						if (pPt >= 1. && pPt < 3. && aPt >= 3. && aPt < 8.)
@@ -833,8 +879,9 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 						if (pPt >= 8. && aPt >= 8.)
 						{
 							hDPhiHH->Fill(DeltaPhi(pPhi, aPhi));
-							hDPhiTrMotherHH->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
-							hDPhiAsMotherHH->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
+							// hDPhiTrMotherHH->Fill(DeltaPhi(pPhi, aPhi), pMotherID);
+							// hDPhiAsMotherHH->Fill(DeltaPhi(pPhi, aPhi), aMotherID);
+							/*
 							if (81 <= pStatus && pStatus <= 89 && 81 <= aStatus && aStatus <= 89)
 							{
 								hDPhiHHPr->Fill(DeltaPhi(pPhi, aPhi));
@@ -855,6 +902,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 								hDPhiHHPrSc->Fill(DeltaPhi(pPhi, aPhi));
 								hTrPtHHPrSc->Fill(pPt);
 							}
+							*/
 						} // End of high-high transverse momentum
 
 						// *** --------- *** //
@@ -926,13 +974,13 @@ int status_analysis_qq(const char *fIn)
 
 	// TRIGGER = D+
 
-	// status_file(411,411,"DplusDplus.root","D^{+}D^{+}");
+	status_file(411, 411, fIn, "DplusDplus.root","D^{+}D^{+}");
 	status_file(411, -411, fIn, "DplusDminus.root", "D^{+}D^{-}");
 	/*
 	status_file(411, 421, fIn, "DplusDzero.root", "D^{+}D^{0}");
 	status_file(411, -421, fIn, "DplusDzerobar.root", "D^{+}#barD^{0}");
-	status_file(411, 431, fIn, "DplusDsplus.root", "D^{+}D_{s}^{+}");
 	status_file(411, -431, fIn, "DplusDsminus.root", "D^{+}D_{s}^{-}");
+	status_file(411, 431, fIn, "DplusDsplus.root", "D^{+}D_{s}^{+}");
 	status_file(411, 4122, fIn, "DplusLambdacplus.root", "D^{+}#Lambda_{c}^{+}");
 	status_file(411, -4122, fIn, "DplusLambdacplusbar.root", "D^{+}#bar#Lambda_{c}^{+}");
 	status_file(411, 4222, fIn, "DplusSigmacplusplus.root", "D^{+}#Sigma_{c}^{++}");
@@ -994,7 +1042,7 @@ int status_analysis_qq(const char *fIn)
 	*/
 
 	// TRIGGER = B+
-	// status_file(521,521, fIn, "BplusBplus.root","B^{+}B^{+}");
+	status_file(521,521, fIn, "BplusBplus.root","B^{+}B^{+}");
 	status_file(521, -521, fIn, "BplusBminus.root", "B^{+}B^{-}");
 	/*
 	status_file(521, 511, fIn, "BplusBzero.root", "B^{+}B^{0}");
