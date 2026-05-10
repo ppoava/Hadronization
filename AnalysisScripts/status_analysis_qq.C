@@ -122,14 +122,14 @@ void traceAncestry(int idx,
 }
 */
 
-void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const char *fOut, const char *title)
+void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const char *fOut, const char *outputDir, const char *title)
 {
 	// This functions takes the trigger and associate id and creates a ROOT output file with the same filename
 	// containing the histograms produced in this macro
 
 	// Define the TChain
 	TChain *ch1 = new TChain("tree");
-	TFile *output = new TFile(fOut, "RECREATE");
+	TFile *output = new TFile(Form("%s/%s", outputDir, fOut), "RECREATE");
 
 	// OPTION 1: SINGLE FILE
 	ch1->Add(fIn);
@@ -967,26 +967,30 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	cout << "File: " << fOut << " has been created!" << endl;
 }
 
-int status_analysis_qq(const char *fIn)
+int status_analysis_qq(const char *fIn, const char *outputDir)
 {
 
 	// Trigger and associate can be chosen as desired, correlations will be created and put into the output ROOT file as named in the function argument
 
 	// TRIGGER = D+
 
-	status_file(411, 411, fIn, "DplusDplus.root","D^{+}D^{+}");
-	status_file(411, -411, fIn, "DplusDminus.root", "D^{+}D^{-}");
+	status_file(411, 411, fIn, "DplusDplus.root", outputDir, "D^{+}D^{+}");
+	status_file(411, -411, fIn, "DplusDminus.root", outputDir, "D^{+}D^{-}");
 	/*
 	status_file(411, 421, fIn, "DplusDzero.root", "D^{+}D^{0}");
 	status_file(411, -421, fIn, "DplusDzerobar.root", "D^{+}#barD^{0}");
 	status_file(411, -431, fIn, "DplusDsminus.root", "D^{+}D_{s}^{-}");
 	status_file(411, 431, fIn, "DplusDsplus.root", "D^{+}D_{s}^{+}");
-	status_file(411, 4122, fIn, "DplusLambdacplus.root", "D^{+}#Lambda_{c}^{+}");
-	status_file(411, -4122, fIn, "DplusLambdacplusbar.root", "D^{+}#bar#Lambda_{c}^{+}");
+	*/
+	status_file(411, 4122, fIn, "DplusLambdacplus.root", outputDir, "D^{+}#Lambda_{c}^{+}");
+	status_file(411, -4122, fIn, "DplusLambdacplusbar.root", outputDir, "D^{+}#bar#Lambda_{c}^{+}");
+	/*
 	status_file(411, 4222, fIn, "DplusSigmacplusplus.root", "D^{+}#Sigma_{c}^{++}");
 	status_file(411, -4222, fIn, "DplusSigmacplusplusbar.root", "D^{+}#bar#Sigma_{c}^{++}");
-	status_file(411, 4212, fIn, "DplusSigmacplus.root", "D^{+}#Sigma_{c}^{+}");
-	status_file(411, -4212, fIn, "DplusSigmacplusbar.root", "D^{+}#bar#Sigma_{c}^{+}");
+	*/
+	status_file(411, 4212, fIn, "DplusSigmacplus.root", outputDir, "D^{+}#Sigma_{c}^{+}");
+	status_file(411, -4212, fIn, "DplusSigmacplusbar.root", outputDir, "D^{+}#bar#Sigma_{c}^{+}");
+	/*
 	status_file(411, 4112, fIn, "DplusSigmaczero.root", "D^{+}#Sigma_{c}^{0}");
 	status_file(411, -4112, fIn, "DplusSigmaczerobar.root", "D^{+}#bar#Sigma_{c}^{0}");
 	*/
@@ -1042,8 +1046,8 @@ int status_analysis_qq(const char *fIn)
 	*/
 
 	// TRIGGER = B+
-	status_file(521,521, fIn, "BplusBplus.root","B^{+}B^{+}");
-	status_file(521, -521, fIn, "BplusBminus.root", "B^{+}B^{-}");
+	status_file(521,521, fIn, "BplusBplus.root", outputDir, "B^{+}B^{+}");
+	status_file(521, -521, fIn, "BplusBminus.root", outputDir, "B^{+}B^{-}");
 	/*
 	status_file(521, 511, fIn, "BplusBzero.root", "B^{+}B^{0}");
 	status_file(521, -511, fIn, "BplusBzerobar.root", "B^{+}#barB^{0}");
@@ -1051,12 +1055,16 @@ int status_analysis_qq(const char *fIn)
 	status_file(521, -531, fIn, "BplusBszerobar.root", "B^{+}#barB_{s}^{0}");
 	status_file(521, 541, fIn, "BplusBcplus.root", "B^{+}B_{c}^{+}");
 	status_file(521, -541, fIn, "BplusBcminus.root", "B^{+}B_{c}^{-}");
-	status_file(521, 5122, fIn, "BplusLb.root", "B^{+}#Lambda_{b}^{0}");
-	status_file(521, -5122, fIn, "BplusLbbar.root", "B^{+}#bar#Lambda_{b}^{0}");
+	*/
+	status_file(521, 5122, fIn, "BplusLb.root", outputDir, "B^{+}#Lambda_{b}^{0}");
+	status_file(521, -5122, fIn, "BplusLbbar.root", outputDir, "B^{+}#bar#Lambda_{b}^{0}");
+	/*
 	status_file(521, 5112, fIn, "BplusSigmabminus.root", "B^{+}#Sigma_{b}^{-}");
 	status_file(521, -5112, fIn, "BplusSigmabminusbar.root", "B^{+}#bar#Sigma_{b}^{-}");
-	status_file(521, 5212, fIn, "BplusSigmabzero.root", "B^{+}#Sigma_{b}^{0}");
-	status_file(521, -5212, fIn, "BplusSigmabzerobar.root", "B^{+}#bar#Sigma_{b}^{0}");
+	*/
+	status_file(521, 5212, fIn, "BplusSigmabzero.root", outputDir, "B^{+}#Sigma_{b}^{0}");
+	status_file(521, -5212, fIn, "BplusSigmabzerobar.root", outputDir, "B^{+}#bar#Sigma_{b}^{0}");
+	/*
 	status_file(521, 5222, fIn, "BplusSigmabplus.root", "B^{+}#Sigma_{b}^{+}");
 	status_file(521, -5222, fIn, "BplusSigmabplusbar.root", "B^{+}#bar#Sigma_{b}^{+}");
 	*/
