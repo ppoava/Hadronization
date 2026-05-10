@@ -17,7 +17,7 @@
 
 void do_draw_2D_correlations(const char *title, const char *fileNameOS, const char *fileNameSS) {
 
-    const char *base_path = "/Users/pv280546/alice/Hadronization/";
+    const char *base_path = "/Users/pv280546/alice/Hadronization/AnalyzedData/complete_root_10_05_2026/";
     const char *pathOS = Form("%s%s", base_path, fileNameOS);
     const char *pathSS = Form("%s%s", base_path, fileNameSS);
 
@@ -113,6 +113,9 @@ void do_draw_2D_correlations(const char *title, const char *fileNameOS, const ch
     gPad->SetPhi(50);
     hSub_M00_20->Draw("SURF1 FB");
 
+    c1->SaveAs("2D_correlations.pdf");
+    cMult->SaveAs("2D_correlations.pdf");
+
     return;
 }
 
@@ -123,11 +126,15 @@ void do_draw_2D_correlations(const char *title, const char *fileNameOS, const ch
 
 int qq_draw_2D_correlations() {
 
-
-
-
-    do_draw_2D_correlations("D+D-", "DplusDminus.root", "DplusDplus.root");
-    do_draw_2D_correlations("B+B-", "BplusBminus.root", "BplusBplus.root");
+    TCanvas *cdummy = new TCanvas();
+    cdummy->SaveAs("2D_correlations.pdf(");
+    do_draw_2D_correlations("D^{+}D^{-}", "DplusDminus.root", "DplusDplus.root");
+    do_draw_2D_correlations("D^{+}#bar#Lambda_{c}^{+}", "DplusLambdacplusbar.root", "DplusLambdacplus.root");
+    do_draw_2D_correlations("D^{+}#bar#Sigma_{c}^{+}", "DplusSigmacplusbar.root", "DplusSigmacplus.root");
+    do_draw_2D_correlations("B^{+}B^{-}", "BplusBminus.root", "BplusBplus.root");
+    do_draw_2D_correlations("B^{+}#Lambda_{b}^{0}", "BplusLb.root", "BplusLbbar.root");
+    do_draw_2D_correlations("B^{+}#Sigma_{b}^{0}", "BplusSigmabzero.root", "BplusSigmabzerobar.root");
+    cdummy->SaveAs("2D_correlations.pdf)");
 
     return 0;
 }
