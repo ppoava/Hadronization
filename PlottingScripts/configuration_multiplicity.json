@@ -5,7 +5,7 @@
   "cc_bar_complete_root_dir_sub_samples":"/Users/pv280546/alice/GitHub/SUBSAMPLES_350/combined_root_subSamples_cc_350",
   "nSubSamples": 10,
 
-  "base_dir": "/Users/pv280546/alice/GitHub/RootFiles_350",
+  "base_dir": "/Users/pv280546/alice/Hadronization/RootFiles/",
   "PYTHIA_TUNES": [
       "MONASH",
       "JUNCTIONS"
