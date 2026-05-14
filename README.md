@@ -1,14 +1,14 @@
 # Hadronization
 
-This repository is the working code base for heavy-flavour hadronization studies in proton-proton collisions with PYTHIA 8 and ROOT. We now use it as a complete local and Stoomboot workflow: it can generate MONASH and JUNCTIONS samples, reduce the raw ROOT trees into subsampled analysis histograms, and make the present comparison plots for multiplicity, pT spectra, selected-particle yields, and baryon-to-meson ratios.
+This repository is the working code base for heavy-flavour hadronization studies in proton-proton collisions with PYTHIA 8 and ROOT. We now use it as a complete local and Stoomboot workflow: it can generate MONASH, JUNCTIONS, and CLOSEPACKING samples, reduce the raw ROOT trees into subsampled analysis histograms, and make the present comparison plots for multiplicity, pT spectra, selected-particle yields, and baryon-to-meson ratios.
 
 The present chain is centered on a unified heavy-flavour production. In that production charm and beauty are allowed in the same PYTHIA run, and the output tree keeps charm hadrons, beauty hadrons, Bc hadrons, pions, event multiplicity, process code, and per-event heavy-flavour counters. The older split production, where bbbar and ccbar are generated and analyzed independently, is still kept because it is needed for reference samples and for comparisons to earlier productions. In practice, we now make new combined HF samples with `SimulationScripts/heavyflavourcorrelations_status.cpp`, analyze them with `AnalysisScripts/hf_mult_pt_analysis_multi.C`, and compare them to the independent samples through the plotting macros under `PlottingScripts`.
 
 ## Repository Map
 
-`SimulationScripts` contains the PYTHIA producers, settings cards, and Makefile. The important executable for current work is `heavyflavourcorrelations_status`, while `bbbarcorrelations_status`, `bbbarcorrelations_status_JUNCTIONS`, `ccbarcorrelations_status`, and `ccbarcorrelations_status_JUNCTIONS` are the split legacy producers. The `pythiasettings_Hard_Low_ccbb_MONASH.cmnd` and `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd` cards are the current combined-HF cards. The split cards remain available as `pythiasettings_Hard_Low_bb*.cmnd` and `pythiasettings_Hard_Low_cc*.cmnd`.
+`SimulationScripts` contains the PYTHIA producers, settings cards, and Makefile. The important executable for current work is `heavyflavourcorrelations_status`, while `bbbarcorrelations_status`, `bbbarcorrelations_status_JUNCTIONS`, `ccbarcorrelations_status`, and `ccbarcorrelations_status_JUNCTIONS` are the split legacy producers. The `pythiasettings_Hard_Low_ccbb_MONASH.cmnd`, `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd`, and `pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd` cards are the current combined-HF cards. The split cards remain available as `pythiasettings_Hard_Low_bb*.cmnd` and `pythiasettings_Hard_Low_cc*.cmnd`.
 
-`AnalysisScripts` contains the ROOT reduction macros and shell wrappers. The current macro `hf_mult_pt_analysis_multi.C` reads `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`, splits the events into subsamples, and writes charm and beauty histogram files into `AnalyzedData/<tag>/Charm` and `AnalyzedData/<tag>/Beauty`. The split macros `bb_mult_pt_analysis_multi.C` and `cc_mult_pt_analysis_multi.C` do the same for the independent old samples.
+`AnalysisScripts` contains the ROOT reduction macros and shell wrappers. The current macro `hf_mult_pt_analysis_multi.C` reads `RootFiles/HF/MONASH`, `RootFiles/HF/JUNCTIONS`, and `RootFiles/HF/CLOSEPACKING`, splits the events into subsamples, and writes charm and beauty histogram files into `AnalyzedData/<tag>/Charm` and `AnalyzedData/<tag>/Beauty`. The split macros `bb_mult_pt_analysis_multi.C` and `cc_mult_pt_analysis_multi.C` do the same for the independent old samples.
 
 `PlottingScripts/PtMultiplicity` contains the current physics plotting macros for pT spectra, multiplicity-dependent spectra, baryon-to-meson ratios, species-resolved spectra, single-particle spectra, and minimum-bias spectra. These macros read the reduced `AnalyzedData` files rather than the raw simulation trees. They prefer the `hf_` file naming scheme and fall back to `bbbar_` or `ccbar_` when an older split sample is being plotted.
 
@@ -61,15 +61,16 @@ For a local combined-HF test, you run the unified producer with a tune mode, an 
 ```bash
 ./SimulationScripts/heavyflavourcorrelations_status monash RootFiles/HF/MONASH/hf_MONASH_test.root 123 456
 ./SimulationScripts/heavyflavourcorrelations_status junctions RootFiles/HF/JUNCTIONS/hf_JUNCTIONS_test.root 123 456
+./SimulationScripts/heavyflavourcorrelations_status closepacking RootFiles/HF/CLOSEPACKING/hf_CLOSEPACKING_test.root 123 456
 ```
 
 The unified output tree is named `tree`. It writes `ID`, `HFCLASS`, `PT`, `ETA`, `Y`, `PHI`, `CHARGE`, `STATUS`, `MOTHER`, `MOTHERID`, `MULTIPLICITY`, `PROCESSCODE`, `NCHARM`, `NBEAUTY`, and `NBC`. The `HFCLASS` convention is simple: `5` means beauty, `4` means charm, `45` means Bc, and `0` means pion.
 
-The current combined-HF cards use proton-proton collisions at 14 TeV, `Tune:pp = 14`, `PhaseSpace:pTHatMin = 1.`, and `ParticleDecays:tau0Max = 0.01`. The MONASH card enables `HardQCD:hardccbar` and `HardQCD:hardbbbar`. The JUNCTIONS card uses the same hard processes and adds the QCD-based color-reconnection, junction, fragmentation, and beam-remnant settings.
+The current combined-HF cards use proton-proton collisions at 14 TeV, `Tune:pp = 14`, `PhaseSpace:pTHatMin = 1.`, and `ParticleDecays:tau0Max = 0.01`. The MONASH card enables `HardQCD:hardccbar` and `HardQCD:hardbbbar`. The JUNCTIONS card uses the same hard processes and adds the QCD-based color-reconnection, junction, fragmentation, and beam-remnant settings. The CLOSEPACKING card uses the same combined-HF output contract and adds the Close Packing T1 parameters.
 
 ## Analysis Workflow
 
-The current analysis wrapper reads all raw combined-HF files for both tunes and writes reduced subsample outputs. The default is ten subsamples and charge-conjugate-combined species histograms.
+The current analysis wrapper reads all raw combined-HF files for the current tunes and writes reduced subsample outputs. The default is ten subsamples and charge-conjugate-combined species histograms.
 
 ```bash
 ./AnalysisScripts/run_hf_analysis.sh 27-03-2026
@@ -86,8 +87,10 @@ The output layout is:
 ```text
 AnalyzedData/<tag>/Beauty/hf_MONASH_sub0.root
 AnalyzedData/<tag>/Beauty/hf_JUNCTIONS_sub0.root
+AnalyzedData/<tag>/Beauty/hf_CLOSEPACKING_sub0.root
 AnalyzedData/<tag>/Charm/hf_MONASH_sub0.root
 AnalyzedData/<tag>/Charm/hf_JUNCTIONS_sub0.root
+AnalyzedData/<tag>/Charm/hf_CLOSEPACKING_sub0.root
 ```
 
 Each output file contains event-count histograms, tagged-event-count histograms, multiplicity histograms, tagged multiplicity histograms, PDG-versus-multiplicity histograms, aggregate charm or beauty meson and baryon histograms, species-resolved pT-versus-multiplicity histograms, and pion pT histograms. The macros enable `Sumw2` so the plotting layer can propagate statistical errors.
@@ -127,7 +130,7 @@ The Condor entry point is `runCondorJob.sh`. It supports both the current combin
 condor_submit submitCondor_hf_10M.sub
 ```
 
-`submitCondor_hf_10M.sub` submits ten one-million-event jobs per tune. `submitCondor_hf_90M.sub` submits ninety one-million-event jobs per tune. `submitCondor_10M.sub` submits the old split bbbar and ccbar production for MONASH and JUNCTIONS. The wrapper names output files with the Condor cluster and job id, writes the ROOT file inside the job work directory, and moves the completed file to `RootFiles/...` only after a successful run.
+`submitCondor_hf_10M.sub` submits ten one-million-event jobs per MONASH/JUNCTIONS tune. `submitCondor_hf_90M.sub` submits ninety one-million-event jobs per MONASH/JUNCTIONS tune. `submitCondor_hf_CLOSEPACKING_100M.sub` submits one hundred one-million-event jobs for the Close Packing tune. `submitCondor_10M.sub` submits the old split bbbar and ccbar production for MONASH and JUNCTIONS. The wrapper names output files with the Condor cluster and job id, writes the ROOT file inside the job work directory, and moves the completed file to `RootFiles/...` only after a successful run.
 
 ## Data and Versioning
 

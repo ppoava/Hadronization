@@ -29,9 +29,10 @@ The current producer is `heavyflavourcorrelations_status.cpp`. It is the program
 ```bash
 ./SimulationScripts/heavyflavourcorrelations_status monash RootFiles/HF/MONASH/hf_MONASH_test.root 123 456
 ./SimulationScripts/heavyflavourcorrelations_status junctions RootFiles/HF/JUNCTIONS/hf_JUNCTIONS_test.root 123 456
+./SimulationScripts/heavyflavourcorrelations_status closepacking RootFiles/HF/CLOSEPACKING/hf_CLOSEPACKING_test.root 123 456
 ```
 
-The mode chooses between `pythiasettings_Hard_Low_ccbb_MONASH.cmnd` and `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd`. Both cards use proton-proton collisions at 14 TeV, `Tune:pp = 14`, `HardQCD:hardccbar = on`, `HardQCD:hardbbbar = on`, `PhaseSpace:pTHatMin = 1.`, and a weak-decay suppression through `ParticleDecays:limitTau0 = on` with `ParticleDecays:tau0Max = 0.01`. The JUNCTIONS card adds the string, beam-remnant, and color-reconnection parameters used for the junction comparison, including `ColourReconnection:allowJunctions = on`.
+The mode chooses between `pythiasettings_Hard_Low_ccbb_MONASH.cmnd`, `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd`, and `pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd`. All three cards use proton-proton collisions at 14 TeV, `Tune:pp = 14`, `HardQCD:hardccbar = on`, `HardQCD:hardbbbar = on`, `PhaseSpace:pTHatMin = 1.`, and a weak-decay suppression through `ParticleDecays:limitTau0 = on` with `ParticleDecays:tau0Max = 0.01`. The JUNCTIONS card adds the string, beam-remnant, and color-reconnection parameters used for the junction comparison, including `ColourReconnection:allowJunctions = on`. The CLOSEPACKING card keeps the same combined-HF output contract and adds the Close Packing T1 settings.
 
 The unified output is a ROOT file opened in `CREATE` mode, so an existing file with the same name is not silently overwritten by the producer. The tree is named `tree`. It contains vectors called `ID`, `HFCLASS`, `PT`, `ETA`, `Y`, `PHI`, `CHARGE`, `STATUS`, `MOTHER`, and `MOTHERID`, and event-level branches called `MULTIPLICITY`, `PROCESSCODE`, `NCHARM`, `NBEAUTY`, and `NBC`. The class code is `5` for beauty, `4` for charm, `45` for Bc, and `0` for pions. The multiplicity is the event charged-primary multiplicity used by the downstream analysis.
 
@@ -56,7 +57,7 @@ The split tree is also named `tree`. It contains `ID`, `PT`, `ETA`, `Y`, `PHI`, 
 
 ## Settings Cards
 
-The combined MONASH and JUNCTIONS cards stabilize the selected weakly decaying charm and beauty hadrons using positive PDG ids in the present cards. The split cards still contain both positive and negative `mayDecay` lines in places because they preserve the older production configuration. The current combined-HF cards make D+, D0, Ds+, Lambdac+, Xic0, Xic+, Omegac0, B+, B0, Bs, Bc+, Lambdab, Sigmab-, Sigmab0, and Sigmab+ stable enough for the selected-particle studies. Pions are stored by the C++ selection code rather than by a special decay rule.
+The combined MONASH, JUNCTIONS, and CLOSEPACKING cards stabilize the selected weakly decaying charm and beauty hadrons using positive PDG ids in the present cards. The split cards still contain both positive and negative `mayDecay` lines in places because they preserve the older production configuration. The current combined-HF cards make D+, D0, Ds+, Lambdac+, Xic0, Xic+, Omegac0, B+, B0, Bs, Bc+, Lambdab, Sigmab-, Sigmab0, and Sigmab+ stable enough for the selected-particle studies. Pions are stored by the C++ selection code rather than by a special decay rule.
 
 The older `pythiasettings_Hard_Low_qq.cmnd` and `pythiasettings_Hard_Low_qq_JUNCTIONS.cmnd` cards remain in the directory with `qqbarcorrelations_status.cpp`. They belong to the earlier broader hard-QCD studies and are not the current recommended path for the combined-HF analysis.
 
@@ -84,10 +85,10 @@ For the older split workflow, they call:
 runCondorJob.sh CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB
 ```
 
-The current 10M combined-HF submit file writes to `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`. The 90M submit file uses the same executable and layout but queues ninety one-million-event jobs per tune. The split 10M submit file writes to `RootFiles/bbbar/MONASH`, `RootFiles/bbbar/JUNCTIONS`, `RootFiles/ccbar/MONASH`, and `RootFiles/ccbar/JUNCTIONS`.
+The current 10M combined-HF submit file writes to `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`. The 90M submit file uses the same executable and layout but queues ninety one-million-event jobs per tune. The Close Packing 100M submit file writes to `RootFiles/HF/CLOSEPACKING`. The split 10M submit file writes to `RootFiles/bbbar/MONASH`, `RootFiles/bbbar/JUNCTIONS`, `RootFiles/ccbar/MONASH`, and `RootFiles/ccbar/JUNCTIONS`.
 
 ## Output Contract
 
-Raw simulation ROOT files belong under `RootFiles`, grouped by workflow and tune. The analysis layer expects the combined files under `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`, while the split analysis expects the older channel directories. The analysis layer then writes compact reduced ROOT files under `AnalyzedData/<tag>/Beauty` and `AnalyzedData/<tag>/Charm`.
+Raw simulation ROOT files belong under `RootFiles`, grouped by workflow and tune. The analysis layer expects the combined files under `RootFiles/HF/MONASH`, `RootFiles/HF/JUNCTIONS`, and `RootFiles/HF/CLOSEPACKING`, while the split analysis expects the older channel directories. The analysis layer then writes compact reduced ROOT files under `AnalyzedData/<tag>/Beauty` and `AnalyzedData/<tag>/Charm`.
 
 This separation matters for synchronization. The raw files are large and machine-local by design. The source files, settings cards, scripts, submit descriptions, and reduced analysis files can be synchronized normally, but raw `.root` production files under `RootFiles` should be excluded unless a data-transfer task explicitly asks for them.

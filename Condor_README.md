@@ -21,7 +21,7 @@ The helper also creates the standard output, work, and log directories under the
 
 ## Unified Heavy-Flavour Submission
 
-The current production path is the unified HF submission. It runs `SimulationScripts/heavyflavourcorrelations_status` and writes raw ROOT files under `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`.
+The current production path is the unified HF submission. It runs `SimulationScripts/heavyflavourcorrelations_status` and writes raw ROOT files under `RootFiles/HF/MONASH`, `RootFiles/HF/JUNCTIONS`, and `RootFiles/HF/CLOSEPACKING`.
 
 For a ten-million-event production per tune, submit:
 
@@ -40,6 +40,15 @@ condor_submit submitCondor_hf_90M.sub
 ```
 
 The 90M submit file queues ninety one-million-event jobs for MONASH and ninety one-million-event jobs for JUNCTIONS. It uses `medium` for MONASH and `long` for JUNCTIONS in the current file.
+
+For a 100M Close Packing production, submit:
+
+```bash
+./update_submit_paths.sh
+condor_submit submitCondor_hf_CLOSEPACKING_100M.sub
+```
+
+The Close Packing submit file queues one hundred one-million-event jobs for `CLOSEPACKING` and uses the `long` category.
 
 The file `submitCondor_hf_90M_resubmit_4181781_held38.sub` is a preserved resubmission file for held JUNCTIONS jobs from cluster `4181781`. It is not the generic production template; it is useful only when one wants to reproduce or inspect that specific held-job recovery.
 
@@ -80,7 +89,7 @@ RootFiles/bbbar/MONASH/bbbar_MONASH_cluster<CLUSTERID>_job<JOBID>.root
 
 `runCondorJob.sh` accepts both the combined and split argument layouts. It prefers the directory where the wrapper itself lives as the repository base, then tries `base_path.txt`, then `HADRONIZATION_BASE`, and finally the fixed fallback `/data/alice/ipardoza/Hadronization`. After the base is resolved, it exports `HADRONIZATION_BASE`, sources `setupEnv.sh`, and re-anchors all paths because external environment scripts may reuse generic variable names.
 
-For combined HF jobs, the wrapper selects `heavyflavourcorrelations_status` and chooses `pythiasettings_Hard_Low_ccbb_MONASH.cmnd` or `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd` from the tune. For split jobs, it selects one of the four split executables and one of the split settings cards from the channel and tune. It copies the card into the work directory, replaces `Main:numberOfEvents` when that line exists, and appends it when it does not.
+For combined HF jobs, the wrapper selects `heavyflavourcorrelations_status` and chooses `pythiasettings_Hard_Low_ccbb_MONASH.cmnd`, `pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd`, or `pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd` from the tune. For split jobs, it selects one of the four split executables and one of the split settings cards from the channel and tune. It copies the card into the work directory, replaces `Main:numberOfEvents` when that line exists, and appends it when it does not.
 
 The wrapper uses deterministic seed modifiers derived from the job id. It writes the ROOT output in the work directory first. Only after the executable finishes and the expected output file exists does the wrapper move the file into the final `RootFiles` directory. Therefore a running job may have no file in `RootFiles` yet even though its work directory already contains partial job state.
 
@@ -91,10 +100,13 @@ The combined workflow uses:
 ```text
 Jobs/HF/MONASH/cluster_<CLUSTERID>/job_<JOBID>
 Jobs/HF/JUNCTIONS/cluster_<CLUSTERID>/job_<JOBID>
+Jobs/HF/CLOSEPACKING/cluster_<CLUSTERID>/job_<JOBID>
 logs/HF/MONASH
 logs/HF/JUNCTIONS
+logs/HF/CLOSEPACKING
 RootFiles/HF/MONASH
 RootFiles/HF/JUNCTIONS
+RootFiles/HF/CLOSEPACKING
 ```
 
 The split workflow uses:

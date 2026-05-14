@@ -2,14 +2,14 @@
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 {monash|junctions}"
+  echo "Usage: $0 {monash|junctions|closepacking}"
   exit 1
 fi
 
 MODE="$1"
 
-if [ "$MODE" != "monash" ] && [ "$MODE" != "junctions" ]; then
-  echo "Error: mode must be either 'monash' or 'junctions'"
+if [ "$MODE" != "monash" ] && [ "$MODE" != "junctions" ] && [ "$MODE" != "closepacking" ]; then
+  echo "Error: mode must be one of 'monash', 'junctions', or 'closepacking'"
   exit 1
 fi
 

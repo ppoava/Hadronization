@@ -71,6 +71,7 @@ source "${PROJECT_BASE}/setupEnv.sh"
 
 MONASH_DIR="${PROJECT_BASE}/RootFiles/HF/MONASH"
 JUNCTIONS_DIR="${PROJECT_BASE}/RootFiles/HF/JUNCTIONS"
+CLOSEPACKING_DIR="${PROJECT_BASE}/RootFiles/HF/CLOSEPACKING"
 
 if [ ! -d "${MONASH_DIR}" ]; then
   echo "ERROR: Expected combined HF input directory not found: ${MONASH_DIR}"
@@ -82,8 +83,14 @@ if [ ! -d "${JUNCTIONS_DIR}" ]; then
   exit 1
 fi
 
+if [ ! -d "${CLOSEPACKING_DIR}" ]; then
+  echo "ERROR: Expected combined HF input directory not found: ${CLOSEPACKING_DIR}"
+  exit 1
+fi
+
 echo "Running combined HF analysis from:"
 echo "  ${MONASH_DIR}"
 echo "  ${JUNCTIONS_DIR}"
+echo "  ${CLOSEPACKING_DIR}"
 
 root -l -b -q "AnalysisScripts/hf_mult_pt_analysis_multi.C+(${NSUB}, \"${OUTPUT_TAG}\", \"${CHARGE_MODE}\")"

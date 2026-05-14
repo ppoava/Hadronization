@@ -5,12 +5,15 @@
 // Reads all ROOT files found in:
 //   RootFiles/HF/MONASH/*.root
 //   RootFiles/HF/JUNCTIONS/*.root
+//   RootFiles/HF/CLOSEPACKING/*.root
 //
 // and writes:
 //   AnalyzedData/<tag>/Beauty/hf_MONASH_sub0.root, ...
 //   AnalyzedData/<tag>/Beauty/hf_JUNCTIONS_sub0.root, ...
+//   AnalyzedData/<tag>/Beauty/hf_CLOSEPACKING_sub0.root, ...
 //   AnalyzedData/<tag>/Charm/hf_MONASH_sub0.root, ...
 //   AnalyzedData/<tag>/Charm/hf_JUNCTIONS_sub0.root, ...
+//   AnalyzedData/<tag>/Charm/hf_CLOSEPACKING_sub0.root, ...
 //
 // Usage:
 //   root -l -b -q 'AnalysisScripts/hf_mult_pt_analysis_multi.C+(10, "27-03-2026", "combined")'
@@ -1130,6 +1133,12 @@ void hf_mult_pt_analysis_multi(int nSubSamples = 10,
   AnalyzeHFTuneMulti((base + "/RootFiles/HF/JUNCTIONS").Data(),
                      (beautyDir + "/hf_JUNCTIONS_sub").Data(),
                      (charmDir  + "/hf_JUNCTIONS_sub").Data(),
+                     nSubSamples,
+                     writeSeparateChargeHists);
+
+  AnalyzeHFTuneMulti((base + "/RootFiles/HF/CLOSEPACKING").Data(),
+                     (beautyDir + "/hf_CLOSEPACKING_sub").Data(),
+                     (charmDir  + "/hf_CLOSEPACKING_sub").Data(),
                      nSubSamples,
                      writeSeparateChargeHists);
 }
