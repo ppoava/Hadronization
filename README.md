@@ -28,7 +28,7 @@ The top level of `PlottingScripts` also keeps the older angular-correlation and 
 
 ## Environment
 
-The repository expects ROOT and PYTHIA 8 from the ALICE CVMFS environment. We now use `setupEnv.sh` as the shared entry point. It resolves `HADRONIZATION_BASE` from the environment first, then from `base_path.txt`, and otherwise from the repository location. It then loads `VO_ALICE@ROOT::v6-30-01-alice5-2` and `VO_ALICE@pythia::v8311-3`.
+The repository expects ROOT and PYTHIA 8 from the ALICE CVMFS environment. We now use `setupEnv.sh` as the shared entry point. It resolves `HADRONIZATION_BASE` from the environment first, then from `base_path.txt`, and otherwise from the repository location. It then loads `VO_ALICE@ROOT::v6-30-01-alice5-2` and `VO_ALICE@pythia::v8315-alice1-23`.
 
 ```bash
 source ./setupEnv.sh

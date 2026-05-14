@@ -17,7 +17,7 @@ Beams:idB = 2212
 Tune:pp = 14
 
 ! Close Packing T1 tune parameters
-StringZ:useOldaExtra = off
+StringZ:useOldAExtra = off
 StringPT:sigma = 0.335
 StringZ:aLund = 0.68
 StringZ:bLund = 0.98

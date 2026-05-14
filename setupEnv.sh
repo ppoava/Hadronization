@@ -25,7 +25,7 @@ if [ -f /cvmfs/alice.cern.ch/etc/login.sh ]; then
 
   # 2. Load ROOT and PYTHIA into THIS shell (no subshells)
   eval "$(alienv printenv VO_ALICE@ROOT::v6-30-01-alice5-2)"
-  eval "$(alienv printenv VO_ALICE@pythia::v8311-3)"
+  eval "$(alienv printenv VO_ALICE@pythia::v8315-alice1-23)"
 else
   echo "WARNING: CVMFS not available — ROOT and PYTHIA not loaded via alienv."
   echo "         Run this script on the Nikhef cluster to get the full environment."
