@@ -574,9 +574,10 @@ TString NormalizeTuneTag(const char* tuneTag)
 
     if (tune == "MONASH") return "MONASH";
     if (tune == "JUNCTIONS" || tune == "JUN") return "JUNCTIONS";
+    if (tune == "CLOSEPACKING" || tune == "CLOSE_PACKING" || tune == "CP") return "CLOSEPACKING";
 
     std::cout << "Unknown tune '" << tuneTag
-              << "'. Expected MONASH or JUNCTIONS.\n";
+              << "'. Expected MONASH, JUNCTIONS, or CLOSEPACKING.\n";
     return "";
 }
 
@@ -588,6 +589,7 @@ TString NormalizeTuneTagQuiet(const char* tuneTag)
 
     if (tune == "MONASH") return "MONASH";
     if (tune == "JUNCTIONS" || tune == "JUN") return "JUNCTIONS";
+    if (tune == "CLOSEPACKING" || tune == "CLOSE_PACKING" || tune == "CP") return "CLOSEPACKING";
 
     return "";
 }
@@ -1648,7 +1650,7 @@ void Plot_HF_SpeciesResolvedPtSpectra_vsMultiplicity_subsamples(const char* date
     }
 
     std::cout << "Unknown selector '" << selectorTag
-              << "'. Expected Charm, Beauty, MONASH, or JUNCTIONS.\n";
+              << "'. Expected Charm, Beauty, MONASH, JUNCTIONS, or CLOSEPACKING.\n";
 }
 
 void runHFSpeciesResolvedSpectra(const char* dateTag = "",

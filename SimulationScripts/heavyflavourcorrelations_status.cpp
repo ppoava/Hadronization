@@ -3,7 +3,7 @@
 // Purpose:
 // - Generate pp events with PYTHIA8 in a single run
 // - Produce both hard charm and hard beauty events in the same generation
-// - Load either MONASH or JUNCTIONS settings from a mode argument
+// - Load MONASH, JUNCTIONS, or CLOSEPACKING settings from a mode argument
 // - Save final-state charm hadrons, beauty hadrons, bc hadrons, and pions into a ROOT TTree
 // - Compute charged multiplicity Nch from prompt charged primaries (e, mu, pi, K, p)
 //
@@ -15,6 +15,7 @@
 // Run:
 //   ./heavyflavourcorrelations_status monash output.root 123 456
 //   ./heavyflavourcorrelations_status junctions output.root 123 456
+//   ./heavyflavourcorrelations_status closepacking output.root 123 456
 
 #include <iostream>
 #include <cmath>
@@ -104,6 +105,9 @@ string ResolveSettingsFile(const string& mode) {
   if (mode == "junctions") {
     return "pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd";
   }
+  if (mode == "closepacking") {
+    return "pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd";
+  }
   return "";
 }
 
@@ -116,7 +120,8 @@ int main(int argc, char** argv) {
               << "  ./heavyflavourcorrelations_status MODE output.root random_number1 random_number2\n"
               << "Where MODE is either:\n"
               << "  monash\n"
-              << "  junctions\n";
+              << "  junctions\n"
+              << "  closepacking\n";
     return 1;
   }
 
@@ -124,7 +129,8 @@ int main(int argc, char** argv) {
   const string settingsFile = ResolveSettingsFile(mode);
 
   if (settingsFile.empty()) {
-    std::cerr << "Error: invalid MODE = '" << mode << "'. Use 'monash' or 'junctions'.\n";
+    std::cerr << "Error: invalid MODE = '" << mode
+              << "'. Use 'monash', 'junctions', or 'closepacking'.\n";
     return 1;
   }
 

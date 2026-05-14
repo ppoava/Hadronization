@@ -660,8 +660,10 @@ void runHFAllHistogramSubsampleFile(const char* dateTag = "",
     bool wroteAnything = false;
     wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Charm", "MONASH", nSub, outFile);
     wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Charm", "JUNCTIONS", nSub, outFile);
+    wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Charm", "CLOSEPACKING", nSub, outFile);
     wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Beauty", "MONASH", nSub, outFile);
     wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Beauty", "JUNCTIONS", nSub, outFile);
+    wroteAnything |= BuildFlavorTuneContent(resolvedDate, "Beauty", "CLOSEPACKING", nSub, outFile);
 
     outFile->Write();
     outFile->Close();

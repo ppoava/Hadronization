@@ -32,22 +32,26 @@ update_file "${SCRIPT_DIR}/submitCondor_10M.sub"
 update_file "${SCRIPT_DIR}/submitCondor_hf_10M.sub"
 update_file "${SCRIPT_DIR}/submitCondor_hf_90M.sub"
 update_file "${SCRIPT_DIR}/submitCondor_hf_90M_resubmit_4181781_held38.sub"
+update_file "${SCRIPT_DIR}/submitCondor_hf_CLOSEPACKING_100M.sub"
 
 mkdir -p \
   "${BASE}/RootFiles/HF/MONASH" \
   "${BASE}/RootFiles/HF/JUNCTIONS" \
+  "${BASE}/RootFiles/HF/CLOSEPACKING" \
   "${BASE}/RootFiles/bbbar/MONASH" \
   "${BASE}/RootFiles/bbbar/JUNCTIONS" \
   "${BASE}/RootFiles/ccbar/MONASH" \
   "${BASE}/RootFiles/ccbar/JUNCTIONS" \
   "${BASE}/Jobs/HF/MONASH" \
   "${BASE}/Jobs/HF/JUNCTIONS" \
+  "${BASE}/Jobs/HF/CLOSEPACKING" \
   "${BASE}/Jobs/bbbar/MONASH" \
   "${BASE}/Jobs/bbbar/JUNCTIONS" \
   "${BASE}/Jobs/ccbar/MONASH" \
   "${BASE}/Jobs/ccbar/JUNCTIONS" \
   "${BASE}/logs/HF/MONASH" \
   "${BASE}/logs/HF/JUNCTIONS" \
+  "${BASE}/logs/HF/CLOSEPACKING" \
   "${BASE}/logs/bbbar/MONASH" \
   "${BASE}/logs/bbbar/JUNCTIONS" \
   "${BASE}/logs/ccbar/MONASH" \

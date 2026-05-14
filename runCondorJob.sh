@@ -10,7 +10,7 @@ set -euo pipefail
 #   CLUSTERID    : Condor cluster id (optional for manual runs)
 #   JOBID        : integer
 #   CHANNEL      : bbbar | ccbar
-#   TUNE         : MONASH | JUNCTIONS
+#   TUNE         : MONASH | JUNCTIONS | CLOSEPACKING (HF only)
 #   NEVT_PER_JOB : integer
 
 usage() {
@@ -18,7 +18,7 @@ usage() {
   echo "  $0 JOBID TUNE NEVT_PER_JOB"
   echo "  $0 CLUSTERID JOBID TUNE NEVT_PER_JOB"
   echo "    Unified heavy-flavour workflow"
-  echo "    TUNE = MONASH | JUNCTIONS"
+  echo "    TUNE = MONASH | JUNCTIONS | CLOSEPACKING"
   echo
   echo "  $0 JOBID CHANNEL TUNE NEVT_PER_JOB"
   echo "  $0 CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB"
@@ -174,8 +174,13 @@ case "${WORKFLOW}" in
         CFG_BASENAME="pythiasettings_Hard_Low_ccbb_JUNCTIONS.cmnd"
         MODE="junctions"
         ;;
+      CLOSEPACKING)
+        CFG_TEMPLATE="${CODEDIR}/pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd"
+        CFG_BASENAME="pythiasettings_Hard_Low_ccbb_CLOSEPACKING.cmnd"
+        MODE="closepacking"
+        ;;
       *)
-        echo "ERROR: Unsupported TUNE='${TUNE}'. Use MONASH or JUNCTIONS."
+        echo "ERROR: Unsupported TUNE='${TUNE}'. Use MONASH, JUNCTIONS, or CLOSEPACKING."
         exit 1
         ;;
     esac
