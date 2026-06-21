@@ -199,8 +199,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	Int_t nBinsSingle[4] = {100, 100, 100, 100};
 	Double_t vMinSingle[4] = {-PI / 2, -4, 0, 0};
 	Double_t vMaxSingle[4] = {3 * PI / 2, 4, 50, 400};
-	THnSparseD *hTrKinematics = new THnSparseD(Form("hTrKinematics for %s", title), Form("hTrKinematics (phi, eta, pt, mult) for %s", title), 4, nBinsSingle, vMinSingle, vMaxSingle);
-	THnSparseD *hAsKinematics = new THnSparseD (Form("hAsKinematics for %s", title), Form("hAsKinematics (phi, eta, pt, mult) for %s", title), 4, nBinsSingle, vMinSingle, vMaxSingle);
+	THnSparseD *hTrKinematics = new THnSparseD("hTrKinematics", "hTrKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
+	THnSparseD *hAsKinematics = new THnSparseD("hAsKinematics", "hAsKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
 	hTrKinematics->GetAxis(0)->SetTitle("#phi");
 	hTrKinematics->GetAxis(1)->SetTitle("#eta");
 	hTrKinematics->GetAxis(2)->SetTitle("p_{T} (GeV/c)");
@@ -214,7 +214,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	Int_t nBinsCorr[5] = {100, 100, 100, 100, 100};
 	Double_t vMinCorr[5] = {-PI / 2, -8, 0, 0, 0};
 	Double_t vMaxCorr[5] = {3 * PI / 2, 8, 50, 50, 400};
-	THnSparseD *hCorrelations = new THnSparseD(Form("hCorrelations for %s", title), Form("hCorrelations (dphi, deta, trpt, aspt, mult) for %s", title), 5, nBinsCorr, vMinCorr, vMaxCorr);
+	THnSparseD *hCorrelations = new THnSparseD("hCorrelations", "hCorrelations (dphi, deta, trpt, aspt, mult)", 5, nBinsCorr, vMinCorr, vMaxCorr);
 	hCorrelations->GetAxis(0)->SetTitle("#Delta#phi");
 	hCorrelations->GetAxis(1)->SetTitle("#Delta#eta");
 	hCorrelations->GetAxis(2)->SetTitle("p_{T}^{trig} (GeV/c)");
