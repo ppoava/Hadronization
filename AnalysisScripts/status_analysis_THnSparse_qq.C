@@ -218,8 +218,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	THnSparseD *hCorrelations = new THnSparseD("hCorrelations", "hCorrelations (dPhi, dEta, trEta, asEta trPt, asPt, mult)", 7, nBinsCorr, vMinCorr, vMaxCorr);
 	hCorrelations->GetAxis(0)->SetTitle("#Delta#phi");
 	hCorrelations->GetAxis(1)->SetTitle("#Delta#eta");
-	hCorrelations->GetAxis(1)->SetTitle("#eta^{trig}");
-	hCorrelations->GetAxis(1)->SetTitle("#eta^{assoc}");
+	hCorrelations->GetAxis(2)->SetTitle("#eta^{trig}");
+	hCorrelations->GetAxis(3)->SetTitle("#eta^{assoc}");
 	hCorrelations->GetAxis(4)->SetTitle("p_{T}^{trig} (GeV/c)");
 	hCorrelations->GetAxis(5)->SetTitle("p_{T}^{assoc} (GeV/c)");
 	hCorrelations->GetAxis(6)->SetTitle("Multiplicity");
