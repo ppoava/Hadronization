@@ -287,7 +287,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 						// if(!(91 <= aStatus && aStatus <= 99)) {continue; }
 
 						Double_t vValuesAs[4] = {aPhi, aEta, aPt, static_cast<Double_t>(MULTIPLICITY)};
-						Double_t vValuesCorr[5] = {DeltaPhi(pPhi, aPhi), (pEta-aEta), pPt, aPt, static_cast<Double_t>(MULTIPLICITY)};
+						Double_t vValuesCorr[7] = {DeltaPhi(pPhi, aPhi), (pEta-aEta), pEta, aEta, pPt, aPt, static_cast<Double_t>(MULTIPLICITY)};
 						hAsKinematics->Fill(vValuesAs);
 						hCorrelations->Fill(vValuesCorr);
 
