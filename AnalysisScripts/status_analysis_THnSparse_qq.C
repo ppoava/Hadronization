@@ -211,15 +211,18 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	hAsKinematics->GetAxis(3)->SetTitle("Multiplicity");
 
 	// Δφ Δη TrPt AsPt mult
-	Int_t nBinsCorr[5] = {100, 100, 100, 100, 100};
-	Double_t vMinCorr[5] = {-PI / 2, -8, 0, 0, 0};
-	Double_t vMaxCorr[5] = {3 * PI / 2, 8, 50, 50, 400};
-	THnSparseD *hCorrelations = new THnSparseD("hCorrelations", "hCorrelations (dphi, deta, trpt, aspt, mult)", 5, nBinsCorr, vMinCorr, vMaxCorr);
+	// TODO: to be complete, one should add also the TrEta and AsEta
+	Int_t nBinsCorr[7] = {100, 100, 100, 100, 100, 100, 100};
+	Double_t vMinCorr[7] = {-PI / 2, -8, -4, -4, 0, 0, 0};
+	Double_t vMaxCorr[7] = {3 * PI / 2, 8, 4, 4, 50, 50, 400};
+	THnSparseD *hCorrelations = new THnSparseD("hCorrelations", "hCorrelations (dPhi, dEta, trEta, asEta trPt, asPt, mult)", 7, nBinsCorr, vMinCorr, vMaxCorr);
 	hCorrelations->GetAxis(0)->SetTitle("#Delta#phi");
 	hCorrelations->GetAxis(1)->SetTitle("#Delta#eta");
-	hCorrelations->GetAxis(2)->SetTitle("p_{T}^{trig} (GeV/c)");
-	hCorrelations->GetAxis(3)->SetTitle("p_{T}^{assoc} (GeV/c)");
-	hCorrelations->GetAxis(4)->SetTitle("Multiplicity");
+	hCorrelations->GetAxis(1)->SetTitle("#eta^{trig}");
+	hCorrelations->GetAxis(1)->SetTitle("#eta^{assoc}");
+	hCorrelations->GetAxis(4)->SetTitle("p_{T}^{trig} (GeV/c)");
+	hCorrelations->GetAxis(5)->SetTitle("p_{T}^{assoc} (GeV/c)");
+	hCorrelations->GetAxis(6)->SetTitle("Multiplicity");
 
 	// Event loop - DPhi spectra
 	// Retrieve variables for trigger particle from event, naming is straight-forward
@@ -317,7 +320,7 @@ int status_analysis_THnSparse_qq(const char *fIn, const char *outputDir)
 
 	// TRIGGER = D+
 
-	// status_file(411, 411, fIn, "DplusDplus.root", outputDir, "D^{+}D^{+}");
+	status_file(411, 411, fIn, "DplusDplus.root", outputDir, "D^{+}D^{+}");
 	status_file(411, -411, fIn, "DplusDminus.root", outputDir, "D^{+}D^{-}");
 	status_file(411, 4122, fIn, "DplusLambdacplus.root", outputDir, "D^{+}#Lambda_{c}^{+}");
 	status_file(411, -4122, fIn, "DplusLambdacplusbar.root", outputDir, "D^{+}#bar#Lambda_{c}^{+}");
