@@ -4,6 +4,7 @@
   "bb_bar_complete_root_dir_sub_samples":"/Users/pv280546/alice/GitHub/SUBSAMPLES_350/combined_root_subSamples_bb_350",
   "cc_bar_complete_root_dir_sub_samples":"/Users/pv280546/alice/GitHub/SUBSAMPLES_350/combined_root_subSamples_cc_350",
   "nSubSamples": 10,
+  "draw_correlation_plots": true,
 
   "base_dir": "/Users/pv280546/alice/Hadronization/AnalyzedData",
   "PYTHIA_TUNES": [
