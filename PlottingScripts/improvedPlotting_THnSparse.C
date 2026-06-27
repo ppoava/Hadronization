@@ -157,6 +157,7 @@ struct CONFIGS {
     bool VERBOSE;
     bool CALCULATE_ERRORS;
     int nSubSamples;
+    bool DRAW_CORRELATION_PLOTS;
     std::string base_dir;
 
     // MONASH, JUNCTIONS, else...
@@ -191,7 +192,7 @@ struct CorrelationHistograms {
 
 // Derive the histograms (delta phi and trigger pt) from the THnSparse, including user-defined cuts
 // Pay attention that the OS and SS histograms need to have the same amount of bins!
-TH1D* hDPhi GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTHnSparse& cuts, const TString& suffix = ""
+TH1D* GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTHnSparse& cuts, const TString& suffix = ""
 ) {
     // THnSparse hCorrelations: (careful: the 'trigger' and 'associate' refer to the pairs)
         // 0 = DeltaPhi
@@ -203,35 +204,35 @@ TH1D* hDPhi GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTH
         // 6 = Multiplicity
 
     // Reset axes
-    for (int i = 0; i <= 6; ++i) { hCorrelations->GetAxis(i)->SetRange(); }
+    for (int i = 0; i < hCorrelations->GetNdimensions(); ++i) { hCorrelations->GetAxis(i)->SetRange(); }
 
-    /*
-    hCorrelations->GetAxis(2)->SetRangeUser(
-        cuts.triggerEtaMin,
-        cuts.triggerEtaMax
-    );
+        /*
+        hCorrelations->GetAxis(2)->SetRangeUser(
+            cuts.triggerEtaMin,
+            cuts.triggerEtaMax
+        );
 
-    hCorrelations->GetAxis(3)->SetRangeUser(
-        cuts.assocEtaMin,
-        cuts.assocEtaMax
-    );
+        hCorrelations->GetAxis(3)->SetRangeUser(
+            cuts.assocEtaMin,
+            cuts.assocEtaMax
+        );
 
-    hCorrelations->GetAxis(4)->SetRangeUser(
-        cuts.triggerPtMin,
-        cuts.triggerPtMax
-    );
+        hCorrelations->GetAxis(4)->SetRangeUser(
+            cuts.triggerPtMin,
+            cuts.triggerPtMax
+        );
 
-    hCorrelations->GetAxis(5)->SetRangeUser(
-        cuts.assocPtMin,
-        cuts.assocPtMax
-    );
-    */
+        hCorrelations->GetAxis(5)->SetRangeUser(
+            cuts.assocPtMin,
+            cuts.assocPtMax
+        );
+        */
 
-   std::cout << "--> applying multiplicity cut from " << cuts.multiplicityMin << " to " << cuts.multiplicityMax << std::endl;
+        std::cout << "--> applying multiplicity cut from " << cuts.multiplicityMin << " to " << cuts.multiplicityMax << std::endl;
 
-    hCorrelations->GetAxis(6)->SetRangeUser(
-        cuts.multiplicityMin,
-        cuts.multiplicityMax
+        hCorrelations->GetAxis(6)->SetRangeUser(
+            cuts.multiplicityMin,
+            cuts.multiplicityMax
     );
 
     TH1D* hDPhi = (TH1D*)hCorrelations->Projection(0, "E");
@@ -244,7 +245,7 @@ TH1D* hDPhi GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTH
 // Derive the trigger pt histogram from the trigger kinematics THnSparse, including user-defined cuts
 // This histogram is then used for normalisation of the hDPhi histogram
 // Pay attention that the OS and SS histograms need to have the same amount of bins!
-TH1D* hTrPt GetTriggerPtHistograms(THnSparseD* hTrKinematics, const BinsFromTHnSparse& cuts, const TString& suffix = ""
+TH1D* GetTriggerPtHistograms(THnSparseD* hTrKinematics, const BinsFromTHnSparse& cuts, const TString& suffix = ""
 ) {
     // THnSparse hCorrelations: (careful: the 'trigger' and 'associate' refer to the pairs)
         // 0 = phi
@@ -253,17 +254,17 @@ TH1D* hTrPt GetTriggerPtHistograms(THnSparseD* hTrKinematics, const BinsFromTHnS
         // 3 = Multiplicity
 
     // Reset axes
-    for (int i = 0; i <= 6; ++i) { hTrKinematics->GetAxis(i)->SetRange(); }
+    for (int i = 0; i < hTrKinematics->GetNdimensions(); ++i) { hTrKinematics->GetAxis(i)->SetRange(); }
 
-   std::cout << "--> applying multiplicity cut from " << cuts.multiplicityMin << " to " << cuts.multiplicityMax << std::endl;
+        std::cout << "--> applying multiplicity cut from " << cuts.multiplicityMin << " to " << cuts.multiplicityMax << std::endl;
 
-    hCorrelations->GetAxis(6)->SetRangeUser(
-        cuts.multiplicityMin,
-        cuts.multiplicityMax
-    );
+        hTrKinematics->GetAxis(3)->SetRangeUser(
+            cuts.multiplicityMin,
+            cuts.multiplicityMax
+        );
 
-    TH1D* hTrPt = (TH1D*)hCorrelations->Projection(4, "E");
-    hTrPt->SetName(Form("hTrPt%s", suffix.Data()));
+        TH1D* hTrPt = (TH1D*)hTrKinematics->Projection(2, "E");
+        hTrPt->SetName(Form("hTrPt%s", suffix.Data()));
 
     return hTrPt;
 }
@@ -386,6 +387,7 @@ CONFIGS readConfig(const char* configurations) {
     std::string bbBarDir_sub_samples = config["bb_bar_complete_root_dir_sub_samples"];
     std::string ccBarDir_sub_samples = config["cc_bar_complete_root_dir_sub_samples"];
     int nSubSamples = config["nSubSamples"].get<int>();
+    bool DRAW_CORRELATION_PLOTS = config["draw_correlation_plots"].get<bool>();
 
     // RootFiles path ("base directory")
     std::string base_dir = config["base_dir"];
@@ -623,6 +625,7 @@ CONFIGS readConfig(const char* configurations) {
     configs_from_json.VERBOSE = VERBOSE;
     configs_from_json.CALCULATE_ERRORS = CALCULATE_ERRORS;
     configs_from_json.nSubSamples = nSubSamples;
+    configs_from_json.DRAW_CORRELATION_PLOTS = DRAW_CORRELATION_PLOTS;
     configs_from_json.base_dir = base_dir;
     configs_from_json.vTUNES = vTUNES;
     configs_from_json.bbBarDir = bbBarDir;
@@ -640,6 +643,7 @@ CONFIGS readConfig(const char* configurations) {
     std::cout << "VERBOSE = " << VERBOSE << std::endl;
     std::cout << "- CALCULATE_ERRORS = " << CALCULATE_ERRORS << std::endl;
     std::cout << "- nSubSamples = " << nSubSamples << std::endl;
+    std::cout << "- DRAW_CORRELATION_PLOTS = " << DRAW_CORRELATION_PLOTS << std::endl;
     std::cout << "- base_dir = " << base_dir << std::endl;
     std::cout << "- vTUNES.size() = " << vTUNES.size() << std::endl;
     std::cout << "- bbBarDir = " << bbBarDir << std::endl;
@@ -707,6 +711,7 @@ YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLA
     bool VERBOSE = configs_from_json.VERBOSE;
     bool CALCULATE_ERRORS = configs_from_json.CALCULATE_ERRORS;
     int nSubSamples = configs_from_json.nSubSamples;
+    bool DRAW_CORRELATION_PLOTS = configs_from_json.DRAW_CORRELATION_PLOTS;
     std::string base_dir = configs_from_json.base_dir;
     std::vector<std::string> vTUNES = configs_from_json.vTUNES;
     std::string complete_root_dir;
@@ -823,9 +828,10 @@ YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLA
 
                 // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
                 // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
-                THnSparseD *hTrKinematicsOS = (THnSparseD*)OStree->Get("hTrKinematics");
                 THnSparseD *hCorrelationsOS = (THnSparseD*)OStree->Get("hCorrelations");
                 THnSparseD *hCorrelationsSS = (THnSparseD*)SStree->Get("hCorrelations");
+                THnSparseD *hTrKinematicsOS = (THnSparseD*)OStree->Get("hTrKinematics");
+                THnSparseD *hTrKinematicsSS = (THnSparseD*)SStree->Get("hTrKinematics"); // in principle the same as OS...
 
                 // Apply cuts to THnSparses
                 // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
@@ -855,6 +861,17 @@ YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLA
                 if (VERBOSE) { 
                     std::cout << "vYields[" << i << "][" << j << "][" << k << "] = " << vYields[i][j][k] << std::endl;
                     std::cout << std::endl;
+                }
+
+
+                // If requested: draw correlation plots
+                // This part is hard-coded for now, but could get its own configuration section in the json
+                // to customise what should be drawn and how already in the json
+                if (DRAW_CORRELATION_PLOTS) {
+                    TCanvas *c_correlations = new TCanvas (Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), 800, 600);
+                    c_correlations->cd();
+                    hDPhiOS->SetTitle(Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()));
+                    hDPhiOS->Draw();
                 }
 
 
