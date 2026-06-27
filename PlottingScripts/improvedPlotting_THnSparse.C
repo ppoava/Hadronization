@@ -893,14 +893,29 @@ YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLA
                         TFile *OStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.OS).c_str());
                         TFile *SStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.SS).c_str());
 
-                        // TODO: subsampling with THnSparse...
-                        // Remove this line later
-                        HistogramAndTriggerPtHistogramNames hDPhiAndhTrPtNames = vHistogramAndTriggerPtHistogramNames[k];
+                        // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
+                        // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
+                        THnSparseD *hCorrelationsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hCorrelations");
+                        THnSparseD *hCorrelationsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hCorrelations");
+                        THnSparseD *hTrKinematicsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hTrKinematics");
+                        THnSparseD *hTrKinematicsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hTrKinematics"); // in principle the same as OS...
 
-                        TH1D *hDPhiOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
-	                    TH1D *hDPhiSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
-	                    TH1D *hTrPtOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
-	                    TH1D *hTrPtSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
+                        // Apply cuts to THnSparses
+                        // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
+                        // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
+                        TH1D *hDPhiOS_subSamples = GetCorrelationHistograms(hCorrelationsOS_subSamples, cuts);
+                        TH1D *hDPhiSS_subSamples = GetCorrelationHistograms(hCorrelationsSS_subSamples, cuts);
+                        TH1D *hTrPtOS_subSamples = GetTriggerPtHistograms(hCorrelationsOS_subSamples, cuts);
+                        TH1D *hTrPtSS_subSamples = GetTriggerPtHistograms(hCorrelationsSS_subSamples, cuts);
+
+                        // TODO: when subsampling ok, remove this part
+                        // HistogramAndTriggerPtHistogramNames hDPhiAndhTrPtNames = vHistogramAndTriggerPtHistogramNames[k];
+                        /* LEGACY CODE
+                            TH1D *hDPhiOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
+                            TH1D *hDPhiSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
+                            TH1D *hTrPtOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
+                            TH1D *hTrPtSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
+                        LEGACY CODE */ 
 
                         Double_t subYield = calculateOneYield(VERBOSE, hDPhiOS_subSamples, hTrPtOS_subSamples, hDPhiSS_subSamples, hTrPtSS_subSamples,
                                                               FLAVOUR, i, j, k, l);
