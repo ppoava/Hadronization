@@ -5,10 +5,10 @@ set -euo pipefail
 # USER INPUTS
 # =========================================================
 
-INPUT_DIRECTORY="/data/alice/ipardoza/Hadronization/RootFiles/HF/MONASH"
+INPUT_DIRECTORY="/data/alice/ipardoza/Hadronization/RootFiles/HF/JUNCTIONS"
 INPUT_ANALYSIS_SCRIPTS_DIRECTORY="/user/pveen/Hadronization/AnalysisScripts"
 
-OUTPUT_DIRECTORY="/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF/MONASH/Job500"
+OUTPUT_DIRECTORY="/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF/JUNCTIONS/Job700"
 OUTPUT_LOGS_DIRECTORY="${OUTPUT_DIRECTORY}/Logs"
 
 NUMBER_OF_SUBJOBS=${1:-1}

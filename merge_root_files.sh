@@ -7,11 +7,11 @@ source /user/pveen/Hadronization/setupEnv.sh
 # DIRECTORIES
 # =========================================================
 
-INPUT_DIR="/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF/MONASH/Job500"
+INPUT_DIR="/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF/JUNCTIONS/Job700"
 
 OUTPUT_BASE_DIR="/user/pveen/Hadronization/AnalyzedData"
 
-OUTPUT_DIR="${OUTPUT_BASE_DIR}/complete_root"
+OUTPUT_DIR="${OUTPUT_BASE_DIR}/complete_root_21_06_2026_JUNCTIONS"
 
 # =========================================================
 # CREATE OUTPUT DIRECTORY

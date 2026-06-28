@@ -35,7 +35,7 @@ echo "========================================"
 # RUN ROOT MACRO
 # =========================================================
 
-root -l -b -q "${SCRIPTSDIR}/status_analysis_qq.C(\"${INPUTFILE}\",\"${JOB_OUTPUT_DIR}\")"
+root -l -b -q "${SCRIPTSDIR}/status_analysis_THnSparse_qq.C(\"${INPUTFILE}\",\"${JOB_OUTPUT_DIR}\")"
 
 # =========================================================
 # OPTIONAL COPY SAFETY (if macro writes elsewhere)
