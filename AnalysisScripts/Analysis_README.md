@@ -86,6 +86,18 @@ The split input tree is expected to contain `ID`, `PT`, and `MULTIPLICITY`, with
 
 `status_analysis_bb.C`, `status_analysis_cc.C`, and `status_analysis_qq.C` are older status-code and ancestry inspection macros. They work closer to the angular-correlation studies than to the current pT-versus-multiplicity reduction. The bb and cc versions inspect the split beauty and charm style inputs. The qq version includes broader ancestry tracing and sphericity-related helper logic. These macros are useful when the question is about production origin, mother relationships, status codes, and older correlation objects rather than the reduced `AnalyzedData` files used by the current plotting layer.
 
+`status_analysis_THnSparse_qq.C` is the converter used by Paul's THnSparse plotting pipeline. It reads raw HF production ROOT files and writes pair-named files such as `BplusBminus.root`, `BplusBplus.root`, `DplusDminus.root`, and `DplusDplus.root`. These files contain `summed MULTIPLICITY`, `hTrKinematics`, `hAsKinematics`, and `hCorrelations`, which are the objects consumed by `PlottingScripts/improvedPlotting_THnSparse.C`.
+
+The shell wrappers at the repository root now treat `MONASH`, `JUNCTIONS`, and `CLOSEPACKING` equally. They accept a tune name or `ALL`:
+
+```bash
+./submit_status_analysis.sh ALL 100 Job700
+./merge_root_files.sh ALL Job700 21_06_2026
+./make_subsamples.sh ALL 8 10 123 Job700 700
+```
+
+For a single tune, replace `ALL` with `MONASH`, `JUNCTIONS`, or `CLOSEPACKING`. The submit wrapper reads raw files from `RootFiles/HF/<TUNE>` by default on the production filesystem, the merge wrapper writes `AnalyzedData/complete_root_21_06_2026_<TUNE>`, and the subsample wrapper writes `AnalyzedData/SUBSAMPLES_700/combined_root_subSamples_<TUNE>`.
+
 ## Subsamples
 
 All three analysis macros use round-robin event assignment. With ten subsamples, event zero goes to subsample zero, event one to subsample one, and event ten returns to subsample zero. This keeps event counts nearly equal and makes the split reproducible without depending on file boundaries.

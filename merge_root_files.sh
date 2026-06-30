@@ -1,73 +1,140 @@
 #!/bin/bash
 set -euo pipefail
 
-source /user/pveen/Hadronization/setupEnv.sh
+# Merge per-job THnSparse status-analysis outputs into Paul's complete_root input
+# directories for one tune or for all paper tunes.
+#
+# Usage:
+#   ./merge_root_files.sh TUNE [JOB_TAG] [OUTPUT_TAG]
+#   ./merge_root_files.sh ALL Job700 21_06_2026
+#
+# TUNE can be MONASH, JUNCTIONS, CLOSEPACKING, or ALL.
 
-# =========================================================
-# DIRECTORIES
-# =========================================================
+usage() {
+    cat <<'USAGE'
+Usage:
+  ./merge_root_files.sh TUNE [JOB_TAG] [OUTPUT_TAG]
+  ./merge_root_files.sh ALL Job700 21_06_2026
 
-INPUT_DIR="/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF/JUNCTIONS/Job700"
+TUNE:
+  MONASH
+  JUNCTIONS
+  CLOSEPACKING
+  ALL
 
-OUTPUT_BASE_DIR="/user/pveen/Hadronization/AnalyzedData"
+Defaults:
+  JOB_TAG    = Job700
+  OUTPUT_TAG = 21_06_2026
 
-OUTPUT_DIR="${OUTPUT_BASE_DIR}/complete_root_21_06_2026_JUNCTIONS"
+Environment overrides:
+  ANALYSIS_OUTPUT_BASE Per-job THnSparse analysis output base directory.
+  ANALYZED_DATA_BASE   Destination base for complete_root directories.
+  HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
+USAGE
+}
 
-# =========================================================
-# CREATE OUTPUT DIRECTORY
-# =========================================================
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+project_base="${HADRONIZATION_BASE:-${script_dir}}"
+project_base="${project_base%/}"
+export HADRONIZATION_BASE="${project_base}"
 
-mkdir -p "${OUTPUT_DIR}"
+requested_tune="${1:-}"
+job_tag="${2:-Job700}"
+output_tag="${3:-21_06_2026}"
 
-# =========================================================
-# FIND UNIQUE ROOT FILENAMES
-# =========================================================
-
-ROOT_FILENAMES=$(find "${INPUT_DIR}" \
-    -mindepth 2 -maxdepth 2 \
-    -type f -name "*.root" \
-    -exec basename {} \; | sort | uniq)
-
-if [[ -z "${ROOT_FILENAMES}" ]]; then
-    echo "ERROR: No ROOT files found in ${INPUT_DIR}"
-    exit 1
+if [[ -z "${requested_tune}" || "${requested_tune}" == "-h" || "${requested_tune}" == "--help" ]]; then
+    usage
+    exit 0
 fi
 
-# =========================================================
-# MERGE EACH ROOT FILE TYPE
-# =========================================================
+requested_tune="$(printf '%s' "${requested_tune}" | tr '[:lower:]' '[:upper:]')"
 
-for ROOTFILE in ${ROOT_FILENAMES}
-do
+analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
+analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
+
+if [[ -f "${project_base}/setupEnv.sh" ]]; then
+    # shellcheck disable=SC1091
+    source "${project_base}/setupEnv.sh"
+fi
+
+resolve_tunes() {
+    case "$1" in
+        MONASH|JUNCTIONS|CLOSEPACKING)
+            printf '%s\n' "$1"
+            ;;
+        ALL)
+            printf '%s\n' MONASH JUNCTIONS CLOSEPACKING
+            ;;
+        *)
+            echo "ERROR: unknown tune '$1'. Expected MONASH, JUNCTIONS, CLOSEPACKING, or ALL." >&2
+            exit 1
+            ;;
+    esac
+}
+
+merge_tune() {
+    local tune="$1"
+    local input_dir="${analysis_output_base}/${tune}/${job_tag}"
+    local output_dir="${analyzed_data_base}/complete_root_${output_tag}_${tune}"
 
     echo "========================================"
-    echo "Processing ${ROOTFILE}"
+    echo "Merging tune: ${tune}"
+    echo "Input:  ${input_dir}"
+    echo "Output: ${output_dir}"
     echo "========================================"
 
-    mapfile -t FILES < <(
-        find "${INPUT_DIR}" \
-            -mindepth 2 -maxdepth 2 \
-            -type f -name "${ROOTFILE}"
-    )
-
-    if [[ ${#FILES[@]} -eq 0 ]]; then
-        echo "WARNING: no files found for ${ROOTFILE}"
-        continue
+    if [[ ! -d "${input_dir}" ]]; then
+        echo "ERROR: input directory not found for ${tune}: ${input_dir}" >&2
+        return 1
     fi
 
-    OUTPUT_FILE="${OUTPUT_DIR}/${ROOTFILE}"
+    mkdir -p "${output_dir}"
 
-    echo "Found ${#FILES[@]} files"
-    echo "Output: ${OUTPUT_FILE}"
+    local root_filenames
+    root_filenames=$(find "${input_dir}" \
+        -mindepth 2 -maxdepth 2 \
+        -type f -name "*.root" \
+        -exec basename {} \; | sort | uniq)
 
-    hadd -f "${OUTPUT_FILE}" "${FILES[@]}"
+    if [[ -z "${root_filenames}" ]]; then
+        echo "ERROR: no ROOT files found in ${input_dir}" >&2
+        return 1
+    fi
 
-    echo "Finished merging ${ROOTFILE}"
-    echo
+    local rootfile
+    for rootfile in ${root_filenames}; do
+        echo "Processing ${rootfile}"
 
+        files=()
+        while IFS= read -r file; do
+            files+=("${file}")
+        done < <(
+            find "${input_dir}" \
+                -mindepth 2 -maxdepth 2 \
+                -type f -name "${rootfile}"
+        )
+
+        if [[ ${#files[@]} -eq 0 ]]; then
+            echo "WARNING: no files found for ${rootfile}" >&2
+            continue
+        fi
+
+        echo "Found ${#files[@]} files"
+        echo "Output: ${output_dir}/${rootfile}"
+        hadd -f "${output_dir}/${rootfile}" "${files[@]}"
+        echo
+    done
+
+    echo "Finished ${tune}: ${output_dir}"
+}
+
+tunes=($(resolve_tunes "${requested_tune}"))
+
+for tune in "${tunes[@]}"; do
+    merge_tune "${tune}"
 done
 
 echo "========================================"
-echo "All merges completed successfully"
-echo "Output directory: ${OUTPUT_DIR}"
+echo "All requested merges completed successfully"
+echo "Tunes: ${tunes[*]}"
 echo "========================================"

@@ -7,18 +7,31 @@
 #include <algorithm>
 #include <random>
 #include <cmath>
+#include <cstring>
+#include <cstdlib>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include <sstream>
+#include <limits>
+#include <vector>
 
 // ROOT headers
 #include "TFile.h"
 #include "TH1D.h"
+#include "THnSparse.h"
+#include "TSystem.h"
 #include "TCanvas.h"
 #include "TString.h" // TODO: can use this for the legend entry names?
 #include <TLegend.h>
 
-// For me the code does not work when this is explicitly included
-// I guess it depends on the set-up
-// Enable this if there is unexplainable problems with reading the .json file
-// #include <nlohmann/json.hpp>
+#if __has_include(<nlohmann/json.hpp>)
+#include <nlohmann/json.hpp>
+#elif __has_include("nlohmann/json.hpp")
+#include "nlohmann/json.hpp"
+#else
+#error "Could not find nlohmann/json.hpp. Source the project/ROOT environment before compiling this macro."
+#endif
 
 using json = nlohmann::json;
 
@@ -90,6 +103,14 @@ struct YieldsAndErrorsMap {
     std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYields;
     std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsErrors;
     std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsRatioErrors;
+};
+
+
+struct SubsampleStatistics {
+    Int_t nValues;
+    Double_t mean;
+    Double_t stdDev;
+    Double_t stdError;
 };
 
 
@@ -200,6 +221,169 @@ struct CorrelationHistograms {
 };
 
 
+std::string JoinPath(const std::vector<std::string>& pieces) {
+    std::string path;
+    for (const auto& piece : pieces) {
+        if (piece.empty()) { continue; }
+        if (!path.empty() && path.back() != '/') { path += "/"; }
+        if (!path.empty() && piece.front() == '/') {
+            path += piece.substr(1);
+        } else {
+            path += piece;
+        }
+    }
+    return path;
+}
+
+
+bool IsAbsolutePath(const std::string& path) {
+    return !path.empty() && (path.front() == '/' || (path.size() > 1 && path[1] == ':'));
+}
+
+
+std::string ParentPath(const std::string& path) {
+    if (path.empty() || path == "/") { return path; }
+    const size_t slash = path.find_last_of('/');
+    if (slash == std::string::npos) { return ""; }
+    if (slash == 0) { return "/"; }
+    return path.substr(0, slash);
+}
+
+
+std::string ExpandPath(const std::string& path) {
+    char* expanded = gSystem->ExpandPathName(path.c_str());
+    std::string result = expanded ? expanded : path;
+    if (expanded) { delete[] expanded; }
+    return result;
+}
+
+
+bool PathExists(const std::string& path) {
+    return !path.empty() && !gSystem->AccessPathName(path.c_str());
+}
+
+
+std::string FindHadronizationBase() {
+    const char* envBase = std::getenv("HADRONIZATION_BASE");
+    if (envBase && PathExists(JoinPath({envBase, "PlottingScripts"}))) {
+        return ExpandPath(envBase);
+    }
+
+    std::string current = ExpandPath(gSystem->WorkingDirectory());
+    while (!current.empty()) {
+        if (PathExists(JoinPath({current, "PlottingScripts", "improvedPlotting_THnSparse.C"})) ||
+            PathExists(JoinPath({current, ".git"}))) {
+            return current;
+        }
+        const std::string parent = ParentPath(current);
+        if (parent == current) { break; }
+        current = parent;
+    }
+
+    return ExpandPath(gSystem->WorkingDirectory());
+}
+
+
+std::string ResolvePathFromBase(const std::string& path, const std::string& hadronizationBase) {
+    if (path.empty() || path == "NONE") { return path; }
+    const std::string expanded = ExpandPath(path);
+    if (IsAbsolutePath(expanded)) { return expanded; }
+    return JoinPath({hadronizationBase, expanded});
+}
+
+
+std::string ResolveConfigurationPath(const std::string& path, const std::string& hadronizationBase) {
+    const std::vector<std::string> candidates = {
+        path,
+        ResolvePathFromBase(path, hadronizationBase),
+        JoinPath({hadronizationBase, "PlottingScripts", path})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) { return candidate; }
+    }
+
+    std::ostringstream message;
+    message << "Could not find configuration file '" << path << "'. Tried:";
+    for (const auto& candidate : candidates) { message << "\n  - " << candidate; }
+    throw std::runtime_error(message.str());
+}
+
+
+std::string ResolveCompleteRootFile(
+    const std::string& baseDir,
+    const std::string& tune,
+    const std::string& completeRootDir,
+    const std::string& fileName
+) {
+    const std::vector<std::string> candidates = {
+        JoinPath({baseDir, tune, completeRootDir + "_" + tune, fileName}),
+        JoinPath({baseDir, tune, completeRootDir, fileName}),
+        JoinPath({baseDir, completeRootDir + "_" + tune, fileName}),
+        JoinPath({baseDir, completeRootDir, fileName})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) { return candidate; }
+    }
+
+    std::ostringstream message;
+    message << "Could not find input ROOT file '" << fileName << "' for tune " << tune
+            << ". Tried:";
+    for (const auto& candidate : candidates) { message << "\n  - " << candidate; }
+    throw std::runtime_error(message.str());
+}
+
+
+std::string ResolveSubSampleRootFile(
+    const std::string& subSampleBaseDir,
+    const std::string& tune,
+    int subSampleIndex,
+    const std::string& fileName
+) {
+    const std::string subSampleDir = Form("combined_root_%i", subSampleIndex);
+    const std::vector<std::string> candidates = {
+        JoinPath({subSampleBaseDir + "_" + tune, subSampleDir, fileName}),
+        JoinPath({subSampleBaseDir, tune, subSampleDir, fileName})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) { return candidate; }
+    }
+
+    std::ostringstream message;
+    message << "Could not find subsample ROOT file '" << fileName << "' for tune " << tune
+            << ", subsample " << subSampleIndex << ". Tried:";
+    for (const auto& candidate : candidates) { message << "\n  - " << candidate; }
+    throw std::runtime_error(message.str());
+}
+
+
+TFile* OpenRootFileOrThrow(const std::string& path) {
+    TFile* file = TFile::Open(path.c_str(), "READ");
+    if (!file || file->IsZombie()) {
+        throw std::runtime_error("Could not open input ROOT file: " + path);
+    }
+    return file;
+}
+
+
+template <typename TObjectType>
+TObjectType* GetObjectOrThrow(TFile* file, const char* objectName, const std::string& filePath) {
+    if (!file) {
+        throw std::runtime_error(std::string("Null TFile while reading object: ") + objectName);
+    }
+
+    TObjectType* object = dynamic_cast<TObjectType*>(file->Get(objectName));
+    if (!object) {
+        throw std::runtime_error(
+            std::string("Missing or wrong-type object '") + objectName + "' in " + filePath
+        );
+    }
+    return object;
+}
+
+
 // Derive the histograms (delta phi and trigger pt) from the THnSparse, including user-defined cuts
 // Pay attention that the OS and SS histograms need to have the same amount of bins!
 TH1D* GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTHnSparse& cuts, const TString& suffix = ""
@@ -212,6 +396,10 @@ TH1D* GetCorrelationHistograms(THnSparseD* hCorrelations, const BinsFromTHnSpars
         // 4 = TriggerPt
         // 5 = AssocPt
         // 6 = Multiplicity
+
+    if (!hCorrelations) {
+        throw std::runtime_error("Cannot project correlations: hCorrelations is null");
+    }
 
     // Reset axes
     for (int i = 0; i < hCorrelations->GetNdimensions(); ++i) { hCorrelations->GetAxis(i)->SetRange(); }
@@ -262,6 +450,10 @@ TH1D* GetTriggerPtHistograms(THnSparseD* hTrKinematics, const BinsFromTHnSparse&
         // 1 = eta
         // 2 = pt
         // 3 = Multiplicity
+
+    if (!hTrKinematics) {
+        throw std::runtime_error("Cannot project trigger pT: hTrKinematics is null");
+    }
 
     // Reset axes
     for (int i = 0; i < hTrKinematics->GetNdimensions(); ++i) { hTrKinematics->GetAxis(i)->SetRange(); }
@@ -328,6 +520,7 @@ void writeCanvasToFiles(bool VERBOSE, TCanvas *canvas, std::string writePath, st
     if (VERBOSE) { 
         std::cout << "- Writing canvas with name " << writeName << " to path " << writePath << std::endl;
     }
+    gSystem->mkdir(writePath.c_str(), true);
     canvas->SaveAs((writePath + "/" + writeName + "_PDF" + ".pdf").c_str());
     canvas->SaveAs((writePath + "/" + writeName + "_PNG" + ".png").c_str());
     canvas->SaveAs((writePath + "/" + writeName + "_MACRO" + ".C").c_str());
@@ -423,10 +616,13 @@ CONFIGS readConfig(const char* configurations) {
     std::cout << "*** Reading configuration.json ***" << std::endl;
     std::cout << std::endl;
 
+    const std::string hadronizationBase = FindHadronizationBase();
+    const std::string configurationPath = ResolveConfigurationPath(configurations, hadronizationBase);
+
     // Open the JSON configuration file
-    std::ifstream configFile(configurations);
+    std::ifstream configFile(configurationPath);
     if (!configFile.is_open()) {
-        std::cerr << "Error opening configuration file." << std::endl;
+        throw std::runtime_error("Error opening configuration file: " + configurationPath);
     }
 
     // Parse the JSON file
@@ -437,13 +633,13 @@ CONFIGS readConfig(const char* configurations) {
     // Generic options
     bool VERBOSE = config["VERBOSE"].get<bool>();
     bool CALCULATE_ERRORS = config["calculate_errors"].get<bool>();
-    std::string bbBarDir_sub_samples = config["bb_bar_complete_root_dir_sub_samples"];
-    std::string ccBarDir_sub_samples = config["cc_bar_complete_root_dir_sub_samples"];
+    std::string bbBarDir_sub_samples = ResolvePathFromBase(config["bb_bar_complete_root_dir_sub_samples"], hadronizationBase);
+    std::string ccBarDir_sub_samples = ResolvePathFromBase(config["cc_bar_complete_root_dir_sub_samples"], hadronizationBase);
     int nSubSamples = config["nSubSamples"].get<int>();
     bool DRAW_CORRELATION_PLOTS = config["draw_correlation_plots"].get<bool>();
 
     // RootFiles path ("base directory")
-    std::string base_dir = config["base_dir"];
+    std::string base_dir = ResolvePathFromBase(config["base_dir"], hadronizationBase);
 
     // Tunes
     std::vector<std::string> vTUNES;
@@ -594,18 +790,24 @@ CONFIGS readConfig(const char* configurations) {
         pair.FLAVOUR = configPair["FLAVOUR"].get<std::string>();
         pair.TriggerToUse = configPair["TriggerToUse"].get<std::string>(); // must be identical to trigger name from 'histograms to draw' section! TODO: do something about that..
         std::string nominatorTuneName = configPair["nominator_TUNE"].get<std::string>();
-        pair.indexNominatorTUNE = findTuneIndex(vTUNES, nominatorTuneName);
-        if (pair.indexNominatorTUNE != -1) {
-            std::cout << "Index of " << nominatorTuneName << " is: " << pair.indexNominatorTUNE << std::endl;
-        } else {
-            std::cout << nominatorTuneName << " ERROR: TUNE not found in vTUNES." << std::endl;
+        pair.indexNominatorTUNE = -1;
+        if (nominatorTuneName != "NONE") {
+            pair.indexNominatorTUNE = findTuneIndex(vTUNES, nominatorTuneName);
+            if (pair.indexNominatorTUNE != -1) {
+                std::cout << "Index of " << nominatorTuneName << " is: " << pair.indexNominatorTUNE << std::endl;
+            } else {
+                std::cout << nominatorTuneName << " ERROR: TUNE not found in vTUNES." << std::endl;
+            }
         }
         std::string denominatorTuneName = configPair["denominator_TUNE"].get<std::string>();
-        pair.indexDenominatorTUNE = findTuneIndex(vTUNES, denominatorTuneName);
-        if (pair.indexDenominatorTUNE != -1) {
-            std::cout << "Index of " << denominatorTuneName << " is: " << pair.indexDenominatorTUNE << std::endl;
-        } else {
-            std::cout << nominatorTuneName << " ERROR: TUNE not found in vTUNES." << std::endl;
+        pair.indexDenominatorTUNE = -1;
+        if (denominatorTuneName != "NONE") {
+            pair.indexDenominatorTUNE = findTuneIndex(vTUNES, denominatorTuneName);
+            if (pair.indexDenominatorTUNE != -1) {
+                std::cout << "Index of " << denominatorTuneName << " is: " << pair.indexDenominatorTUNE << std::endl;
+            } else {
+                std::cout << denominatorTuneName << " ERROR: TUNE not found in vTUNES." << std::endl;
+            }
         }
         std::vector<std::string> vBaryonNames;
         for (const auto& baryonName : configPair["baryons_to_plot_in_baryon/meson_ratio"]) {
@@ -617,7 +819,7 @@ CONFIGS readConfig(const char* configurations) {
         pair.vBaryonNames = vBaryonNames;
         pair.useHardCodedSettings = configPair["use_hard_coded_settings"].get<bool>();
         pair.write = configPair["write"].get<bool>();
-        pair.writePath = configPair["write_path"].get<std::string>();
+        pair.writePath = ResolvePathFromBase(configPair["write_path"].get<std::string>(), hadronizationBase);
         pair.writeName = configPair["write_name"].get<std::string>();
 
         // Plotting settings
@@ -707,7 +909,7 @@ CONFIGS readConfig(const char* configurations) {
         }
         pair.vMiniCanvases = vMiniCanvases;
         pair.write = configPair["write"].get<bool>();
-        pair.writePath = configPair["write_path"].get<std::string>();
+        pair.writePath = ResolvePathFromBase(configPair["write_path"].get<std::string>(), hadronizationBase);
         pair.writeName = configPair["write_name"].get<std::string>();
         pair.xSizeCanvas = configPair["x_size_canvas"].get<Double_t>();
         pair.ySizeCanvas = configPair["y_size_canvas"].get<Double_t>();
@@ -779,9 +981,50 @@ CONFIGS readConfig(const char* configurations) {
 // Simple function that returns the propagated error from a ratio A/B with errors for A and B
 // Assumes A and B are uncorrelated
 Double_t propagateRatioError(Double_t valueA, Double_t valueB, Double_t errorA, Double_t errorB) {
+    if (!std::isfinite(valueA) || !std::isfinite(valueB) ||
+        !std::isfinite(errorA) || !std::isfinite(errorB) ||
+        valueA == 0.0 || valueB == 0.0) {
+        return 0.0;
+    }
+
     Double_t relativeUncertainty = pow((errorA / valueA), 2) + pow((errorB / valueB), 2);
     return ((valueA / valueB) * sqrt(relativeUncertainty));
 } // propagateRatioError()
+
+
+Double_t safeRatio(Double_t numerator, Double_t denominator) {
+    if (!std::isfinite(numerator) || !std::isfinite(denominator) || denominator == 0.0) {
+        return std::numeric_limits<Double_t>::quiet_NaN();
+    }
+    return numerator / denominator;
+}
+
+
+SubsampleStatistics calculateSubsampleStatistics(const std::vector<Double_t>& values) {
+    std::vector<Double_t> finiteValues;
+    finiteValues.reserve(values.size());
+    for (const auto value : values) {
+        if (std::isfinite(value)) { finiteValues.push_back(value); }
+    }
+
+    SubsampleStatistics stats{static_cast<Int_t>(finiteValues.size()), 0.0, 0.0, 0.0};
+    if (finiteValues.empty()) { return stats; }
+
+    for (const auto value : finiteValues) { stats.mean += value; }
+    stats.mean /= finiteValues.size();
+
+    if (finiteValues.size() > 1) {
+        Double_t variance = 0.0;
+        for (const auto value : finiteValues) {
+            variance += pow(value - stats.mean, 2);
+        }
+        variance /= (finiteValues.size() - 1);
+        stats.stdDev = sqrt(variance);
+        stats.stdError = stats.stdDev / sqrt(static_cast<Double_t>(finiteValues.size()));
+    }
+
+    return stats;
+}
 
 
 // Simple function to calculate the yield given by two normalised OS and SS histograms
@@ -790,6 +1033,12 @@ Double_t propagateRatioError(Double_t valueA, Double_t valueB, Double_t errorA, 
 // (if desired)
 Double_t calculateOneYield(bool VERBOSE, TH1D *hDPhiOS, TH1D *hTrPtOS, TH1D *hDPhiSS, TH1D *hTrPtSS, const char* FLAVOUR, 
                            Int_t i, Int_t j, Int_t k, Int_t l) {
+
+    (void)FLAVOUR;
+    (void)i;
+    (void)j;
+    (void)k;
+    (void)l;
 
     // Normalise by number of triggers
     if (VERBOSE) {
@@ -841,6 +1090,8 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
     if (strcmp(FLAVOUR, "CHARM")  == 0) { histConfigs = configs_from_json.charmConfigs; }
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames; // remove this line later (toremove)
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
+    const Int_t nTUNES = static_cast<Int_t>(vTUNES.size());
+    const Int_t nDependencies = static_cast<Int_t>(vBinsFromTHnSparse.size());
 
     // TODO: make these vectors into arrays, don't think vector is necessary
     // and the subYields are stored in an array anyways
@@ -862,14 +1113,24 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
         // COMMENT: the subsampling will also be affected by these changes
         // I need to make sure things are propagated with Inaki's improvements to the subsampling
         // (based on older code)
+        const Int_t nAssociates = static_cast<Int_t>(vTriggerAssociateOSandSS.size());
         std::vector<std::vector<std::vector<Double_t>>> vYields;
         std::vector<std::vector<std::vector<Double_t>>> vYieldsErrors;
         std::vector<std::vector<std::vector<Double_t>>> vYieldsRatioErrors;
-        Double_t vSubYields[vTUNES.size()][vTriggerAssociateOSandSS.size()][vBinsFromTHnSparse.size()][nSubSamples];
+        std::vector<std::vector<std::vector<std::vector<Double_t>>>> vSubYields(
+            vTUNES.size(),
+            std::vector<std::vector<std::vector<Double_t>>>(
+                vTriggerAssociateOSandSS.size(),
+                std::vector<std::vector<Double_t>>(
+                    vBinsFromTHnSparse.size(),
+                    std::vector<Double_t>(nSubSamples, 0.0)
+                )
+            )
+        );
 
 
         // Loop over TUNES
-        for (Int_t i=0; i<vTUNES.size(); i++) {
+        for (Int_t i=0; i<nTUNES; i++) {
 
 
             std::string TUNE = vTUNES[i];
@@ -878,17 +1139,19 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
 
 
             // Loop over ASSOCIATES
-            for (Int_t j=0; j<vTriggerAssociateOSandSS.size(); j++) {
+            for (Int_t j=0; j<nAssociates; j++) {
 
 
                 TriggerAssociateOSandSS fileNamesOSandSS = vTriggerAssociateOSandSS[j];
                 std::cout << "starting loop over OS file: " << fileNamesOSandSS.OS << " and SS file: " << fileNamesOSandSS.SS << std::endl;
-                TFile *OStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.OS).c_str());
-                TFile *SStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.SS).c_str());
+                const std::string osFilePath = ResolveCompleteRootFile(base_dir, TUNE, complete_root_dir, fileNamesOSandSS.OS);
+                const std::string ssFilePath = ResolveCompleteRootFile(base_dir, TUNE, complete_root_dir, fileNamesOSandSS.SS);
+                TFile *OStree = OpenRootFileOrThrow(osFilePath);
+                TFile *SStree = OpenRootFileOrThrow(ssFilePath);
                 std::cout << std::endl;
 
                 // This is where we calculate the multiplicity
-                TH1D *hSummedMultiplicity = (TH1D*)OStree->Get("summed MULTIPLICITY");
+                TH1D *hSummedMultiplicity = GetObjectOrThrow<TH1D>(OStree, "summed MULTIPLICITY", osFilePath);
                 Double_t fullIntegral = 0;
                 fullIntegral = hSummedMultiplicity->Integral();
                 std::set<double> requestedPercentiles;
@@ -921,7 +1184,7 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                 }
 
                 // Loop over DEPENDENCIES
-                for (Int_t k=0; k<vBinsFromTHnSparse.size(); k++) {
+                for (Int_t k=0; k<nDependencies; k++) {
 
                     BinsFromTHnSparse binFromTHnSparse = vBinsFromTHnSparse[k];
                     if (VERBOSE) {
@@ -961,10 +1224,10 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
 
                     // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
                     // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
-                    THnSparseD *hCorrelationsOS = (THnSparseD*)OStree->Get("hCorrelations");
-                    THnSparseD *hCorrelationsSS = (THnSparseD*)SStree->Get("hCorrelations");
-                    THnSparseD *hTrKinematicsOS = (THnSparseD*)OStree->Get("hTrKinematics");
-                    THnSparseD *hTrKinematicsSS = (THnSparseD*)SStree->Get("hTrKinematics"); // in principle the same as OS...
+                    THnSparseD *hCorrelationsOS = GetObjectOrThrow<THnSparseD>(OStree, "hCorrelations", osFilePath);
+                    THnSparseD *hCorrelationsSS = GetObjectOrThrow<THnSparseD>(SStree, "hCorrelations", ssFilePath);
+                    THnSparseD *hTrKinematicsOS = GetObjectOrThrow<THnSparseD>(OStree, "hTrKinematics", osFilePath);
+                    THnSparseD *hTrKinematicsSS = GetObjectOrThrow<THnSparseD>(SStree, "hTrKinematics", ssFilePath); // in principle the same as OS...
 
                     // Apply cuts to THnSparses
                     // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
@@ -987,9 +1250,9 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
 
                     // Calculate yield value and assign to appropriate place in vector
                     Double_t yield = calculateOneYield(VERBOSE, hDPhiOS, hTrPtOS, hDPhiSS, hTrPtSS, FLAVOUR, i, j, k, 0);
-                    if (i >= vYields.size()) { vYields.resize(i + 1); }
-                    if (j >= vYields[i].size()) { vYields[i].resize(j + 1); }
-                    if (k >= vYields[i][j].size()) { vYields[i][j].resize(k + 1); }
+                    if (static_cast<std::size_t>(i) >= vYields.size()) { vYields.resize(i + 1); }
+                    if (static_cast<std::size_t>(j) >= vYields[i].size()) { vYields[i].resize(j + 1); }
+                    if (static_cast<std::size_t>(k) >= vYields[i][j].size()) { vYields[i][j].resize(k + 1); }
                     vYields[i][j][k] = yield; 
                     if (VERBOSE) { 
                         std::cout << "vYields[" << i << "][" << j << "][" << k << "] = " << vYields[i][j][k] << std::endl;
@@ -1012,8 +1275,8 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                         // Hard-coded: we only want to show correlations for B+B- and D+D-
                         // TODO: put an option in the configuration.json to give a list of desired correlations to draw
                         if (TUNE == "MONASH" &&
-                           (strcmp(fileNamesOSandSS.OS.c_str(), "BplusBminus.root") == 0) ||
-                            strcmp(fileNamesOSandSS.OS.c_str(), "DplusDminus.root") == 0) { 
+                           (strcmp(fileNamesOSandSS.OS.c_str(), "BplusBminus.root") == 0 ||
+                            strcmp(fileNamesOSandSS.OS.c_str(), "DplusDminus.root") == 0)) {
                                 TCanvas *c_correlations_OS_SS = new TCanvas(Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), 800, 600);
                                 TPad *cMiniPadOS = createMiniPad("cMiniPadOS", 0.00, 0.00, 0.50, 1.00);
                                 TPad *cMiniPadOSSS = createMiniPad("cMiniPadSS", 0.50, 0.00, 1.00, 1.00);
@@ -1062,8 +1325,8 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                                 leg->Draw();
 
                                 c_correlations_OS_SS->cd();
-                                // TODO: hardcoded writePath
-                                writeCanvasToFiles(VERBOSE, c_correlations_OS_SS, "/Users/pv280546/Desktop/Plots", Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax));
+                                const std::string correlationPlotDir = ResolvePathFromBase("PlottingScripts/Plots/THnSparse/Correlations", FindHadronizationBase());
+                                writeCanvasToFiles(VERBOSE, c_correlations_OS_SS, correlationPlotDir, Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax));
                         }
                     }
 
@@ -1072,34 +1335,40 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                     // Not the most efficient way, but it is straightforward and clear
                     // and anyways the files are quite small so it doesn't take too long
                     if (CALCULATE_ERRORS) {
-                        
-
-                        // Error estimation is independent of binning, however one needs to make sure the 
-                        // yield values are within the min and max bin ranges
-                        TH1D *hSubYields = new TH1D(Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, vYields[i][j][k]/5, vYields[i][j][k]*5);
-                        TH1D *hSubRatioYields = new TH1D(Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, (vYields[i][j][k]/vYields[i][0][k])/5, (vYields[i][j][k]/vYields[i][0][k])*5);
+                        std::vector<Double_t> subYieldValues;
+                        std::vector<Double_t> subRatioValues;
+                        subYieldValues.reserve(nSubSamples);
+                        subRatioValues.reserve(nSubSamples);
 
 
                         for (Int_t l = 1; l < nSubSamples+1; l++) {
 
 
-                            TFile *OStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.OS).c_str());
-                            TFile *SStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.SS).c_str());
+                            const std::string osSubSamplePath = ResolveSubSampleRootFile(complete_root_dir_sub_samples, TUNE, l, fileNamesOSandSS.OS);
+                            const std::string ssSubSamplePath = ResolveSubSampleRootFile(complete_root_dir_sub_samples, TUNE, l, fileNamesOSandSS.SS);
+                            TFile *OStree_subSamples = OpenRootFileOrThrow(osSubSamplePath);
+                            TFile *SStree_subSamples = OpenRootFileOrThrow(ssSubSamplePath);
 
                             // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
                             // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
-                            THnSparseD *hCorrelationsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hCorrelations");
-                            THnSparseD *hCorrelationsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hCorrelations");
-                            THnSparseD *hTrKinematicsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hTrKinematics");
-                            THnSparseD *hTrKinematicsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hTrKinematics"); // in principle the same as OS...
+                            THnSparseD *hCorrelationsOS_subSamples = GetObjectOrThrow<THnSparseD>(OStree_subSamples, "hCorrelations", osSubSamplePath);
+                            THnSparseD *hCorrelationsSS_subSamples = GetObjectOrThrow<THnSparseD>(SStree_subSamples, "hCorrelations", ssSubSamplePath);
+                            THnSparseD *hTrKinematicsOS_subSamples = GetObjectOrThrow<THnSparseD>(OStree_subSamples, "hTrKinematics", osSubSamplePath);
+                            THnSparseD *hTrKinematicsSS_subSamples = GetObjectOrThrow<THnSparseD>(SStree_subSamples, "hTrKinematics", ssSubSamplePath); // in principle the same as OS...
 
                             // Apply cuts to THnSparses
                             // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
                             // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
                             TH1D *hDPhiOS_subSamples = GetCorrelationHistograms(hCorrelationsOS_subSamples, cuts);
                             TH1D *hDPhiSS_subSamples = GetCorrelationHistograms(hCorrelationsSS_subSamples, cuts);
-                            TH1D *hTrPtOS_subSamples = GetTriggerPtHistograms(hCorrelationsOS_subSamples, cuts);
-                            TH1D *hTrPtSS_subSamples = GetTriggerPtHistograms(hCorrelationsSS_subSamples, cuts);
+                            TH1D *hTrPtOS_subSamples = GetTriggerPtHistograms(hTrKinematicsOS_subSamples, cuts);
+                            TH1D *hTrPtSS_subSamples = GetTriggerPtHistograms(hTrKinematicsSS_subSamples, cuts);
+
+                            // Apply the same same-sign double-counting correction used for the central yield.
+                            if (strcmp((fileNamesOSandSS.trigger).c_str(),
+                                       (fileNamesOSandSS.associateSS).c_str()) == 0) {
+                                hDPhiSS_subSamples->Scale(0.5);
+                            }
 
                             // TODO: when subsampling ok, remove this part
                             // HistogramAndTriggerPtHistogramNames hDPhiAndhTrPtNames = vHistogramAndTriggerPtHistogramNames[k];
@@ -1112,26 +1381,14 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
 
                             Double_t subYield = calculateOneYield(VERBOSE, hDPhiOS_subSamples, hTrPtOS_subSamples, hDPhiSS_subSamples, hTrPtSS_subSamples,
                                                                 FLAVOUR, i, j, k, l);
-                            vSubYields[i][j][k][l] = subYield;
+                            vSubYields[i][j][k][l - 1] = subYield;
                             if (VERBOSE) {
-                                std::cout << "vSubYields[" << i << "][" << j << "][" << k << "][" << l << "] = " << subYield << std::endl;
+                                std::cout << "vSubYields[" << i << "][" << j << "][" << k << "][" << (l - 1) << "] = " << subYield << std::endl;
                                 std::cout << std::endl;
                             }
 
-                            hSubYields->Fill(subYield);
-                            hSubRatioYields->Fill((vSubYields[i][j][k][l])/(vSubYields[i][0][k][l]));
-
-                            // TODO: debug checks not appearing anymore due to memory deletion?
-                            TCanvas *cTestHDPhiOS;
-                            if (i==0 && j==0 && k==0 && l==1) {
-                                cTestHDPhiOS = new TCanvas(Form("testHDPhiOS_%s", FLAVOUR), "testHDPhiOS",600,800);
-                                cTestHDPhiOS->cd();
-                                hDPhiOS_subSamples->Draw("hist");
-                            }
-                            if (i==0 && j==0 && k==0 && l==2) {
-                                cTestHDPhiOS->cd();
-                                hDPhiOS_subSamples->Draw("same hist");
-                            }
+                            subYieldValues.push_back(subYield);
+                            subRatioValues.push_back(safeRatio(vSubYields[i][j][k][l - 1], vSubYields[i][0][k][l - 1]));
 
                             // Free memory
                             OStree_subSamples->Close();
@@ -1143,32 +1400,37 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                         } // Loop over SUBSAMPLES
 
 
-                        TCanvas *cTestSubYields;
-                        TCanvas *cTestSubRatioYields;
-                        if (i==1 && j==4 && k==0) {
-                                cTestSubYields = new TCanvas(Form("testSubYields_%s", FLAVOUR), "testSubYields",600,800);
-                                cTestSubYields->cd();
-                                hSubYields->Draw("hist");
-                            }
-                        if (i==1 && j==4 && k==0) {
-                            cTestSubRatioYields = new TCanvas(Form("testSubRatioYields_%s", FLAVOUR), "testSubRatioYields",600,800);
-                            cTestSubRatioYields->cd();
-                            hSubRatioYields->Draw("hist");
+                        const SubsampleStatistics yieldStats = calculateSubsampleStatistics(subYieldValues);
+                        const SubsampleStatistics yieldRatioStats = calculateSubsampleStatistics(subRatioValues);
+                        Double_t yieldError = yieldStats.stdError;
+                        Double_t yieldRatioError = yieldRatioStats.stdError;
+                        if (VERBOSE) {
+                            std::cout << "subsample yield stats n=" << yieldStats.nValues
+                                      << " mean=" << yieldStats.mean
+                                      << " stdDev=" << yieldStats.stdDev
+                                      << " stdError=" << yieldStats.stdError << std::endl;
+                            std::cout << "subsample ratio stats n=" << yieldRatioStats.nValues
+                                      << " mean=" << yieldRatioStats.mean
+                                      << " stdDev=" << yieldRatioStats.stdDev
+                                      << " stdError=" << yieldRatioStats.stdError << std::endl;
+                            std::cout << std::endl;
                         }
-                        Double_t yieldError = hSubYields->GetStdDev();
-                        Double_t yieldRatioError = hSubRatioYields->GetStdDev();
-                        if (i >= vYieldsErrors.size()) { vYieldsErrors.resize(i + 1); }
-                        if (j >= vYieldsErrors[i].size()) { vYieldsErrors[i].resize(j + 1); }
-                        if (k >= vYieldsErrors[i][j].size()) { vYieldsErrors[i][j].resize(k + 1); }
+                        if (static_cast<std::size_t>(i) >= vYieldsErrors.size()) { vYieldsErrors.resize(i + 1); }
+                        if (static_cast<std::size_t>(j) >= vYieldsErrors[i].size()) { vYieldsErrors[i].resize(j + 1); }
+                        if (static_cast<std::size_t>(k) >= vYieldsErrors[i][j].size()) { vYieldsErrors[i][j].resize(k + 1); }
                         vYieldsErrors[i][j][k] = yieldError; 
-                        std::cout << "vYieldsErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsErrors[i][j][k] << std::endl;
-                        std::cout << std::endl;
-                        if (i >= vYieldsRatioErrors.size()) { vYieldsRatioErrors.resize(i + 1); }
-                        if (j >= vYieldsRatioErrors[i].size()) { vYieldsRatioErrors[i].resize(j + 1); }
-                        if (k >= vYieldsRatioErrors[i][j].size()) { vYieldsRatioErrors[i][j].resize(k + 1); }
+                        if (VERBOSE) {
+                            std::cout << "vYieldsErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsErrors[i][j][k] << std::endl;
+                            std::cout << std::endl;
+                        }
+                        if (static_cast<std::size_t>(i) >= vYieldsRatioErrors.size()) { vYieldsRatioErrors.resize(i + 1); }
+                        if (static_cast<std::size_t>(j) >= vYieldsRatioErrors[i].size()) { vYieldsRatioErrors[i].resize(j + 1); }
+                        if (static_cast<std::size_t>(k) >= vYieldsRatioErrors[i][j].size()) { vYieldsRatioErrors[i][j].resize(k + 1); }
                         vYieldsRatioErrors[i][j][k] = yieldRatioError; 
-                        std::cout << "vYieldsRatioErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsRatioErrors[i][j][k] << std::endl;
-                        std::cout << std::endl;
+                        if (VERBOSE) {
+                            std::cout << "vYieldsRatioErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsRatioErrors[i][j][k] << std::endl;
+                            std::cout << std::endl;
+                        }
 
 
                     } // calculate errors

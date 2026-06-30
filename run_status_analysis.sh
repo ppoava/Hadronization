@@ -9,12 +9,15 @@ JOBID="$1"
 INPUTFILE="$2"
 OUTPUTDIR="$3"
 SCRIPTSDIR="$4"
+HADRONIZATION_BASE="${HADRONIZATION_BASE:-/user/pveen/Hadronization}"
 
 # =========================================================
 # ENVIRONMENT SETUP
 # =========================================================
 
-source /user/pveen/Hadronization/setupEnv.sh
+if [[ -f "${HADRONIZATION_BASE}/setupEnv.sh" ]]; then
+  source "${HADRONIZATION_BASE}/setupEnv.sh"
+fi
 
 # =========================================================
 # BUILD OUTPUT STRUCTURE

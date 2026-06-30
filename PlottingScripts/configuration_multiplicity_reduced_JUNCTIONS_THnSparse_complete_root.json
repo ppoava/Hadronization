@@ -1,10 +1,10 @@
 {
-  "VERBOSE": true,
-  "calculate_errors": true,
+  "VERBOSE": false,
+  "calculate_errors": false,
   "bb_bar_complete_root_dir_sub_samples": "AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
   "cc_bar_complete_root_dir_sub_samples": "AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
-  "nSubSamples": 10,
-  "draw_correlation_plots": true,
+  "nSubSamples": 8,
+  "draw_correlation_plots": false,
   "base_dir": "AnalyzedData",
   "PYTHIA_TUNES": [
     "MONASH",
@@ -15,138 +15,41 @@
   "cc_bar_complete_root_dir": "complete_root_21_06_2026",
   "beauty_correlations_to_analyse": [
     {
-      "trigger": "B^{+}",
-      "configs": [
-        {
-          "trigger": "B^{+}",
-          "associateOS": "B-",
-          "associateSS": "B^{+}",
-          "OS": "BplusBminus.root",
-          "SS": "BplusBplus.root"
-        },
-        {
-          "trigger": "B^{+}",
-          "associateOS": "Bc-",
-          "associateSS": "Bc+",
-          "OS": "BplusBcminus.root",
-          "SS": "BplusBcplus.root"
-        },
-        {
-          "trigger": "B^{+}",
-          "associateOS": "B_s^0-bar",
-          "associateSS": "B_s^0",
-          "OS": "BplusBszerobar.root",
-          "SS": "BplusBszero.root"
-        },
-        {
-          "trigger": "B^{+}",
-          "associateOS": "B^{0}-bar",
-          "associateSS": "B^{0}",
-          "OS": "BplusBzerobar.root",
-          "SS": "BplusBzero.root"
-        },
-        {
-          "trigger": "B^{+}",
-          "associateOS": "Lambda_b",
-          "associateSS": "Lambda_b-bar",
-          "OS": "BplusLb.root",
-          "SS": "BplusLbbar.root"
-        }
-      ]
+      "trigger": "Bˆ{+}",
+      "associateOS": "B-",
+      "associateSS": "Bˆ{+}",
+      "OS": "BplusBminus.root",
+      "SS": "BplusBplus.root"
     },
     {
-      "trigger": "Lambda_b-bar",
-      "configs": [
-        {
-          "trigger": "Lambda_b-bar",
-          "associateOS": "B-",
-          "associateSS": "B^{+}",
-          "OS": "LbbarBminus.root",
-          "SS": "LbbarBplus.root"
-        },
-        {
-          "trigger": "Lambda_b-bar",
-          "associateOS": "Bc-",
-          "associateSS": "Bc+",
-          "OS": "LbbarBcminus.root",
-          "SS": "LbbarBcplus.root"
-        },
-        {
-          "trigger": "Lambda_b-bar",
-          "associateOS": "B_s^0-bar",
-          "associateSS": "B_s^0",
-          "OS": "LbbarBszerobar.root",
-          "SS": "LbbarBszero.root"
-        },
-        {
-          "trigger": "Lambda_b-bar",
-          "associateOS": "B^{0}-bar",
-          "associateSS": "B^{0}",
-          "OS": "LbbarBzerobar.root",
-          "SS": "LbbarBzero.root"
-        },
-        {
-          "trigger": "Lambda_b-bar",
-          "associateOS": "Lambda_b",
-          "associateSS": "Lambda_b-bar",
-          "OS": "LbbarLb.root",
-          "SS": "LbbarLbbar.root"
-        }
-      ]
+      "trigger": "Bˆ{+}",
+      "associateOS": "Lambda_b",
+      "associateSS": "Lambda_b-bar",
+      "OS": "BplusLb.root",
+      "SS": "BplusLbbar.root"
+    },
+    {
+      "trigger": "Bˆ{+}",
+      "associateOS": "Sigma_b0",
+      "associateSS": "Sigma_b(0)-bar",
+      "OS": "BplusSigmabzero.root",
+      "SS": "BplusSigmabzerobar.root"
     }
   ],
   "charm_correlations_to_analyse": [
     {
-      "trigger": "D^{+}",
-      "configs": [
-        {
-          "trigger": "D^{+}",
-          "associateOS": "D-",
-          "associateSS": "D^{+}",
-          "OS": "DplusDminus.root",
-          "SS": "DplusDplus.root"
-        },
-        {
-          "trigger": "D^{+}",
-          "associateOS": "D^{0}-bar",
-          "associateSS": "D^{0}",
-          "OS": "DplusDzerobar.root",
-          "SS": "DplusDzero.root"
-        },
-        {
-          "trigger": "D^{+}",
-          "associateOS": "Lambda_c(+)-bar",
-          "associateSS": "Lambda_c(+)",
-          "OS": "DplusLambdacplusbar.root",
-          "SS": "DplusLambdacplus.root"
-        }
-      ]
+      "trigger": "Dˆ{+}",
+      "associateOS": "D-",
+      "associateSS": "Dˆ{+}",
+      "OS": "DplusDminus.root",
+      "SS": "DplusDplus.root"
     },
     {
-      "trigger": "Lambda_c(+)",
-      "configs": [
-        {
-          "trigger": "Lambda_c(+)",
-          "associateOS": "D-",
-          "associateSS": "D^{+}",
-          "OS": "LambdacplusDminus.root",
-          "SS": "LambdacplusDplus.root"
-        },
-        {
-          "trigger": "Lambda_c(+)",
-          "associateOS": "D^{0}-bar",
-          "associateSS": "D^{0}",
-          "OS": "LambdacplusDzerobar.root",
-          "SS": "LambdacplusDzero.root"
-        },
-        {
-          "trigger": "Lambda_c(+)",
-          "associateOS": "Lambda_c(+)-bar",
-          "associateSS": "Lambda_c(+)",
-          "OS": "LambdacplusLambdacplusbar.root",
-          "SS": "LambdacplusLambdacplus.root"
-        }
-      ]
+      "trigger": "Dˆ{+}",
+      "associateOS": "Lambda_c(+)-bar",
+      "associateSS": "Lambda_c(+)",
+      "OS": "DplusLambdacplusbar.root",
+      "SS": "DplusLambdacplus.root"
     }
   ],
   "histograms_to_analyse": [
@@ -372,10 +275,12 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_all",
       "canvas_title": "beauty balancing",
       "x_axis_title": "associate",
@@ -505,8 +410,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "beauty_balancing_JUNCTIONS_over_MONASH",
@@ -518,10 +424,12 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_JUNCTIONS_over_MONASH",
       "canvas_title": "beauty balancing ratio",
       "x_axis_title": "associate",
@@ -591,7 +499,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -638,8 +548,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "beauty_balancing_baryon_over_meson_ratio",
@@ -658,7 +569,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_baryon_over_meson_ratio",
       "canvas_title": "beauty balancing baryon/meson ratio",
       "x_axis_title": "pT",
@@ -706,7 +617,9 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -716,8 +629,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "beauty_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH",
@@ -735,7 +647,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH",
       "canvas_title": "beauty balancing ratio of baryon/meson ratio",
       "x_axis_title": "pT",
@@ -769,8 +681,12 @@
           "display_name": "B+ Sigma_b0"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -780,8 +696,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "charm_balancing_all",
@@ -794,10 +709,12 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_all",
       "canvas_title": "charm balancing",
       "x_axis_title": "associate",
@@ -927,8 +844,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "charm_balancing_JUNCTIONS_over_MONASH",
@@ -940,10 +858,12 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_JUNCTIONS_over_MONASH",
       "canvas_title": "charm balancing ratio",
       "x_axis_title": "associate",
@@ -1013,7 +933,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -1060,8 +982,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "charm_balancing_baryon_over_meson_ratio",
@@ -1079,7 +1002,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_baryon_over_meson_ratio",
       "canvas_title": "charm balancing baryon/meson ratio",
       "x_axis_title": "pT",
@@ -1123,14 +1046,15 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "charm_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH",
@@ -1147,7 +1071,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH",
       "canvas_title": "charm balancing ratio of baryon/meson ratio",
       "x_axis_title": "pT",
@@ -1217,7 +1141,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -1269,8 +1195,7 @@
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_MONASH",
@@ -1281,7 +1206,9 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -1406,8 +1333,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_JUNCTIONS",
@@ -1418,7 +1346,9 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -1543,8 +1473,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_JUNCTIONS_over_MONASH",
@@ -1556,7 +1487,9 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -1629,7 +1562,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -1676,8 +1611,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_MONASH",
@@ -1688,7 +1624,9 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -1813,8 +1751,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_JUNCTIONS",
@@ -1825,7 +1764,9 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -1950,8 +1891,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_JUNCTIONS_over_MONASH",
@@ -1963,7 +1905,9 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -2036,7 +1980,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -2083,8 +2029,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_lambda_only",
@@ -2146,7 +2093,9 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -2156,8 +2105,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_lambda_sigma",
@@ -2224,7 +2172,9 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -2234,8 +2184,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH_lambda_only",
@@ -2282,8 +2231,12 @@
           "display_name": "B+ Lambda_b"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -2293,8 +2246,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH_lambda_sigma",
@@ -2346,8 +2298,12 @@
           "display_name": "B+ Sigma_b0"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -2357,8 +2313,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_lambda_only",
@@ -2420,14 +2375,15 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_lambda_sigma",
@@ -2489,14 +2445,15 @@
           "colour": 6
         }
       ],
-      "dependency_line_styles": [],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH_lambda_only",
@@ -2543,15 +2500,18 @@
           "display_name": "D+ Lambda_c(+)-bar"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_JUNCTIONS_over_MONASH_lambda_sigma",
@@ -2598,15 +2558,18 @@
           "display_name": "D+ Lambda_c(+)-bar"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "beauty_balancing_CLOSEPACKING_over_MONASH",
@@ -2618,10 +2581,12 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "CLOSEPACKING",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_CLOSEPACKING_over_MONASH",
       "canvas_title": "beauty balancing ratio",
       "x_axis_title": "associate",
@@ -2691,7 +2656,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -2738,8 +2705,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "beauty_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH",
@@ -2757,7 +2725,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "beauty_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH",
       "canvas_title": "beauty balancing ratio of baryon/meson ratio",
       "x_axis_title": "pT",
@@ -2791,8 +2759,12 @@
           "display_name": "B+ Sigma_b0"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -2802,8 +2774,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "charm_balancing_CLOSEPACKING_over_MONASH",
@@ -2815,10 +2786,12 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "CLOSEPACKING",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_CLOSEPACKING_over_MONASH",
       "canvas_title": "charm balancing ratio",
       "x_axis_title": "associate",
@@ -2888,7 +2861,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -2935,8 +2910,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "charm_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH",
@@ -2953,7 +2929,7 @@
       ],
       "use_hard_coded_settings": false,
       "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "charm_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH",
       "canvas_title": "charm balancing ratio of baryon/meson ratio",
       "x_axis_title": "pT",
@@ -3023,7 +2999,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -3075,8 +3053,7 @@
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_CLOSEPACKING",
@@ -3087,7 +3064,9 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -3212,8 +3191,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_CLOSEPACKING_over_MONASH",
@@ -3225,7 +3205,9 @@
       "FLAVOUR": "BEAUTY",
       "nominator_TUNE": "CLOSEPACKING",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -3298,7 +3280,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -3345,8 +3329,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "B^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_CLOSEPACKING",
@@ -3357,7 +3342,9 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -3482,8 +3469,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_CLOSEPACKING_over_MONASH",
@@ -3495,7 +3483,9 @@
       "FLAVOUR": "CHARM",
       "nominator_TUNE": "CLOSEPACKING",
       "denominator_TUNE": "MONASH",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
+      "baryons_to_plot_in_baryon/meson_ratio": [
+
+      ],
       "use_hard_coded_settings": false,
       "write": false,
       "write_path": "NONE",
@@ -3568,7 +3558,9 @@
           "display_name": "90-100%"
         }
       ],
-      "TUNE_colours": [],
+      "TUNE_colours": [
+
+      ],
       "dependency_line_styles": [
         {
           "dependency_name": "hDPhiM0_1",
@@ -3615,8 +3607,9 @@
           "line_style": 1
         }
       ],
-      "baryon_line_styles": [],
-      "TriggerToUse": "D^{+}"
+      "baryon_line_styles": [
+
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH_lambda_only",
@@ -3663,8 +3656,12 @@
           "display_name": "B+ Lambda_b"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -3674,8 +3671,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_beauty_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH_lambda_sigma",
@@ -3727,8 +3723,12 @@
           "display_name": "B+ Sigma_b0"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_b",
@@ -3738,8 +3738,7 @@
           "baryon_name": "Sigma_b0",
           "line_style": 2
         }
-      ],
-      "TriggerToUse": "B^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH_lambda_only",
@@ -3786,15 +3785,18 @@
           "display_name": "D+ Lambda_c(+)-bar"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
+      ]
     },
     {
       "canvas_name": "mini_charm_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH_lambda_sigma",
@@ -3841,245 +3843,18 @@
           "display_name": "D+ Lambda_c(+)-bar"
         }
       ],
-      "TUNE_colours": [],
-      "dependency_line_styles": [],
+      "TUNE_colours": [
+
+      ],
+      "dependency_line_styles": [
+
+      ],
       "baryon_line_styles": [
         {
           "baryon_name": "Lambda_c(+)-bar",
           "line_style": 1
         }
-      ],
-      "TriggerToUse": "D^{+}"
-    },
-    {
-      "canvas_name": "beauty_balancing_all_lambda_trigger",
-      "draw_function_to_use": "drawBalancingPlots",
-      "TUNES": [
-        "MONASH",
-        "JUNCTIONS",
-        "CLOSEPACKING"
-      ],
-      "FLAVOUR": "BEAUTY",
-      "TriggerToUse": "Lambda_b-bar",
-      "nominator_TUNE": "NONE",
-      "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
-      "use_hard_coded_settings": false,
-      "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
-      "write_name": "beauty_balancing_all_lambda_b-bar",
-      "canvas_title": "beauty balancing",
-      "x_axis_title": "associate",
-      "y_axis_title": "yield",
-      "x_size_canvas": 800,
-      "y_size_canvas": 600,
-      "x_min_mini_pad": -1,
-      "x_max_mini_pad": -1,
-      "y_min_mini_pad": -1,
-      "y_max_mini_pad": -1,
-      "top_margin_mini_pad": -1,
-      "bottom_margin_mini_pad": -1,
-      "left_margin_mini_pad": -1,
-      "right_margin_mini_pad": -1,
-      "y_min_axis": 0.0001,
-      "y_max_axis": 0.8,
-      "histogram_minimum": -1,
-      "histogram_maximum": -1,
-      "set_log_y": true,
-      "x_min_legend": 0.63,
-      "x_max_legend": 0.90,
-      "y_min_legend": 0.68,
-      "y_max_legend": 0.88,
-      "legend_entries": [
-        {
-          "object_name": "hDPhiM80_100",
-          "display_name": "80-100%"
-        },
-        {
-          "object_name": "hDPhiM60_80",
-          "display_name": "60-80%"
-        },
-        {
-          "object_name": "hDPhiM40_60",
-          "display_name": "40-60%"
-        },
-        {
-          "object_name": "hDPhiM20_40",
-          "display_name": "20-40%"
-        },
-        {
-          "object_name": "hDPhiM5_20",
-          "display_name": "5-20%"
-        },
-        {
-          "object_name": "hDPhiM1_5",
-          "display_name": "1-5%"
-        },
-        {
-          "object_name": "hDPhiM1",
-          "display_name": "0-1%"
-        }
-      ],
-      "TUNE_colours": [
-        {
-          "TUNE_name": "MONASH",
-          "colour": 1
-        },
-        {
-          "TUNE_name": "JUNCTIONS",
-          "colour": 2
-        },
-        {
-          "TUNE_name": "CLOSEPACKING",
-          "colour": 3
-        }
-      ],
-      "dependency_line_styles": [
-        {
-          "dependency_name": "hDPhiM80_100",
-          "line_style": 0
-        },
-        {
-          "dependency_name": "hDPhiM60_80",
-          "line_style": 1
-        },
-        {
-          "dependency_name": "hDPhiM40_60",
-          "line_style": 2
-        },
-        {
-          "dependency_name": "hDPhiM20_40",
-          "line_style": 3
-        },
-        {
-          "dependency_name": "hDPhiM5_20",
-          "line_style": 0
-        },
-        {
-          "dependency_name": "hDPhiM1_5",
-          "line_style": 1
-        },
-        {
-          "dependency_name": "hDPhiM1",
-          "line_style": 2
-        }
-      ],
-      "baryon_line_styles": []
-    },
-    {
-      "canvas_name": "charm_balancing_all_Lambda_c(+)",
-      "draw_function_to_use": "drawBalancingPlots",
-      "TUNES": [
-        "MONASH",
-        "JUNCTIONS",
-        "CLOSEPACKING"
-      ],
-      "FLAVOUR": "CHARM",
-      "TriggerToUse": "Lambda_c(+)",
-      "nominator_TUNE": "NONE",
-      "denominator_TUNE": "NONE",
-      "baryons_to_plot_in_baryon/meson_ratio": [],
-      "use_hard_coded_settings": false,
-      "write": false,
-      "write_path": "PlottingScripts/Plots/THnSparse",
-      "write_name": "charm_balancing_all_Lambda_c(+)",
-      "canvas_title": "charm balancing",
-      "x_axis_title": "associate",
-      "y_axis_title": "yield",
-      "x_size_canvas": 800,
-      "y_size_canvas": 600,
-      "x_min_mini_pad": -1,
-      "x_max_mini_pad": -1,
-      "y_min_mini_pad": -1,
-      "y_max_mini_pad": -1,
-      "top_margin_mini_pad": -1,
-      "bottom_margin_mini_pad": -1,
-      "left_margin_mini_pad": -1,
-      "right_margin_mini_pad": -1,
-      "y_min_axis": 0.0001,
-      "y_max_axis": 0.8,
-      "histogram_minimum": -1,
-      "histogram_maximum": -1,
-      "set_log_y": true,
-      "x_min_legend": 0.63,
-      "x_max_legend": 0.90,
-      "y_min_legend": 0.68,
-      "y_max_legend": 0.88,
-      "legend_entries": [
-        {
-          "object_name": "hDPhiM80_100",
-          "display_name": "80-100%"
-        },
-        {
-          "object_name": "hDPhiM60_80",
-          "display_name": "60-80%"
-        },
-        {
-          "object_name": "hDPhiM40_60",
-          "display_name": "40-60%"
-        },
-        {
-          "object_name": "hDPhiM20_40",
-          "display_name": "20-40%"
-        },
-        {
-          "object_name": "hDPhiM5_20",
-          "display_name": "5-20%"
-        },
-        {
-          "object_name": "hDPhiM1_5",
-          "display_name": "1-5%"
-        },
-        {
-          "object_name": "hDPhiM1",
-          "display_name": "0-1%"
-        }
-      ],
-      "TUNE_colours": [
-        {
-          "TUNE_name": "MONASH",
-          "colour": 1
-        },
-        {
-          "TUNE_name": "JUNCTIONS",
-          "colour": 2
-        },
-        {
-          "TUNE_name": "CLOSEPACKING",
-          "colour": 3
-        }
-      ],
-      "dependency_line_styles": [
-        {
-          "dependency_name": "hDPhiM80_100",
-          "line_style": 0
-        },
-        {
-          "dependency_name": "hDPhiM60_80",
-          "line_style": 1
-        },
-        {
-          "dependency_name": "hDPhiM40_60",
-          "line_style": 2
-        },
-        {
-          "dependency_name": "hDPhiM20_40",
-          "line_style": 3
-        },
-        {
-          "dependency_name": "hDPhiM5_20",
-          "line_style": 0
-        },
-        {
-          "dependency_name": "hDPhiM1_5",
-          "line_style": 1
-        },
-        {
-          "dependency_name": "hDPhiM1",
-          "line_style": 2
-        }
-      ],
-      "baryon_line_styles": []
+      ]
     }
   ],
   "global_canvases_to_be_drawn": [
@@ -4099,7 +3874,7 @@
         "mini_charm_balancing_JUNCTIONS_over_MONASH"
       ],
       "write": true,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "global_balancing_plots_multiplicity",
       "x_size_canvas": 1000,
       "y_size_canvas": 950
@@ -4122,7 +3897,7 @@
         "mini_charm_balancing_baryon_over_meson_ratio_CLOSEPACKING_over_MONASH_lambda_sigma"
       ],
       "write": true,
-      "write_path": "PlottingScripts/Plots/THnSparse",
+      "write_path": "PlottingScripts/Plots/THnSparseCompleteRoot",
       "write_name": "global_balancing_baryon_over_meson_ratio_multiplicity",
       "x_size_canvas": 1000,
       "y_size_canvas": 950

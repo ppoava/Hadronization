@@ -5,13 +5,16 @@
 // The code is layed out in such a way that it should be easy to append or modify other settings, as desired.
 
 // C++ libraries
+#include <cmath>
 #include <iostream>
 #include <vector>
 // ROOT libraries
 #include "TFile.h"
 #include "TH1D.h"
+#include "THnSparse.h"
 #include "TTree.h"
 #include "TChain.h"
+#include "TMath.h"
 #include "TString.h"
 
 #define PI 3.14159265

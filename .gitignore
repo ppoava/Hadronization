@@ -22,6 +22,12 @@ Jobs/HF/**/hf_*.root
 *_C.so
 *_C.d
 *_ACLiC_dict_rdict.pcm
+*.pcm
+
+# Ignore generated plot outputs
+PlottingScripts/Plots/
+PlottingScripts/**/Plots/
+Balancing_and_Sampling/**/Plots/
 
 # Ignore built executables
 SimulationScripts/heavyflavourcorrelations_status

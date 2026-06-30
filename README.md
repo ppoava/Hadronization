@@ -14,7 +14,7 @@ The present chain is centered on a unified heavy-flavour production. In that pro
 
 `PlottingScripts/FinalAnalysis` contains the final comparison layer. It now has two source macros. `Plot_MultiplicityDistributions_TwoSamples.C` compares multiplicity distributions between two analyzed samples. `Plot_SelectedParticleYields_IndependentVsCombined.C` compares selected charm and beauty yields and draws the independent-over-combined ratio inside the same output canvas.
 
-The top level of `PlottingScripts` also keeps the older angular-correlation and configurable plotting machinery. `improvedPlotting.C` reads the JSON configuration files for the older yield and tune-comparison plotting system. `combinedCanvasPlots.C`, `B_Balancing_GeneralPlotting.C`, and `PlottingWizard.C` are earlier plotting macros for balancing and angular-correlation studies. `ListHistos.C` is the small inspection tool used to list objects inside a ROOT file. The `DpDmBpBm_ComparisonStudy` subdirectory keeps the D+/D- and B+/B- origin, same-mother, different-mother, decay-only, and decay-plus-hadronisation comparison macros.
+The top level of `PlottingScripts` contains the paper THnSparse plotting path. `improvedPlotting_THnSparse.C` reads `configuration_multiplicity_reduced_JUNCTIONS_THnSparse.json` and treats MONASH, JUNCTIONS, and CLOSEPACKING as equal tunes. `Plot_MultiplicityDistribution_PercentileBoundaries.C` draws the charged-particle multiplicity distribution with the configured percentile boundaries, and `run_paper_plots.sh` is the preferred entry point for paper plotting targets. The older configurable plotting machinery is still present: `improvedPlotting.C` reads the older JSON configuration files, while `combinedCanvasPlots.C`, `B_Balancing_GeneralPlotting.C`, and `PlottingWizard.C` are earlier plotting macros for balancing and angular-correlation studies. `ListHistos.C` is the small inspection tool used to list objects inside a ROOT file. The `DpDmBpBm_ComparisonStudy` subdirectory keeps the D+/D- and B+/B- origin, same-mother, different-mother, decay-only, and decay-plus-hadronisation comparison macros.
 
 `Balancing_and_Sampling` keeps the older balancing, yield, sampling, and uncertainty machinery. This part of the repository is still useful for reproducing the earlier balancing plots and for batch-yield error studies, but it is not the primary entry point for the current combined-HF production. The scripts under `Balancing_and_Sampling/CalculateErrors` still use the sampling directories from the older `/data/alice/pveen/ProductionsPythia` layout unless those base paths are overridden in the environment.
 
@@ -23,8 +23,6 @@ The top level of `PlottingScripts` also keeps the older angular-correlation and 
 `Jobs` and `logs` are the Condor work and log areas. They are produced by `runCondorJob.sh` and the submit files. They are not physics inputs by themselves, but they matter for diagnosing Stoomboot submissions.
 
 `Literature` stores the reference bibliography and thesis PDF used for context. It is not part of the executable workflow, but it keeps the project references close to the analysis code.
-
-`Other` is an archival holding area. It currently keeps an older copy of the general balancing plotting macro from before the present documentation pass. It should be read as provenance rather than as the preferred current entry point.
 
 ## Environment
 
@@ -104,6 +102,44 @@ The split analysis wrappers are still available for old independent samples.
 
 ## Plotting Workflow
 
+The current paper THnSparse plotting workflow uses pair-named ROOT files produced by `AnalysisScripts/status_analysis_THnSparse_qq.C`. The root-level wrappers build the input layout expected by Paul's plotting macro for all three tunes:
+
+```bash
+./submit_status_analysis.sh ALL 100 Job700
+./merge_root_files.sh ALL Job700 21_06_2026
+./make_subsamples.sh ALL 8 10 123 Job700 700
+```
+
+For a smaller validation pass, replace `100` with the number of raw jobs to process. For example, the planned three-tune test run uses:
+
+```bash
+./submit_status_analysis.sh ALL 50 Job700
+./merge_root_files.sh ALL Job700 21_06_2026_50job
+./make_subsamples.sh ALL 8 6 123 Job700 700_50job
+```
+
+When using non-default tags like these, copy one of the THnSparse JSON configs and update `bb_bar_complete_root_dir`, `cc_bar_complete_root_dir`, `bb_bar_complete_root_dir_sub_samples`, and `cc_bar_complete_root_dir_sub_samples` to the validation tags. Then pass that config through `THNSPARSE_CONFIG`, `THNSPARSE_COMPLETE_ROOT_CONFIG`, or `MULTIPLICITY_CONFIG` when running `PlottingScripts/run_paper_plots.sh`.
+
+The resulting paper THnSparse inputs are:
+
+```text
+AnalyzedData/complete_root_<tag>_MONASH
+AnalyzedData/complete_root_<tag>_JUNCTIONS
+AnalyzedData/complete_root_<tag>_CLOSEPACKING
+AnalyzedData/SUBSAMPLES_<tag>/combined_root_subSamples_MONASH
+AnalyzedData/SUBSAMPLES_<tag>/combined_root_subSamples_JUNCTIONS
+AnalyzedData/SUBSAMPLES_<tag>/combined_root_subSamples_CLOSEPACKING
+```
+
+The paper plotting entry point is:
+
+```bash
+./PlottingScripts/run_paper_plots.sh smoke
+./PlottingScripts/run_paper_plots.sh
+```
+
+`smoke` runs the multiplicity-boundary plot and the complete-root THnSparse config without subsampling. The default `all` target runs the multiplicity-boundary plot and the full THnSparse config.
+
 The current pT and multiplicity plots are made from `AnalyzedData`, not from `RootFiles`. If no date is passed, the plotting helpers search for the latest dated folder under `AnalyzedData`. In ordinary use, we pass the date explicitly so that no older production is selected by accident.
 
 ```bash
@@ -136,4 +172,4 @@ condor_submit submitCondor_hf_10M.sub
 
 Raw ROOT files are large production artifacts. They belong under `RootFiles` on the machine that runs the production, but they should be excluded from ordinary source synchronization unless the task explicitly concerns data transfer. Reduced analysis ROOT files in `AnalyzedData` are tracked in this working branch because they are the compact products used by the plotting layer.
 
-The local branch used for this work is `Iñaki`. When synchronizing with the Nikhef copy over `ssh stbc`, the safe rule is that code, scripts, documentation, plots, submit files, and reduced analysis outputs should match, while raw `.root` files under `RootFiles` may differ or remain only on the cluster. This keeps the branch reproducible without moving the heavy raw productions unnecessarily.
+The three-tune integration branch is `three-tunes`. When synchronizing with the Nikhef copy, the safe rule is that code, scripts, documentation, submit files, and reduced analysis outputs should match, while raw `.root` files under `RootFiles` may differ or remain only on the cluster. This keeps the branch reproducible without moving the heavy raw productions unnecessarily.
