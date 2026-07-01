@@ -110,7 +110,7 @@ The current paper THnSparse plotting workflow uses pair-named ROOT files produce
 ./make_subsamples.sh ALL 8 10 123 Job700 700
 ```
 
-For a smaller validation pass, replace `100` with the number of raw jobs to process. For example, the planned three-tune test run uses:
+For a smaller validation pass, replace `100` with the number of available raw files to process per tune. The submit wrapper sorts available files by numeric job id and selects the first N completed files, so this works even if some low job ids are still running. For example, the planned three-tune test run uses:
 
 ```bash
 ./submit_status_analysis.sh ALL 50 Job700

@@ -96,7 +96,7 @@ The shell wrappers at the repository root now treat `MONASH`, `JUNCTIONS`, and `
 ./make_subsamples.sh ALL 8 10 123 Job700 700
 ```
 
-For a single tune, replace `ALL` with `MONASH`, `JUNCTIONS`, or `CLOSEPACKING`. The submit wrapper reads raw files from `RootFiles/HF/<TUNE>` by default on the production filesystem, the merge wrapper writes `AnalyzedData/complete_root_21_06_2026_<TUNE>`, and the subsample wrapper writes `AnalyzedData/SUBSAMPLES_700/combined_root_subSamples_<TUNE>`.
+For a single tune, replace `ALL` with `MONASH`, `JUNCTIONS`, or `CLOSEPACKING`. The submit wrapper reads raw files from `RootFiles/HF/<TUNE>` by default on the production filesystem and selects the first requested number of available files sorted by numeric job id. The merge wrapper writes `AnalyzedData/complete_root_21_06_2026_<TUNE>`, and the subsample wrapper writes `AnalyzedData/SUBSAMPLES_700/combined_root_subSamples_<TUNE>`.
 
 ## Subsamples
 

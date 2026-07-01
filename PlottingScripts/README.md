@@ -27,7 +27,7 @@ The root-level scripts create the expected input layout:
 ./make_subsamples.sh ALL 8 10 123 Job700 700
 ```
 
-For a smaller validation run, change the number of raw jobs passed to `submit_status_analysis.sh` and use distinct output tags when merging and subsampling.
+For a smaller validation run, change the number of raw files passed to `submit_status_analysis.sh` and use distinct output tags when merging and subsampling. The submit wrapper sorts available files by numeric job id and selects the first N completed files for each tune; it does not require the selected files to be exactly job ids `0` through `N-1`.
 
 When using distinct validation tags, copy one of the JSON configs and update:
 

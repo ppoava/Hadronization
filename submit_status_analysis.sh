@@ -4,10 +4,11 @@ set -euo pipefail
 # Submit Paul's THnSparse status analysis for one HF tune or for all paper tunes.
 #
 # Usage:
-#   ./submit_status_analysis.sh TUNE [NUMBER_OF_SUBJOBS] [JOB_TAG]
+#   ./submit_status_analysis.sh TUNE [NUMBER_OF_FILES] [JOB_TAG]
 #   ./submit_status_analysis.sh ALL 100 Job700
 #
 # TUNE can be MONASH, JUNCTIONS, CLOSEPACKING, or ALL.
+# NUMBER_OF_FILES is the number of available raw ROOT files to process per tune.
 #
 # Environment overrides:
 #   RAW_INPUT_BASE      default: /data/alice/ipardoza/Hadronization/RootFiles/HF
@@ -18,7 +19,7 @@ set -euo pipefail
 usage() {
     cat <<'USAGE'
 Usage:
-  ./submit_status_analysis.sh TUNE [NUMBER_OF_SUBJOBS] [JOB_TAG]
+  ./submit_status_analysis.sh TUNE [NUMBER_OF_FILES] [JOB_TAG]
   ./submit_status_analysis.sh ALL 100 Job700
 
 TUNE:
@@ -28,8 +29,13 @@ TUNE:
   ALL
 
 Defaults:
-  NUMBER_OF_SUBJOBS = 1
-  JOB_TAG           = Job700
+  NUMBER_OF_FILES = 1
+  JOB_TAG         = Job700
+
+NUMBER_OF_FILES selects the first N available raw ROOT files for each tune,
+sorted by the numeric job id in the filename. This means validation runs can
+use, for example, 50 completed files per tune even if some low job ids are
+still running.
 
 Environment overrides:
   RAW_INPUT_BASE       Raw HF ROOT input base directory.
@@ -50,7 +56,7 @@ analysis_scripts_dir="${project_base}/AnalysisScripts"
 dry_run="${DRY_RUN:-0}"
 
 requested_tune="${1:-}"
-number_of_subjobs="${2:-1}"
+number_of_files="${2:-1}"
 job_tag="${3:-Job700}"
 
 if [[ -z "${requested_tune}" || "${requested_tune}" == "-h" || "${requested_tune}" == "--help" ]]; then
@@ -60,8 +66,8 @@ fi
 
 requested_tune="$(printf '%s' "${requested_tune}" | tr '[:lower:]' '[:upper:]')"
 
-if ! [[ "${number_of_subjobs}" =~ ^[0-9]+$ ]]; then
-    echo "ERROR: NUMBER_OF_SUBJOBS must be an integer, got '${number_of_subjobs}'" >&2
+if ! [[ "${number_of_files}" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: NUMBER_OF_FILES must be an integer, got '${number_of_files}'" >&2
     exit 1
 fi
 
@@ -122,27 +128,41 @@ for tune in "${tunes[@]}"; do
         continue
     fi
 
-    for (( i=0; i<number_of_subjobs; i++ )); do
-        file=$(find "${input_directory}" -name "*job${i}.root" | head -n 1)
+    queued_for_tune=0
 
-        if [[ -z "${file}" ]]; then
-            echo "WARNING: missing file for ${tune} job ${i}" >&2
+    while IFS=$'\t' read -r job_id file; do
+        if [[ -z "${job_id}" || -z "${file}" ]]; then
             continue
         fi
 
         cat >> "${subfile}" <<EOF
 
-arguments = ${i} ${file} ${output_directory} ${analysis_scripts_dir}
+arguments = ${job_id} ${file} ${output_directory} ${analysis_scripts_dir}
 
-output = ${output_logs_directory}/job_${i}.out
-error  = ${output_logs_directory}/job_${i}.err
-log    = ${output_logs_directory}/job_${i}.log
+output = ${output_logs_directory}/job_${job_id}.out
+error  = ${output_logs_directory}/job_${job_id}.err
+log    = ${output_logs_directory}/job_${job_id}.log
 
 queue 1
 EOF
 
         queued_jobs=$((queued_jobs + 1))
-    done
+        queued_for_tune=$((queued_for_tune + 1))
+    done < <(
+        find "${input_directory}" -maxdepth 1 -type f -name "*.root" -print |
+        while IFS= read -r candidate; do
+            job_id=$(printf '%s\n' "${candidate}" | sed -n 's/.*job\([0-9][0-9]*\)\.root$/\1/p')
+            if [[ -n "${job_id}" ]]; then
+                printf '%s\t%s\n' "${job_id}" "${candidate}"
+            fi
+        done |
+        sort -n -k1,1 |
+        head -n "${number_of_files}"
+    )
+
+    if [[ "${queued_for_tune}" -lt "${number_of_files}" ]]; then
+        echo "WARNING: requested ${number_of_files} files for ${tune}, but only queued ${queued_for_tune}" >&2
+    fi
 done
 
 if [[ "${queued_jobs}" -eq 0 ]]; then
