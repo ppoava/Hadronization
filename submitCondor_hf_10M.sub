@@ -23,6 +23,12 @@ error  = logs/HF/$(TUNE)/job_$(Cluster)_$(JOBID).err
 # Shared filesystem (/data/alice), no Condor file transfer
 should_transfer_files = NO
 
+# Retry non-zero exits, including walltime/draining evictions that leave a
+# partial ROOT file in the work directory. The wrapper removes stale workdir
+# outputs and uses the retry count in the seed modifiers.
+max_retries = 5
+retry_until = (ExitCode == 0)
+
 # 1,000,000 events/job × 10 jobs/tune = 10,000,000 events/tune.
 # JUNCTIONS jobs regularly exceed the 4h "short" walltime limit on Stoomboot,
 # so the job category is set per block below.

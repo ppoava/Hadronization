@@ -4,24 +4,29 @@ set -euo pipefail
 # Usage:
 #   runCondorJob.sh JOBID TUNE NEVT_PER_JOB
 #   runCondorJob.sh CLUSTERID JOBID TUNE NEVT_PER_JOB
+#   runCondorJob.sh CLUSTERID JOBID TUNE NEVT_PER_JOB ATTEMPT
 #   runCondorJob.sh JOBID CHANNEL TUNE NEVT_PER_JOB
 #   runCondorJob.sh CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB
+#   runCondorJob.sh CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB ATTEMPT
 #
 #   CLUSTERID    : Condor cluster id (optional for manual runs)
 #   JOBID        : integer
 #   CHANNEL      : bbbar | ccbar
 #   TUNE         : MONASH | JUNCTIONS | CLOSEPACKING (HF only)
 #   NEVT_PER_JOB : integer
+#   ATTEMPT      : retry/start counter, optional
 
 usage() {
   echo "Usage:"
   echo "  $0 JOBID TUNE NEVT_PER_JOB"
   echo "  $0 CLUSTERID JOBID TUNE NEVT_PER_JOB"
+  echo "  $0 CLUSTERID JOBID TUNE NEVT_PER_JOB ATTEMPT"
   echo "    Unified heavy-flavour workflow"
   echo "    TUNE = MONASH | JUNCTIONS | CLOSEPACKING"
   echo
   echo "  $0 JOBID CHANNEL TUNE NEVT_PER_JOB"
   echo "  $0 CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB"
+  echo "  $0 CLUSTERID JOBID CHANNEL TUNE NEVT_PER_JOB ATTEMPT"
   echo "    Split independent workflow"
   echo "    CHANNEL = bbbar | ccbar"
   echo "    TUNE    = MONASH | JUNCTIONS"
@@ -39,6 +44,7 @@ is_nonnegative_integer() {
 }
 
 CLUSTERID=""
+ATTEMPT="0"
 
 if [ "$#" -eq 3 ]; then
   WORKFLOW="hf"
@@ -60,12 +66,27 @@ elif [ "$#" -eq 4 ]; then
     NEVT_PER_JOB="$4"
   fi
 elif [ "$#" -eq 5 ]; then
+  CLUSTERID="$1"
+  JOBID="$2"
+  if [ "$3" = "bbbar" ] || [ "$3" = "ccbar" ]; then
+    WORKFLOW="split"
+    CHANNEL="$3"
+    TUNE="$4"
+    NEVT_PER_JOB="$5"
+  else
+    WORKFLOW="hf"
+    TUNE="$3"
+    NEVT_PER_JOB="$4"
+    ATTEMPT="$5"
+  fi
+elif [ "$#" -eq 6 ]; then
   WORKFLOW="split"
   CLUSTERID="$1"
   JOBID="$2"
   CHANNEL="$3"
   TUNE="$4"
   NEVT_PER_JOB="$5"
+  ATTEMPT="$6"
 else
   usage
   exit 1
@@ -79,6 +100,22 @@ fi
 if ! is_nonnegative_integer "${JOBID}"; then
   echo "ERROR: JOBID must be a non-negative integer."
   exit 1
+fi
+
+if ! is_nonnegative_integer "${ATTEMPT}"; then
+  echo "ERROR: ATTEMPT must be a non-negative integer."
+  exit 1
+fi
+
+# HTCondor exposes the live job ClassAd inside the job sandbox. When jobs are
+# retried by max_retries, NumJobStarts increments even though the command-line
+# arguments stay unchanged. Folding it into the seed modifiers makes retry
+# attempts statistically independent.
+if [ -n "${_CONDOR_JOB_AD:-}" ] && [ -r "${_CONDOR_JOB_AD}" ]; then
+  JOB_AD_ATTEMPT="$(awk -F'= ' '/^NumJobStarts = / {gsub(/"/, "", $2); print $2; exit}' "${_CONDOR_JOB_AD}" 2>/dev/null || true)"
+  if is_nonnegative_integer "${JOB_AD_ATTEMPT:-}" && [ "${JOB_AD_ATTEMPT}" -gt "${ATTEMPT}" ]; then
+    ATTEMPT="${JOB_AD_ATTEMPT}"
+  fi
 fi
 
 # --------------------------------------------------
@@ -264,6 +301,7 @@ if [ -n "${CLUSTERID}" ]; then
   echo ">>> CLUSTERID    = ${CLUSTERID}"
 fi
 echo ">>> JOBID        = ${JOBID}"
+echo ">>> ATTEMPT      = ${ATTEMPT}"
 if [ "${WORKFLOW}" = "split" ]; then
   echo ">>> CHANNEL      = ${CHANNEL}"
 fi
@@ -290,14 +328,37 @@ else
   echo "Main:numberOfEvents = ${NEVT_PER_JOB}" >> "${JOB_CMND}"
 fi
 
+if [ -s "${OUTDIR}/${OUTBASENAME}" ]; then
+  echo "Final output already exists, leaving it untouched: ${OUTDIR}/${OUTBASENAME}"
+  exit 0
+fi
+
+if [ -e "${WORKDIR}/${OUTBASENAME}" ]; then
+  echo "WARNING: Removing stale workdir output from a previous failed/evicted attempt:"
+  echo "         ${WORKDIR}/${OUTBASENAME}"
+  rm -f "${WORKDIR}/${OUTBASENAME}"
+fi
+
 echo "Using .cmnd file:"
 head -n 12 "${JOB_CMND}" || true
 
 # --------------------------------------------------
-# Deterministic seeds from JOBID
+# Seed modifiers from cluster, job id, tune, and retry attempt.
+# The C++ producer also folds in time and process id; these modifiers make the
+# Condor identity and retry count explicit, so reruns do not reuse old seeds.
 # --------------------------------------------------
-SEED1=$((10000 + JOBID))
-SEED2=$((20000 + JOBID))
+CLUSTER_FOR_SEED="${CLUSTERID:-0}"
+TUNE_COMPONENT=0
+case "${TUNE}" in
+  MONASH)       TUNE_COMPONENT=101 ;;
+  JUNCTIONS)   TUNE_COMPONENT=202 ;;
+  CLOSEPACKING) TUNE_COMPONENT=303 ;;
+esac
+
+SEED1=$((10000 + (CLUSTER_FOR_SEED % 100000) * 1000 + JOBID * 10 + ATTEMPT))
+SEED2=$((20000 + TUNE_COMPONENT * 100000 + (CLUSTER_FOR_SEED % 1000) * 10 + ATTEMPT))
+echo ">>> SEED_MOD_1   = ${SEED1}"
+echo ">>> SEED_MOD_2   = ${SEED2}"
 
 if [ "${WORKFLOW}" = "hf" ]; then
   echo "Running: ${EXE} ${MODE} ${OUTBASENAME} ${SEED1} ${SEED2}"

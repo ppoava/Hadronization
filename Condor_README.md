@@ -50,6 +50,14 @@ condor_submit submitCondor_hf_CLOSEPACKING_100M.sub
 
 The Close Packing submit file queues one hundred one-million-event jobs for `CLOSEPACKING` and uses the `long` category.
 
+The unified HF submit files retry non-zero exits up to five times. This covers
+Stoomboot walltime/draining evictions, which can leave a partial ROOT file in
+the job work directory. On each retry, `runCondorJob.sh` removes only the stale
+workdir output, keeps any already-moved final output untouched, and folds the
+cluster id, job id, tune, and retry counter into the seed modifiers before
+calling the PYTHIA executable. That prevents a retried production job from
+reusing the same seed path as the failed attempt.
+
 The file `submitCondor_hf_90M_resubmit_4181781_held38.sub` is a preserved resubmission file for held JUNCTIONS jobs from cluster `4181781`. It is not the generic production template; it is useful only when one wants to reproduce or inspect that specific held-job recovery.
 
 The argument layout for the combined workflow is:

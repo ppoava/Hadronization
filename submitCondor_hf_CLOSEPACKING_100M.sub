@@ -26,6 +26,12 @@ error  = logs/HF/$(TUNE)/job_$(Cluster)_$(Process).err
 # Shared filesystem (/data/alice), no Condor file transfer
 should_transfer_files = NO
 
+# Retry non-zero exits, including walltime/draining evictions that leave a
+# partial ROOT file in the work directory. The wrapper removes stale workdir
+# outputs and uses the retry count in the seed modifiers.
+max_retries = 5
+retry_until = (ExitCode == 0)
+
 # 1,000,000 events/job x 100 jobs = 100,000,000 Close Packing events.
 #
 # Arguments to runCondorJob.sh:
