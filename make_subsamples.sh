@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Usage:
 #   ./make_subsamples.sh TUNE NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED] [JOB_TAG] [SUBSAMPLE_TAG]
-#   ./make_subsamples.sh ALL 8 10 123 Job700 700
+#   ./make_subsamples.sh ALL 10 10 123 Job700 700
 #
 # TUNE can be MONASH, JUNCTIONS, CLOSEPACKING, or ALL.
 #
@@ -18,7 +18,7 @@ usage() {
     cat <<'USAGE'
 Usage:
   ./make_subsamples.sh TUNE NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED] [JOB_TAG] [SUBSAMPLE_TAG]
-  ./make_subsamples.sh ALL 8 10 123 Job700 700
+  ./make_subsamples.sh ALL 10 10 123 Job700 700
 
 Backward-compatible:
   ./make_subsamples.sh NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED]
@@ -38,6 +38,11 @@ Environment overrides:
   ANALYSIS_OUTPUT_BASE Per-job THnSparse analysis output base directory.
   ANALYZED_DATA_BASE   Destination base for AnalyzedData.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
+  SUBSAMPLE_MODE       partition (default) or bootstrap.
+
+The default partition mode shuffles the available jobs once per tune and then
+splits them into non-overlapping subsamples. Use SUBSAMPLE_MODE=bootstrap only
+when overlapping random resamples are intentional.
 USAGE
 }
 
@@ -78,6 +83,16 @@ done
 analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
 analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
 output_base_dir="${analyzed_data_base}/SUBSAMPLES_${subsample_tag}"
+subsample_mode="${SUBSAMPLE_MODE:-partition}"
+
+case "${subsample_mode}" in
+    partition|bootstrap)
+        ;;
+    *)
+        echo "ERROR: SUBSAMPLE_MODE must be 'partition' or 'bootstrap', got '${subsample_mode}'" >&2
+        exit 1
+        ;;
+esac
 
 if [[ -f "${project_base}/setupEnv.sh" ]]; then
     # shellcheck disable=SC1091
@@ -120,6 +135,7 @@ make_tune_subsamples() {
     echo "Creating subsamples for ${tune}"
     echo "Input:  ${input_dir}"
     echo "Output: ${output_dir}"
+    echo "Mode:   ${subsample_mode}"
     echo "========================================"
 
     if [[ ! -d "${input_dir}" ]]; then
@@ -173,6 +189,23 @@ make_tune_subsamples() {
 
     echo "Found ${#rootfiles[@]} ROOT file types"
 
+    local total_requested=$((nsubsamples * njobs_per_subsample))
+    local shuffled_all_jobs=()
+
+    if [[ "${subsample_mode}" == "partition" ]]; then
+        if [[ "${total_requested}" -gt "${njobs_total}" ]]; then
+            echo "ERROR: partition mode requested ${total_requested} job slots (${nsubsamples} subsamples x ${njobs_per_subsample} jobs), but only ${njobs_total} jobs are available for ${tune}." >&2
+            echo "       Reduce NSUBSAMPLES or NJOBS_PER_SUBSAMPLE, or set SUBSAMPLE_MODE=bootstrap if overlapping resamples are intentional." >&2
+            return 1
+        fi
+
+        while IFS= read -r shuffled_job; do
+            shuffled_all_jobs+=("${shuffled_job}")
+        done < <(
+            printf "%s\n" "${all_jobs[@]}" | shuffle_jobs "${tune_index}" 0
+        )
+    fi
+
     local s
     for (( s=1; s<=nsubsamples; s++ )); do
         echo "Creating ${tune} subsample ${s}"
@@ -183,14 +216,19 @@ make_tune_subsamples() {
         local joblist_file="${sub_dir}/jobs_used.txt"
         : > "${joblist_file}"
 
-        shuffled_jobs=()
-        while IFS= read -r shuffled_job; do
-            shuffled_jobs+=("${shuffled_job}")
-        done < <(
-            printf "%s\n" "${all_jobs[@]}" | shuffle_jobs "${tune_index}" "${s}"
-        )
-
-        selected_jobs=("${shuffled_jobs[@]:0:njobs_per_subsample}")
+        selected_jobs=()
+        if [[ "${subsample_mode}" == "partition" ]]; then
+            local offset=$(((s - 1) * njobs_per_subsample))
+            selected_jobs=("${shuffled_all_jobs[@]:offset:njobs_per_subsample}")
+        else
+            shuffled_jobs=()
+            while IFS= read -r shuffled_job; do
+                shuffled_jobs+=("${shuffled_job}")
+            done < <(
+                printf "%s\n" "${all_jobs[@]}" | shuffle_jobs "${tune_index}" "${s}"
+            )
+            selected_jobs=("${shuffled_jobs[@]:0:njobs_per_subsample}")
+        fi
 
         if [[ ${#selected_jobs[@]} -lt "${njobs_per_subsample}" ]]; then
             echo "WARNING: requested ${njobs_per_subsample} jobs but only selected ${#selected_jobs[@]}" >&2

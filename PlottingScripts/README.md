@@ -24,10 +24,12 @@ The root-level scripts create the expected input layout:
 ```bash
 ./submit_status_analysis.sh ALL 100 Job700
 ./merge_root_files.sh ALL Job700 21_06_2026
-./make_subsamples.sh ALL 8 10 123 Job700 700
+./make_subsamples.sh ALL 10 10 123 Job700 700
 ```
 
 For a smaller validation run, change the number of raw files passed to `submit_status_analysis.sh` and use distinct output tags when merging and subsampling. The submit wrapper sorts available files by numeric job id and selects the first N completed files for each tune; it does not require the selected files to be exactly job ids `0` through `N-1`.
+
+`make_subsamples.sh` uses non-overlapping shuffled partitions by default. For the final 100-job production, `ALL 10 10` creates ten independent 10-job subsamples per tune and covers all 100 jobs.
 
 When using distinct validation tags, copy one of the JSON configs and update:
 
