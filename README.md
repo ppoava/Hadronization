@@ -107,7 +107,7 @@ The current paper THnSparse plotting workflow uses pair-named ROOT files produce
 ```bash
 ./submit_status_analysis.sh ALL 100 Job700
 ./merge_root_files.sh ALL Job700 21_06_2026
-./make_subsamples.sh ALL 10 10 123 Job700 700
+./make_subsamples.sh
 ```
 
 For a smaller validation pass, replace `100` with the number of available raw files to process per tune. The submit wrapper sorts available files by numeric job id and selects the first N completed files, so this works even if some low job ids are still running. For example, the planned three-tune test run uses:
@@ -120,7 +120,7 @@ For a smaller validation pass, replace `100` with the number of available raw fi
 
 When using non-default tags like these, copy one of the THnSparse JSON configs and update `bb_bar_complete_root_dir`, `cc_bar_complete_root_dir`, `bb_bar_complete_root_dir_sub_samples`, and `cc_bar_complete_root_dir_sub_samples` to the validation tags. Then pass that config through `THNSPARSE_CONFIG`, `THNSPARSE_COMPLETE_ROOT_CONFIG`, or `MULTIPLICITY_CONFIG` when running `PlottingScripts/run_paper_plots.sh`.
 
-`make_subsamples.sh` uses non-overlapping shuffled partitions by default. For the final 100-job production, `ALL 10 10` creates ten independent 10-job subsamples per tune and covers all 100 jobs.
+`make_subsamples.sh` uses non-overlapping shuffled partitions by default. With no arguments, it runs the final paper default: all three tunes, ten independent 10-job subsamples per tune, `Job700` input, and `SUBSAMPLES_700` output. This covers all 100 jobs per tune.
 
 The resulting paper THnSparse inputs are:
 

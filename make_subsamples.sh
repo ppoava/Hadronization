@@ -5,22 +5,24 @@ set -euo pipefail
 # status-analysis outputs.
 #
 # Usage:
+#   ./make_subsamples.sh
 #   ./make_subsamples.sh TUNE NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED] [JOB_TAG] [SUBSAMPLE_TAG]
 #   ./make_subsamples.sh ALL 10 10 123 Job700 700
 #
 # TUNE can be MONASH, JUNCTIONS, CLOSEPACKING, or ALL.
 #
-# Backward-compatible usage is also accepted:
+# Numeric shorthand is also accepted:
 #   ./make_subsamples.sh NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED]
-# which defaults to TUNE=MONASH.
+# which defaults to TUNE=ALL.
 
 usage() {
     cat <<'USAGE'
 Usage:
+  ./make_subsamples.sh
   ./make_subsamples.sh TUNE NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED] [JOB_TAG] [SUBSAMPLE_TAG]
   ./make_subsamples.sh ALL 10 10 123 Job700 700
 
-Backward-compatible:
+Numeric shorthand:
   ./make_subsamples.sh NSUBSAMPLES NJOBS_PER_SUBSAMPLE [SEED]
 
 TUNE:
@@ -30,7 +32,10 @@ TUNE:
   ALL
 
 Defaults:
-  SEED          = 0
+  TUNE          = ALL
+  NSUBSAMPLES   = 10
+  NJOBS/SAMPLE  = 10
+  SEED          = 123
   JOB_TAG       = Job700
   SUBSAMPLE_TAG = 700
 
@@ -51,25 +56,39 @@ project_base="${HADRONIZATION_BASE:-${script_dir}}"
 project_base="${project_base%/}"
 export HADRONIZATION_BASE="${project_base}"
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "$#" -lt 2 ]]; then
+default_tune="ALL"
+default_nsubsamples="10"
+default_njobs_per_subsample="10"
+default_seed="123"
+default_job_tag="Job700"
+default_subsample_tag="700"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
     exit 0
 fi
 
-if [[ "${1}" =~ ^[0-9]+$ ]]; then
-    requested_tune="MONASH"
+if [[ "$#" -eq 0 ]]; then
+    requested_tune="${default_tune}"
+    nsubsamples="${default_nsubsamples}"
+    njobs_per_subsample="${default_njobs_per_subsample}"
+    seed="${default_seed}"
+    job_tag="${default_job_tag}"
+    subsample_tag="${default_subsample_tag}"
+elif [[ "${1}" =~ ^[0-9]+$ ]]; then
+    requested_tune="${default_tune}"
     nsubsamples="${1}"
     njobs_per_subsample="${2:-}"
-    seed="${3:-0}"
-    job_tag="Job700"
-    subsample_tag="700"
+    seed="${3:-${default_seed}}"
+    job_tag="${default_job_tag}"
+    subsample_tag="${default_subsample_tag}"
 else
     requested_tune="$(printf '%s' "${1}" | tr '[:lower:]' '[:upper:]')"
-    nsubsamples="${2:-}"
-    njobs_per_subsample="${3:-}"
-    seed="${4:-0}"
-    job_tag="${5:-Job700}"
-    subsample_tag="${6:-700}"
+    nsubsamples="${2:-${default_nsubsamples}}"
+    njobs_per_subsample="${3:-${default_njobs_per_subsample}}"
+    seed="${4:-${default_seed}}"
+    job_tag="${5:-${default_job_tag}}"
+    subsample_tag="${6:-${default_subsample_tag}}"
 fi
 
 for value_name in nsubsamples njobs_per_subsample seed; do

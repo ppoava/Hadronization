@@ -93,12 +93,12 @@ The shell wrappers at the repository root now treat `MONASH`, `JUNCTIONS`, and `
 ```bash
 ./submit_status_analysis.sh ALL 100 Job700
 ./merge_root_files.sh ALL Job700 21_06_2026
-./make_subsamples.sh ALL 10 10 123 Job700 700
+./make_subsamples.sh
 ```
 
 For a single tune, replace `ALL` with `MONASH`, `JUNCTIONS`, or `CLOSEPACKING`. The submit wrapper reads raw files from `RootFiles/HF/<TUNE>` by default on the production filesystem and selects the first requested number of available files sorted by numeric job id. The merge wrapper writes `AnalyzedData/complete_root_21_06_2026_<TUNE>`, and the subsample wrapper writes `AnalyzedData/SUBSAMPLES_700/combined_root_subSamples_<TUNE>`.
 
-Subsamples are non-overlapping shuffled partitions by default. For the final 100-job production, `ALL 10 10` creates ten independent 10-job subsamples per tune and covers all 100 jobs.
+Subsamples are non-overlapping shuffled partitions by default. With no arguments, `make_subsamples.sh` runs the final paper default: all three tunes, ten independent 10-job subsamples per tune, `Job700` input, and `SUBSAMPLES_700` output. This covers all 100 jobs per tune.
 
 ## Subsamples
 
