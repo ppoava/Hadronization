@@ -196,9 +196,12 @@ CODEDIR="${BASEDIR}/SimulationScripts"
 case "${WORKFLOW}" in
   hf)
     EXE="${CODEDIR}/heavyflavourcorrelations_status"
-    OUTDIR="${BASEDIR}/RootFiles/HF/${TUNE}"
-    WORKDIR_BASE="${BASEDIR}/Jobs/HF/${TUNE}"
-    LOGDIR="${BASEDIR}/logs/HF/${TUNE}"
+    HF_OUTPUT_ROOT="${HADRONIZATION_HF_OUTPUT_ROOT:-${BASEDIR}/RootFiles/HF}"
+    HF_WORK_ROOT="${HADRONIZATION_HF_WORK_ROOT:-${BASEDIR}/Jobs/HF}"
+    HF_LOG_ROOT="${HADRONIZATION_HF_LOG_ROOT:-${BASEDIR}/logs/HF}"
+    OUTDIR="${HF_OUTPUT_ROOT%/}/${TUNE}"
+    WORKDIR_BASE="${HF_WORK_ROOT%/}/${TUNE}"
+    LOGDIR="${HF_LOG_ROOT%/}/${TUNE}"
 
     case "${TUNE}" in
       MONASH)

@@ -108,8 +108,7 @@ request_disk = 2GB
 
 environment = "HADRONIZATION_BASE=${project_base}"
 
-should_transfer_files = YES
-when_to_transfer_output = ON_EXIT
+should_transfer_files = NO
 
 EOF
 

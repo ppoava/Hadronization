@@ -30,6 +30,7 @@ Environment overrides:
   ANALYSIS_OUTPUT_BASE Per-job THnSparse analysis output base directory.
   ANALYZED_DATA_BASE   Destination base for complete_root directories.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
+  MERGE_BACKEND         object (default) or hadd.
 USAGE
 }
 
@@ -51,6 +52,16 @@ requested_tune="$(printf '%s' "${requested_tune}" | tr '[:lower:]' '[:upper:]')"
 
 analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
 analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
+merge_backend="${MERGE_BACKEND:-object}"
+
+case "${merge_backend}" in
+    object|hadd)
+        ;;
+    *)
+        echo "ERROR: MERGE_BACKEND must be 'object' or 'hadd', got '${merge_backend}'" >&2
+        exit 1
+        ;;
+esac
 
 if [[ -f "${project_base}/setupEnv.sh" ]]; then
     # shellcheck disable=SC1091
@@ -68,6 +79,35 @@ resolve_tunes() {
         *)
             echo "ERROR: unknown tune '$1'. Expected MONASH, JUNCTIONS, CLOSEPACKING, or ALL." >&2
             exit 1
+            ;;
+    esac
+}
+
+merge_files() {
+    local output_file="$1"
+    shift
+
+    case "${merge_backend}" in
+        object)
+            local merge_macro="${project_base}/AnalysisScripts/MergeAnalysisObjects.C"
+            if [[ ! -f "${merge_macro}" ]]; then
+                echo "ERROR: object merge backend requested, but macro not found: ${merge_macro}" >&2
+                return 1
+            fi
+
+            local input_list
+            input_list="$(mktemp "/tmp/merge_root_files_XXXXXX.txt")"
+            printf '%s\n' "$@" > "${input_list}"
+
+            root -l -b <<ROOTCMDS
+.L ${merge_macro}+
+int __merge_result = MergeAnalysisObjects("${input_list}", "${output_file}", true);
+if (__merge_result != 0) { gSystem->Exit(__merge_result); }
+.q
+ROOTCMDS
+            ;;
+        hadd)
+            hadd -f "${output_file}" "$@"
             ;;
     esac
 }
@@ -121,7 +161,7 @@ merge_tune() {
 
         echo "Found ${#files[@]} files"
         echo "Output: ${output_dir}/${rootfile}"
-        hadd -f "${output_dir}/${rootfile}" "${files[@]}"
+        merge_files "${output_dir}/${rootfile}" "${files[@]}"
         echo
     done
 

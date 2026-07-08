@@ -1,9 +1,9 @@
 {
   "VERBOSE": false,
-  "calculate_errors": false,
+  "calculate_errors": true,
   "bb_bar_complete_root_dir_sub_samples": "AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
   "cc_bar_complete_root_dir_sub_samples": "AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
-  "nSubSamples": 8,
+  "nSubSamples": 10,
   "draw_correlation_plots": false,
   "base_dir": "AnalyzedData",
   "PYTHIA_TUNES": [

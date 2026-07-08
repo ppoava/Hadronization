@@ -12,6 +12,14 @@
 !AnalyzedData/
 !AnalyzedData/**/*.root
 
+# Ignore generated production analysis outputs
+/AnalysisResults/
+/AnalyzedData/complete_root_*/
+/AnalyzedData/SUBSAMPLES_*/
+/.root_hist
+/submit_status_analysis_*.sub
+/submitCondor_hf_*_50job_separate.sub
+
 # Ignore job outputs and logs
 logs/
 Jobs/

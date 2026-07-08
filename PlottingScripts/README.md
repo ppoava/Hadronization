@@ -72,13 +72,32 @@ Use the paper runner from the repository root:
 
 Targets:
 
-- `smoke`: multiplicity-boundary plot plus complete-root THnSparse plots without subsampling.
+- `smoke`: multiplicity-boundary plot, kinematic spectra, plus complete-root THnSparse plots without subsampling.
 - `thnsparse-complete-root`: Paul's THnSparse plots without subsampling.
 - `thnsparse`: Paul's full THnSparse plots with subsampling if enabled in the config.
 - `multiplicity-boundaries`: charged-particle multiplicity distribution with percentile boundary lines.
-- `all` / `paper`: multiplicity boundaries plus the full THnSparse config.
+- `kinematic-spectra`: pT, eta, phi, multiplicity, and optional delta-phi/delta-eta spectra from the THnSparse pair files.
+- `all` / `paper`: multiplicity boundaries, kinematic spectra, plus the full THnSparse config.
 
 The runner resolves the repository root from `HADRONIZATION_BASE` or from its own location, sources `setupEnv.sh` when present, and runs ROOT in batch mode.
+
+The kinematic spectra target uses the complete-root config by default:
+
+```bash
+./PlottingScripts/run_paper_plots.sh kinematic-spectra
+```
+
+Useful overrides:
+
+```bash
+KINEMATIC_CONFIG=PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse.json \
+KINEMATIC_OUTPUT_DIR=PlottingScripts/Plots/KinematicSpectraFull \
+./PlottingScripts/run_paper_plots.sh kinematic-spectra
+```
+
+The default kinematic output is shape-normalized. Set `KINEMATIC_NORMALIZE=false` to draw bin-width-normalized counts. Set `KINEMATIC_CORRELATIONS=false` to skip the optional `Delta phi` and `Delta eta` spectra.
+
+Event-level spectra that are independent of the selected heavy-flavour pair are intentionally drawn once. In particular, `summed MULTIPLICITY` comes from the same HF event sample for charm and beauty, so the paper macro writes one shared multiplicity plot per tune rather than duplicate charm and beauty versions. Trigger spectra are still split by charm/beauty because the trigger particle differs (`D+` versus `B+`), while associate spectra are split by pair file.
 
 ## THnSparse Configs
 
@@ -131,6 +150,16 @@ Multiplicity-boundary plot:
 root -l -b -q 'PlottingScripts/Plot_MultiplicityDistribution_PercentileBoundaries.C'
 ```
 
+Kinematic spectra:
+
+```bash
+root -l -b <<'ROOT'
+.L PlottingScripts/Plot_KinematicSpectra_THnSparse.C+
+Plot_KinematicSpectra_THnSparse("PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json")
+.q
+ROOT
+```
+
 ## Outputs
 
 The current paper runner writes under:
@@ -139,6 +168,7 @@ The current paper runner writes under:
 PlottingScripts/Plots/THnSparse
 PlottingScripts/Plots/THnSparseCompleteRoot
 PlottingScripts/Plots/MultiplicityDistribution
+PlottingScripts/Plots/KinematicSpectra
 ```
 
 These are generated artifacts and are ignored by Git. Regenerate them from the macros instead of committing them.

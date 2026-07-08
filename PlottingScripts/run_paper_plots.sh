@@ -14,11 +14,12 @@ Usage:
   ./PlottingScripts/run_paper_plots.sh [TARGET ...]
 
 Targets:
-  all                         Current paper suite: multiplicity-boundaries + thnsparse
+  all                         Current paper suite: multiplicity-boundaries + kinematic-spectra + thnsparse
   paper                       Alias for all
-  smoke                       Quick suite: multiplicity-boundaries + thnsparse-complete-root
+  smoke                       Quick suite: multiplicity-boundaries + kinematic-spectra + thnsparse-complete-root
   quick                       Alias for smoke
   multiplicity-boundaries     Charged-particle multiplicity plot with percentile boundaries
+  kinematic-spectra           pT, eta, phi, multiplicity, and optional correlation spectra
   thnsparse                   Paul's full THnSparse plotting config, with subsampling if enabled
   thnsparse-complete-root     Paul's complete-root THnSparse config, without subsampling
   final-multiplicity          FinalAnalysis two-sample multiplicity comparison
@@ -38,6 +39,18 @@ Useful environment overrides:
       default: false
   MULTIPLICITY_STRICT
       default: true
+  KINEMATIC_CONFIG
+      default: THNSPARSE_COMPLETE_ROOT_CONFIG
+  KINEMATIC_OUTPUT_DIR
+      default: PlottingScripts/Plots/KinematicSpectra
+  KINEMATIC_NORMALIZE
+      default: true
+  KINEMATIC_SUBSAMPLE_ERRORS
+      default: true
+  KINEMATIC_STRICT
+      default: true
+  KINEMATIC_CORRELATIONS
+      default: true
   FINAL_INDEPENDENT_TAG
       default: 12-01-2026
   FINAL_COMBINED_TAG
@@ -51,6 +64,7 @@ Examples:
   ./PlottingScripts/run_paper_plots.sh
   ./PlottingScripts/run_paper_plots.sh smoke
   ./PlottingScripts/run_paper_plots.sh multiplicity-boundaries
+  ./PlottingScripts/run_paper_plots.sh kinematic-spectra
   THNSPARSE_CONFIG=PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json \
     ./PlottingScripts/run_paper_plots.sh thnsparse
 USAGE
@@ -85,6 +99,12 @@ MULTIPLICITY_CONFIG="${MULTIPLICITY_CONFIG:-${THNSPARSE_COMPLETE_ROOT_CONFIG}}"
 MULTIPLICITY_OUTPUT_DIR="${MULTIPLICITY_OUTPUT_DIR:-PlottingScripts/Plots/MultiplicityDistribution}"
 MULTIPLICITY_NORMALIZE="$(normalize_bool "${MULTIPLICITY_NORMALIZE:-false}")"
 MULTIPLICITY_STRICT="$(normalize_bool "${MULTIPLICITY_STRICT:-true}")"
+KINEMATIC_CONFIG="${KINEMATIC_CONFIG:-${THNSPARSE_COMPLETE_ROOT_CONFIG}}"
+KINEMATIC_OUTPUT_DIR="${KINEMATIC_OUTPUT_DIR:-PlottingScripts/Plots/KinematicSpectra}"
+KINEMATIC_NORMALIZE="$(normalize_bool "${KINEMATIC_NORMALIZE:-true}")"
+KINEMATIC_SUBSAMPLE_ERRORS="$(normalize_bool "${KINEMATIC_SUBSAMPLE_ERRORS:-true}")"
+KINEMATIC_STRICT="$(normalize_bool "${KINEMATIC_STRICT:-true}")"
+KINEMATIC_CORRELATIONS="$(normalize_bool "${KINEMATIC_CORRELATIONS:-true}")"
 FINAL_INDEPENDENT_TAG="${FINAL_INDEPENDENT_TAG:-12-01-2026}"
 FINAL_COMBINED_TAG="${FINAL_COMBINED_TAG:-27-03-2026}"
 FINAL_NSUB="${FINAL_NSUB:-10}"
@@ -106,12 +126,12 @@ for target in "$@"; do
       exit 0
       ;;
     all|paper)
-      expanded_targets+=("multiplicity-boundaries" "thnsparse")
+      expanded_targets+=("multiplicity-boundaries" "kinematic-spectra" "thnsparse")
       ;;
     smoke|quick)
-      expanded_targets+=("multiplicity-boundaries" "thnsparse-complete-root")
+      expanded_targets+=("multiplicity-boundaries" "kinematic-spectra" "thnsparse-complete-root")
       ;;
-    multiplicity-boundaries|thnsparse|thnsparse-complete-root|final-multiplicity|final-yields)
+    multiplicity-boundaries|kinematic-spectra|thnsparse|thnsparse-complete-root|final-multiplicity|final-yields)
       expanded_targets+=("${target}")
       ;;
     *)
@@ -192,6 +212,21 @@ Plot_MultiplicityDistribution_PercentileBoundaries("${MULTIPLICITY_CONFIG}", "${
 ROOTCMDS
 }
 
+run_kinematic_spectra() {
+  require_file "${KINEMATIC_CONFIG}"
+
+  echo
+  echo "==> Running kinematic-spectra"
+  echo "    config: ${KINEMATIC_CONFIG}"
+  echo "    output: ${KINEMATIC_OUTPUT_DIR}"
+
+  root -l -b <<ROOTCMDS
+.L PlottingScripts/Plot_KinematicSpectra_THnSparse.C+
+Plot_KinematicSpectra_THnSparse("${KINEMATIC_CONFIG}", "${KINEMATIC_OUTPUT_DIR}", ${KINEMATIC_NORMALIZE}, ${KINEMATIC_SUBSAMPLE_ERRORS}, ${KINEMATIC_STRICT}, ${KINEMATIC_CORRELATIONS});
+.q
+ROOTCMDS
+}
+
 run_final_multiplicity() {
   require_file "PlottingScripts/FinalAnalysis/Plot_MultiplicityDistributions_TwoSamples.C"
   require_integer "FINAL_NSUB" "${FINAL_NSUB}"
@@ -228,6 +263,9 @@ for target in "${expanded_targets[@]}"; do
   case "${target}" in
     multiplicity-boundaries)
       run_multiplicity_boundaries
+      ;;
+    kinematic-spectra)
+      run_kinematic_spectra
       ;;
     thnsparse)
       run_thnsparse "${THNSPARSE_CONFIG}" "thnsparse"

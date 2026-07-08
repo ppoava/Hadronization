@@ -1,0 +1,961 @@
+// ---------------------------------------------------------------------------
+// Plot_KinematicSpectra_THnSparse.C
+//
+// Draw one-dimensional kinematic spectra from the THnSparse pair files used by
+// Paul's plotting macro. The macro reads the same JSON configuration, so tune
+// names, complete-root paths, and subsample paths stay synchronized.
+//
+// Default usage from the Hadronization repository root:
+//
+//   root -l -b -q 'PlottingScripts/Plot_KinematicSpectra_THnSparse.C'
+//
+// The output deliberately keeps event-level spectra, such as charged-particle
+// multiplicity, shared across charm and beauty. These spectra come from the
+// same HF event sample and should not be duplicated as separate charm/beauty
+// paper plots.
+// ---------------------------------------------------------------------------
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "TCanvas.h"
+#include "TFile.h"
+#include "TH1D.h"
+#include "THnSparse.h"
+#include "TLatex.h"
+#include "TLegend.h"
+#include "TObject.h"
+#include "TString.h"
+#include "TStyle.h"
+#include "TSystem.h"
+
+#if __has_include(<nlohmann/json.hpp>)
+#include <nlohmann/json.hpp>
+#elif __has_include("nlohmann/json.hpp")
+#include "nlohmann/json.hpp"
+#else
+#error "Could not find nlohmann/json.hpp. Source the project/ROOT environment before compiling this macro."
+#endif
+
+using json = nlohmann::json;
+
+namespace KinematicSpectraPlot {
+
+enum class Flavor {
+    Beauty,
+    Charm
+};
+
+enum class FileRole {
+    OS,
+    SS
+};
+
+enum class SourceKind {
+    Multiplicity,
+    TriggerKinematics,
+    AssociateKinematics,
+    Correlations
+};
+
+struct PairConfig {
+    Flavor flavor;
+    std::string triggerLabel;
+    std::string associateOSLabel;
+    std::string associateSSLabel;
+    std::string osFileName;
+    std::string ssFileName;
+};
+
+struct PlotConfig {
+    std::string hadronizationBase;
+    std::string baseDir;
+    std::string outputDir;
+    std::string beautyCompleteRootDir;
+    std::string charmCompleteRootDir;
+    std::string beautySubsampleRootDir;
+    std::string charmSubsampleRootDir;
+    std::vector<std::string> tunes;
+    std::vector<PairConfig> beautyPairs;
+    std::vector<PairConfig> charmPairs;
+    bool calculateErrors = false;
+    int nSubSamples = 0;
+};
+
+struct SpectrumDef {
+    std::string key;
+    std::string title;
+    std::string xTitle;
+    std::string yTitleCounts;
+    std::string yTitleShape;
+    SourceKind sourceKind;
+    int axis = -1;
+    bool logY = false;
+};
+
+struct SampleRequest {
+    Flavor flavor;
+    FileRole role;
+    std::string fileName;
+    std::string displayLabel;
+    bool sharedEventSample = false;
+};
+
+struct LoadedHistogram {
+    TH1D* hist = nullptr;
+    std::string tune;
+};
+
+std::string JoinPath(const std::vector<std::string>& pieces)
+{
+    std::string path;
+    for (const auto& piece : pieces) {
+        if (piece.empty()) continue;
+        if (!path.empty() && path.back() != '/') path += "/";
+        if (!path.empty() && piece.front() == '/') {
+            path += piece.substr(1);
+        } else {
+            path += piece;
+        }
+    }
+    return path;
+}
+
+bool IsAbsolutePath(const std::string& path)
+{
+    return !path.empty() && (path.front() == '/' || (path.size() > 1 && path[1] == ':'));
+}
+
+std::string ParentPath(const std::string& path)
+{
+    if (path.empty() || path == "/") return path;
+    const size_t slash = path.find_last_of('/');
+    if (slash == std::string::npos) return "";
+    if (slash == 0) return "/";
+    return path.substr(0, slash);
+}
+
+std::string ExpandPath(const std::string& path)
+{
+    char* expanded = gSystem->ExpandPathName(path.c_str());
+    std::string result = expanded ? expanded : path;
+    if (expanded) delete[] expanded;
+    return result;
+}
+
+bool PathExists(const std::string& path)
+{
+    return !path.empty() && !gSystem->AccessPathName(path.c_str());
+}
+
+std::string FindHadronizationBase()
+{
+    const char* envBase = std::getenv("HADRONIZATION_BASE");
+    if (envBase && PathExists(JoinPath({envBase, "PlottingScripts"}))) {
+        return ExpandPath(envBase);
+    }
+
+    std::string current = ExpandPath(gSystem->WorkingDirectory());
+    while (!current.empty()) {
+        if (PathExists(JoinPath({current, "PlottingScripts"})) ||
+            PathExists(JoinPath({current, ".git"}))) {
+            return current;
+        }
+        const std::string parent = ParentPath(current);
+        if (parent == current) break;
+        current = parent;
+    }
+
+    return ExpandPath(gSystem->WorkingDirectory());
+}
+
+std::string ResolvePathFromBase(const std::string& path, const std::string& hadronizationBase)
+{
+    if (path.empty() || path == "NONE") return path;
+    const std::string expanded = ExpandPath(path);
+    if (IsAbsolutePath(expanded)) return expanded;
+    return JoinPath({hadronizationBase, expanded});
+}
+
+std::string ResolveConfigurationPath(const std::string& path, const std::string& hadronizationBase)
+{
+    const std::vector<std::string> candidates = {
+        path,
+        ResolvePathFromBase(path, hadronizationBase),
+        JoinPath({hadronizationBase, "PlottingScripts", path})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) return candidate;
+    }
+
+    std::ostringstream message;
+    message << "Could not find configuration file '" << path << "'. Tried:";
+    for (const auto& candidate : candidates) message << "\n  - " << candidate;
+    throw std::runtime_error(message.str());
+}
+
+std::string FlavorName(Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? "Beauty" : "Charm";
+}
+
+std::string FlavorNameUpper(Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? "BEAUTY" : "CHARM";
+}
+
+std::string SanitizeToken(std::string value)
+{
+    if (value.empty()) return "unnamed";
+
+    for (char& c : value) {
+        const bool keep =
+            (c >= 'A' && c <= 'Z') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9');
+        if (!keep) c = '_';
+    }
+
+    while (value.find("__") != std::string::npos) {
+        value.replace(value.find("__"), 2, "_");
+    }
+    if (!value.empty() && value.front() == '_') value.erase(value.begin());
+    if (!value.empty() && value.back() == '_') value.pop_back();
+    return value.empty() ? "unnamed" : value;
+}
+
+std::string StripRootExtension(std::string fileName)
+{
+    const std::string suffix = ".root";
+    if (fileName.size() >= suffix.size() &&
+        fileName.substr(fileName.size() - suffix.size()) == suffix) {
+        fileName.resize(fileName.size() - suffix.size());
+    }
+    return fileName;
+}
+
+std::string CompleteRootDirForFlavor(const PlotConfig& config, Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? config.beautyCompleteRootDir : config.charmCompleteRootDir;
+}
+
+std::string SubsampleRootDirForFlavor(const PlotConfig& config, Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? config.beautySubsampleRootDir : config.charmSubsampleRootDir;
+}
+
+std::string ResolveCompleteRootFile(const std::string& baseDir,
+                                    const std::string& tune,
+                                    const std::string& completeRootDir,
+                                    const std::string& fileName)
+{
+    const std::vector<std::string> candidates = {
+        JoinPath({baseDir, tune, completeRootDir + "_" + tune, fileName}),
+        JoinPath({baseDir, tune, completeRootDir, fileName}),
+        JoinPath({baseDir, completeRootDir + "_" + tune, fileName}),
+        JoinPath({baseDir, completeRootDir, fileName})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) return candidate;
+    }
+
+    std::ostringstream message;
+    message << "Could not find input ROOT file '" << fileName << "' for tune "
+            << tune << ". Tried:";
+    for (const auto& candidate : candidates) message << "\n  - " << candidate;
+    throw std::runtime_error(message.str());
+}
+
+std::string ResolveSubSampleRootFile(const std::string& subSampleBaseDir,
+                                     const std::string& tune,
+                                     int subSampleIndex,
+                                     const std::string& fileName)
+{
+    const std::string subSampleDir = Form("combined_root_%i", subSampleIndex);
+    const std::vector<std::string> candidates = {
+        JoinPath({subSampleBaseDir + "_" + tune, subSampleDir, fileName}),
+        JoinPath({subSampleBaseDir, tune, subSampleDir, fileName})
+    };
+
+    for (const auto& candidate : candidates) {
+        if (PathExists(candidate)) return candidate;
+    }
+
+    std::ostringstream message;
+    message << "Could not find subsample ROOT file '" << fileName << "' for tune "
+            << tune << ", subsample " << subSampleIndex << ". Tried:";
+    for (const auto& candidate : candidates) message << "\n  - " << candidate;
+    throw std::runtime_error(message.str());
+}
+
+TFile* OpenRootFile(const std::string& path, bool strictInputs)
+{
+    TFile* file = TFile::Open(path.c_str(), "READ");
+    if (!file || file->IsZombie()) {
+        if (file) file->Close();
+        if (strictInputs) throw std::runtime_error("Could not open input ROOT file: " + path);
+        std::cerr << "WARNING: could not open input ROOT file: " << path << std::endl;
+        return nullptr;
+    }
+    return file;
+}
+
+template <class T>
+T* GetObject(TFile* file, const std::string& objectName, const std::string& filePath, bool strictInputs)
+{
+    if (!file) return nullptr;
+
+    T* object = dynamic_cast<T*>(file->Get(objectName.c_str()));
+    if (!object && strictInputs) {
+        throw std::runtime_error("Missing '" + objectName + "' in " + filePath);
+    }
+    if (!object) {
+        std::cerr << "WARNING: missing '" << objectName << "' in " << filePath << std::endl;
+    }
+    return object;
+}
+
+std::vector<PairConfig> ReadPairs(const json& config, const char* key, Flavor flavor)
+{
+    std::vector<PairConfig> pairs;
+    if (!config.contains(key) || !config[key].is_array()) return pairs;
+
+    for (const auto& entry : config[key]) {
+        PairConfig pair;
+        pair.flavor = flavor;
+        pair.triggerLabel = entry.value("trigger", "");
+        pair.associateOSLabel = entry.value("associateOS", "");
+        pair.associateSSLabel = entry.value("associateSS", "");
+        pair.osFileName = entry.value("OS", "");
+        pair.ssFileName = entry.value("SS", "");
+        if (!pair.osFileName.empty()) pairs.push_back(pair);
+    }
+
+    return pairs;
+}
+
+PlotConfig ReadConfig(const char* configuration, const char* outputDir)
+{
+    PlotConfig configOut;
+    configOut.hadronizationBase = FindHadronizationBase();
+
+    const std::string configPath =
+        ResolveConfigurationPath(configuration, configOut.hadronizationBase);
+    std::ifstream input(configPath);
+    if (!input.is_open()) {
+        throw std::runtime_error("Could not open configuration file: " + configPath);
+    }
+
+    json config = json::parse(input);
+    configOut.baseDir =
+        ResolvePathFromBase(config["base_dir"].get<std::string>(), configOut.hadronizationBase);
+    configOut.outputDir = ResolvePathFromBase(outputDir, configOut.hadronizationBase);
+    configOut.beautyCompleteRootDir = config["bb_bar_complete_root_dir"].get<std::string>();
+    configOut.charmCompleteRootDir = config["cc_bar_complete_root_dir"].get<std::string>();
+    configOut.beautySubsampleRootDir =
+        ResolvePathFromBase(config.value("bb_bar_complete_root_dir_sub_samples", "NONE"),
+                            configOut.hadronizationBase);
+    configOut.charmSubsampleRootDir =
+        ResolvePathFromBase(config.value("cc_bar_complete_root_dir_sub_samples", "NONE"),
+                            configOut.hadronizationBase);
+    configOut.calculateErrors = config.value("calculate_errors", false);
+    configOut.nSubSamples = config.value("nSubSamples", 0);
+
+    for (const auto& tune : config["PYTHIA_TUNES"]) {
+        configOut.tunes.push_back(tune.get<std::string>());
+    }
+    configOut.beautyPairs = ReadPairs(config, "beauty_correlations_to_analyse", Flavor::Beauty);
+    configOut.charmPairs = ReadPairs(config, "charm_correlations_to_analyse", Flavor::Charm);
+
+    return configOut;
+}
+
+std::vector<SpectrumDef> KinematicSpectra()
+{
+    return {
+        {"pT", "#it{p}_{T}", "#it{p}_{T} (GeV/#it{c})", "Counts", "Normalized counts",
+         SourceKind::TriggerKinematics, 2, true},
+        {"eta", "#eta", "#eta", "Counts", "Normalized counts",
+         SourceKind::TriggerKinematics, 1, false},
+        {"phi", "#phi", "#phi", "Counts", "Normalized counts",
+         SourceKind::TriggerKinematics, 0, false}
+    };
+}
+
+std::vector<SpectrumDef> CorrelationSpectra()
+{
+    return {
+        {"deltaPhi", "#Delta#phi", "#Delta#phi", "Counts", "Normalized counts",
+         SourceKind::Correlations, 0, false},
+        {"deltaEta", "#Delta#eta", "#Delta#eta", "Counts", "Normalized counts",
+         SourceKind::Correlations, 1, false}
+    };
+}
+
+SpectrumDef MultiplicitySpectrum()
+{
+    return {"multiplicity", "charged-particle multiplicity", "Charged-particle multiplicity N_{ch}",
+            "Counts", "Normalized events", SourceKind::Multiplicity, -1, true};
+}
+
+void NormalizeShape(TH1D* hist)
+{
+    if (!hist) return;
+    hist->Sumw2();
+    const double integral = hist->Integral(1, hist->GetNbinsX());
+    if (integral > 0.0) hist->Scale(1.0 / integral);
+}
+
+void ApplyBinWidthNormalization(TH1D* hist)
+{
+    if (!hist) return;
+    hist->Sumw2();
+    for (int bin = 1; bin <= hist->GetNbinsX(); ++bin) {
+        const double width = hist->GetBinWidth(bin);
+        if (width <= 0.0) continue;
+        hist->SetBinContent(bin, hist->GetBinContent(bin) / width);
+        hist->SetBinError(bin, hist->GetBinError(bin) / width);
+    }
+}
+
+void ResetSparseRanges(THnSparseD* sparse)
+{
+    if (!sparse) return;
+    for (int axis = 0; axis < sparse->GetNdimensions(); ++axis) {
+        sparse->GetAxis(axis)->SetRange();
+    }
+}
+
+TH1D* CloneMultiplicityHistogram(TFile* file,
+                                 const std::string& filePath,
+                                 const char* cloneName,
+                                 bool strictInputs)
+{
+    TH1D* source = GetObject<TH1D>(file, "summed MULTIPLICITY", filePath, strictInputs);
+    if (!source) return nullptr;
+
+    TH1D* hist = dynamic_cast<TH1D*>(source->Clone(cloneName));
+    if (!hist) return nullptr;
+    hist->SetDirectory(nullptr);
+    hist->Sumw2();
+    return hist;
+}
+
+TH1D* ProjectSparseAxis(TFile* file,
+                        const std::string& filePath,
+                        const SpectrumDef& spectrum,
+                        const char* cloneName,
+                        bool strictInputs)
+{
+    std::string sourceName;
+    if (spectrum.sourceKind == SourceKind::TriggerKinematics) {
+        sourceName = "hTrKinematics";
+    } else if (spectrum.sourceKind == SourceKind::AssociateKinematics) {
+        sourceName = "hAsKinematics";
+    } else if (spectrum.sourceKind == SourceKind::Correlations) {
+        sourceName = "hCorrelations";
+    } else {
+        throw std::runtime_error("ProjectSparseAxis called with non-THnSparse spectrum");
+    }
+
+    THnSparseD* sparse = GetObject<THnSparseD>(file, sourceName, filePath, strictInputs);
+    if (!sparse) return nullptr;
+    if (spectrum.axis < 0 || spectrum.axis >= sparse->GetNdimensions()) {
+        throw std::runtime_error("Invalid axis " + std::to_string(spectrum.axis) +
+                                 " for " + sourceName + " in " + filePath);
+    }
+
+    ResetSparseRanges(sparse);
+    TH1D* hist = dynamic_cast<TH1D*>(sparse->Projection(spectrum.axis, "E"));
+    ResetSparseRanges(sparse);
+    if (!hist) return nullptr;
+
+    hist->SetName(cloneName);
+    hist->SetTitle("");
+    hist->SetDirectory(nullptr);
+    hist->Sumw2();
+    return hist;
+}
+
+TH1D* LoadSpectrumFromFile(const std::string& filePath,
+                           const SpectrumDef& spectrum,
+                           const char* cloneName,
+                           bool normalizeShape,
+                           bool strictInputs)
+{
+    std::unique_ptr<TFile> file(OpenRootFile(filePath, strictInputs));
+    if (!file) return nullptr;
+
+    TH1D* hist = nullptr;
+    if (spectrum.sourceKind == SourceKind::Multiplicity) {
+        hist = CloneMultiplicityHistogram(file.get(), filePath, cloneName, strictInputs);
+    } else {
+        hist = ProjectSparseAxis(file.get(), filePath, spectrum, cloneName, strictInputs);
+    }
+
+    if (!hist) return nullptr;
+    if (normalizeShape) {
+        NormalizeShape(hist);
+    } else {
+        ApplyBinWidthNormalization(hist);
+    }
+    return hist;
+}
+
+void ApplySubsampleErrors(TH1D* central, const std::vector<TH1D*>& subsamples)
+{
+    if (!central || subsamples.size() < 2) return;
+
+    for (int bin = 1; bin <= central->GetNbinsX(); ++bin) {
+        double mean = 0.0;
+        int n = 0;
+        for (TH1D* sub : subsamples) {
+            if (!sub || bin > sub->GetNbinsX()) continue;
+            mean += sub->GetBinContent(bin);
+            ++n;
+        }
+        if (n < 2) continue;
+        mean /= static_cast<double>(n);
+
+        double variance = 0.0;
+        for (TH1D* sub : subsamples) {
+            if (!sub || bin > sub->GetNbinsX()) continue;
+            const double diff = sub->GetBinContent(bin) - mean;
+            variance += diff * diff;
+        }
+        variance /= static_cast<double>(n - 1);
+        central->SetBinError(bin, std::sqrt(std::max(0.0, variance) / n));
+    }
+}
+
+TH1D* LoadSpectrum(const PlotConfig& config,
+                   const std::string& tune,
+                   const SampleRequest& request,
+                   const SpectrumDef& spectrum,
+                   bool normalizeShape,
+                   bool useSubsampleErrors,
+                   bool strictInputs)
+{
+    const std::string completeDir = CompleteRootDirForFlavor(config, request.flavor);
+    const std::string filePath =
+        ResolveCompleteRootFile(config.baseDir, tune, completeDir, request.fileName);
+    const std::string cloneName =
+        "h_" + SanitizeToken(spectrum.key) + "_" + SanitizeToken(tune) + "_" +
+        SanitizeToken(request.displayLabel);
+
+    TH1D* central =
+        LoadSpectrumFromFile(filePath, spectrum, cloneName.c_str(), normalizeShape, strictInputs);
+    if (!central) return nullptr;
+
+    if (useSubsampleErrors && config.calculateErrors && config.nSubSamples > 1) {
+        std::vector<TH1D*> subsamples;
+        const std::string subSampleDir = SubsampleRootDirForFlavor(config, request.flavor);
+        if (subSampleDir != "NONE" && !subSampleDir.empty()) {
+            for (int iSub = 1; iSub <= config.nSubSamples; ++iSub) {
+                try {
+                    const std::string subPath =
+                        ResolveSubSampleRootFile(subSampleDir, tune, iSub, request.fileName);
+                    const std::string subName = cloneName + "_sub" + std::to_string(iSub);
+                    TH1D* subHist =
+                        LoadSpectrumFromFile(subPath, spectrum, subName.c_str(),
+                                             normalizeShape, false);
+                    if (subHist) subsamples.push_back(subHist);
+                } catch (const std::exception& error) {
+                    if (strictInputs) {
+                        for (TH1D* hist : subsamples) delete hist;
+                        delete central;
+                        throw;
+                    }
+                    std::cerr << "WARNING: " << error.what() << std::endl;
+                }
+            }
+            ApplySubsampleErrors(central, subsamples);
+            for (TH1D* hist : subsamples) delete hist;
+        }
+    }
+
+    return central;
+}
+
+SampleRequest FirstAvailableSharedSample(const PlotConfig& config,
+                                         const std::string& tune,
+                                         bool strictInputs)
+{
+    std::vector<SampleRequest> candidates;
+    if (!config.beautyPairs.empty()) {
+        candidates.push_back({Flavor::Beauty, FileRole::OS, config.beautyPairs.front().osFileName,
+                              "SharedEventSample", true});
+    }
+    if (!config.charmPairs.empty()) {
+        candidates.push_back({Flavor::Charm, FileRole::OS, config.charmPairs.front().osFileName,
+                              "SharedEventSample", true});
+    }
+
+    for (const auto& request : candidates) {
+        try {
+            ResolveCompleteRootFile(config.baseDir, tune,
+                                    CompleteRootDirForFlavor(config, request.flavor),
+                                    request.fileName);
+            return request;
+        } catch (const std::exception&) {
+        }
+    }
+
+    if (strictInputs) {
+        throw std::runtime_error("Could not find any shared multiplicity input file for tune " + tune);
+    }
+    return candidates.empty()
+        ? SampleRequest{Flavor::Beauty, FileRole::OS, "", "SharedEventSample", true}
+        : candidates.front();
+}
+
+Color_t TuneColor(const std::string& tune)
+{
+    if (tune == "MONASH") return kBlack;
+    if (tune == "JUNCTIONS") return kBlue + 1;
+    if (tune == "CLOSEPACKING") return kMagenta + 1;
+    return kGray + 2;
+}
+
+int TuneMarker(const std::string& tune)
+{
+    if (tune == "MONASH") return 20;
+    if (tune == "JUNCTIONS") return 21;
+    if (tune == "CLOSEPACKING") return 22;
+    return 24;
+}
+
+void StyleHistogram(TH1D* hist,
+                    const std::string& tune,
+                    const SpectrumDef& spectrum,
+                    bool normalizeShape)
+{
+    if (!hist) return;
+    hist->SetStats(0);
+    hist->SetTitle("");
+    hist->SetLineColor(TuneColor(tune));
+    hist->SetMarkerColor(TuneColor(tune));
+    hist->SetMarkerStyle(TuneMarker(tune));
+    hist->SetLineWidth(2);
+    hist->GetXaxis()->SetTitle(spectrum.xTitle.c_str());
+    hist->GetYaxis()->SetTitle(normalizeShape
+                               ? spectrum.yTitleShape.c_str()
+                               : spectrum.yTitleCounts.c_str());
+    hist->GetXaxis()->SetTitleOffset(1.05);
+    hist->GetYaxis()->SetTitleOffset(1.25);
+}
+
+double PositiveMinimum(const std::vector<LoadedHistogram>& loaded)
+{
+    double minimum = 1.0e30;
+    for (const auto& item : loaded) {
+        TH1D* hist = item.hist;
+        if (!hist) continue;
+        for (int bin = 1; bin <= hist->GetNbinsX(); ++bin) {
+            const double content = hist->GetBinContent(bin);
+            if (content > 0.0 && content < minimum) minimum = content;
+        }
+    }
+    return minimum < 1.0e30 ? minimum : 1.0e-8;
+}
+
+double MaximumWithErrors(const std::vector<LoadedHistogram>& loaded)
+{
+    double maximum = 0.0;
+    for (const auto& item : loaded) {
+        TH1D* hist = item.hist;
+        if (!hist) continue;
+        for (int bin = 1; bin <= hist->GetNbinsX(); ++bin) {
+            maximum = std::max(maximum, hist->GetBinContent(bin) + hist->GetBinError(bin));
+        }
+    }
+    return maximum > 0.0 ? maximum : 1.0;
+}
+
+void DrawMissingMessage(const std::string& label)
+{
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextAlign(22);
+    latex.SetTextSize(0.04);
+    latex.DrawLatex(0.50, 0.54, "No input histograms found");
+    latex.SetTextSize(0.03);
+    latex.DrawLatex(0.50, 0.47, label.c_str());
+}
+
+void DrawTuneOverlay(const PlotConfig& config,
+                     const SampleRequest& request,
+                     const SpectrumDef& spectrum,
+                     const std::string& outputStem,
+                     bool normalizeShape,
+                     bool useSubsampleErrors,
+                     bool strictInputs)
+{
+    std::vector<LoadedHistogram> loaded;
+    for (const auto& tune : config.tunes) {
+        try {
+            TH1D* hist = LoadSpectrum(config, tune, request, spectrum, normalizeShape,
+                                      useSubsampleErrors, strictInputs);
+            if (!hist) continue;
+            StyleHistogram(hist, tune, spectrum, normalizeShape);
+            loaded.push_back({hist, tune});
+        } catch (const std::exception& error) {
+            if (strictInputs) {
+                for (auto& item : loaded) delete item.hist;
+                throw;
+            }
+            std::cerr << "WARNING: " << error.what() << std::endl;
+        }
+    }
+
+    const int width = 760;
+    const int height = 620;
+    TCanvas* canvas = new TCanvas(("c_" + outputStem).c_str(),
+                                  (spectrum.title + " " + request.displayLabel).c_str(),
+                                  width, height);
+    canvas->SetTicks(1, 1);
+    canvas->SetLeftMargin(0.13);
+    canvas->SetRightMargin(0.04);
+    canvas->SetBottomMargin(0.12);
+    canvas->SetTopMargin(0.09);
+    if (spectrum.logY) canvas->SetLogy();
+
+    if (loaded.empty()) {
+        DrawMissingMessage(request.displayLabel);
+    } else {
+        const double maxY = MaximumWithErrors(loaded);
+        const double minY = spectrum.logY ? std::max(PositiveMinimum(loaded) * 0.35, 1.0e-12) : 0.0;
+        const double upper = spectrum.logY ? maxY * 8.0 : maxY * 1.28;
+
+        TLegend* legend = new TLegend(0.62, 0.70, 0.91, 0.88);
+        legend->SetBorderSize(0);
+        legend->SetFillStyle(0);
+
+        bool first = true;
+        for (auto& item : loaded) {
+            TH1D* hist = item.hist;
+            hist->SetMinimum(minY);
+            hist->SetMaximum(std::max(upper, minY * 10.0));
+            hist->Draw(first ? "E1 HIST" : "E1 HIST SAME");
+            legend->AddEntry(hist, item.tune.c_str(), "l");
+            first = false;
+        }
+        legend->Draw();
+
+        TLatex title;
+        title.SetNDC();
+        title.SetTextAlign(13);
+        title.SetTextSize(0.038);
+        title.DrawLatex(0.15, 0.94, request.displayLabel.c_str());
+    }
+
+    if (gSystem->mkdir(config.outputDir.c_str(), true) != 0 &&
+        gSystem->AccessPathName(config.outputDir.c_str())) {
+        throw std::runtime_error("Could not create output directory: " + config.outputDir);
+    }
+
+    const std::string outBase = JoinPath({config.outputDir, outputStem});
+    canvas->SaveAs((outBase + ".png").c_str());
+    canvas->SaveAs((outBase + ".pdf").c_str());
+    canvas->SaveAs((outBase + ".C").c_str());
+
+    delete canvas;
+    for (auto& item : loaded) delete item.hist;
+}
+
+std::string TriggerLabelForFlavor(Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? "B^{+} trigger" : "D^{+} trigger";
+}
+
+std::vector<SampleRequest> BuildTriggerRequests(const PlotConfig& config)
+{
+    std::vector<SampleRequest> requests;
+    if (!config.beautyPairs.empty()) {
+        requests.push_back({Flavor::Beauty, FileRole::OS, config.beautyPairs.front().osFileName,
+                            "Beauty " + TriggerLabelForFlavor(Flavor::Beauty), false});
+    }
+    if (!config.charmPairs.empty()) {
+        requests.push_back({Flavor::Charm, FileRole::OS, config.charmPairs.front().osFileName,
+                            "Charm " + TriggerLabelForFlavor(Flavor::Charm), false});
+    }
+    return requests;
+}
+
+std::vector<SampleRequest> BuildAssociateRequests(const PlotConfig& config)
+{
+    std::vector<SampleRequest> requests;
+    const auto appendRequests = [&requests](const std::vector<PairConfig>& pairs) {
+        std::set<std::string> seen;
+        for (const auto& pair : pairs) {
+            const std::string flavor = FlavorName(pair.flavor);
+            const std::string osKey = flavor + "|" + pair.osFileName;
+            if (!pair.osFileName.empty() && !seen.count(osKey)) {
+                seen.insert(osKey);
+                requests.push_back({pair.flavor, FileRole::OS, pair.osFileName,
+                                    flavor + " associate OS: " +
+                                        (pair.associateOSLabel.empty()
+                                             ? StripRootExtension(pair.osFileName)
+                                             : pair.associateOSLabel),
+                                    false});
+            }
+
+            const std::string ssKey = flavor + "|" + pair.ssFileName;
+            if (!pair.ssFileName.empty() && !seen.count(ssKey)) {
+                seen.insert(ssKey);
+                requests.push_back({pair.flavor, FileRole::SS, pair.ssFileName,
+                                    flavor + " associate SS: " +
+                                        (pair.associateSSLabel.empty()
+                                             ? StripRootExtension(pair.ssFileName)
+                                             : pair.associateSSLabel),
+                                    false});
+            }
+        }
+    };
+
+    appendRequests(config.beautyPairs);
+    appendRequests(config.charmPairs);
+    return requests;
+}
+
+std::vector<SampleRequest> BuildCorrelationRequests(const PlotConfig& config)
+{
+    std::vector<SampleRequest> requests;
+    const auto appendRequests = [&requests](const std::vector<PairConfig>& pairs) {
+        std::set<std::string> seen;
+        for (const auto& pair : pairs) {
+            const std::string flavor = FlavorName(pair.flavor);
+            const std::string osKey = flavor + "|" + pair.osFileName;
+            if (!pair.osFileName.empty() && !seen.count(osKey)) {
+                seen.insert(osKey);
+                requests.push_back({pair.flavor, FileRole::OS, pair.osFileName,
+                                    flavor + " correlation OS: " + StripRootExtension(pair.osFileName),
+                                    false});
+            }
+
+            const std::string ssKey = flavor + "|" + pair.ssFileName;
+            if (!pair.ssFileName.empty() && !seen.count(ssKey)) {
+                seen.insert(ssKey);
+                requests.push_back({pair.flavor, FileRole::SS, pair.ssFileName,
+                                    flavor + " correlation SS: " + StripRootExtension(pair.ssFileName),
+                                    false});
+            }
+        }
+    };
+
+    appendRequests(config.beautyPairs);
+    appendRequests(config.charmPairs);
+    return requests;
+}
+
+void SetPlotStyle()
+{
+    gStyle->SetOptStat(0);
+    gStyle->SetTitleFont(42, "XYZ");
+    gStyle->SetLabelFont(42, "XYZ");
+    gStyle->SetLegendBorderSize(0);
+    gStyle->SetErrorX(0.0);
+}
+
+} // namespace KinematicSpectraPlot
+
+void Plot_KinematicSpectra_THnSparse(
+    const char* configuration =
+        "PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json",
+    const char* outputDir = "PlottingScripts/Plots/KinematicSpectra",
+    bool normalizeShape = true,
+    bool useSubsampleErrors = true,
+    bool strictInputs = false,
+    bool includeCorrelationSpectra = true)
+{
+    using namespace KinematicSpectraPlot;
+
+    SetPlotStyle();
+    const PlotConfig config = ReadConfig(configuration, outputDir);
+
+    std::cout << "Using Hadronization base: " << config.hadronizationBase << std::endl;
+    std::cout << "Using analyzed data dir: " << config.baseDir << std::endl;
+    std::cout << "Writing kinematic spectra to: " << config.outputDir << std::endl;
+    std::cout << "Subsample errors: "
+              << ((useSubsampleErrors && config.calculateErrors) ? "enabled" : "disabled")
+              << std::endl;
+
+    const SpectrumDef multiplicity = MultiplicitySpectrum();
+    const std::string suffix = normalizeShape ? "shape" : "density";
+
+    SampleRequest sharedRequest =
+        config.tunes.empty()
+            ? SampleRequest{Flavor::Beauty, FileRole::OS, "", "Shared event multiplicity", true}
+            : FirstAvailableSharedSample(config, config.tunes.front(), strictInputs);
+    sharedRequest.displayLabel = "Shared event multiplicity";
+
+    DrawTuneOverlay(config,
+                    sharedRequest,
+                    multiplicity,
+                    "MultiplicitySpectrum_Shared_" + suffix,
+                    normalizeShape,
+                    useSubsampleErrors,
+                    strictInputs);
+
+    std::vector<SpectrumDef> triggerSpectra = KinematicSpectra();
+    std::vector<SampleRequest> triggerRequests = BuildTriggerRequests(config);
+    for (const auto& request : triggerRequests) {
+        for (auto spectrum : triggerSpectra) {
+            spectrum.sourceKind = SourceKind::TriggerKinematics;
+            DrawTuneOverlay(config,
+                            request,
+                            spectrum,
+                            "Trigger_" + SanitizeToken(spectrum.key) + "_" +
+                                FlavorNameUpper(request.flavor) + "_" + suffix,
+                            normalizeShape,
+                            useSubsampleErrors,
+                            strictInputs);
+        }
+    }
+
+    std::vector<SpectrumDef> associateSpectra = KinematicSpectra();
+    std::vector<SampleRequest> associateRequests = BuildAssociateRequests(config);
+    for (const auto& request : associateRequests) {
+        for (auto spectrum : associateSpectra) {
+            spectrum.sourceKind = SourceKind::AssociateKinematics;
+            DrawTuneOverlay(config,
+                            request,
+                            spectrum,
+                            "Associate_" + SanitizeToken(spectrum.key) + "_" +
+                                FlavorNameUpper(request.flavor) + "_" +
+                                SanitizeToken(StripRootExtension(request.fileName)) + "_" + suffix,
+                            normalizeShape,
+                            useSubsampleErrors,
+                            strictInputs);
+        }
+    }
+
+    if (includeCorrelationSpectra) {
+        std::vector<SampleRequest> correlationRequests = BuildCorrelationRequests(config);
+        for (const auto& request : correlationRequests) {
+            for (const auto& spectrum : CorrelationSpectra()) {
+                DrawTuneOverlay(config,
+                                request,
+                                spectrum,
+                                "Correlation_" + SanitizeToken(spectrum.key) + "_" +
+                                    FlavorNameUpper(request.flavor) + "_" +
+                                    SanitizeToken(StripRootExtension(request.fileName)) + "_" + suffix,
+                                normalizeShape,
+                                useSubsampleErrors,
+                                strictInputs);
+            }
+        }
+    }
+}

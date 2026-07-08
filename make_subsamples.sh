@@ -44,6 +44,7 @@ Environment overrides:
   ANALYZED_DATA_BASE   Destination base for AnalyzedData.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
   SUBSAMPLE_MODE       partition (default) or bootstrap.
+  MERGE_BACKEND        object (default) or hadd.
 
 The default partition mode shuffles the available jobs once per tune and then
 splits them into non-overlapping subsamples. Use SUBSAMPLE_MODE=bootstrap only
@@ -103,12 +104,22 @@ analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/R
 analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
 output_base_dir="${analyzed_data_base}/SUBSAMPLES_${subsample_tag}"
 subsample_mode="${SUBSAMPLE_MODE:-partition}"
+merge_backend="${MERGE_BACKEND:-object}"
 
 case "${subsample_mode}" in
     partition|bootstrap)
         ;;
     *)
         echo "ERROR: SUBSAMPLE_MODE must be 'partition' or 'bootstrap', got '${subsample_mode}'" >&2
+        exit 1
+        ;;
+esac
+
+case "${merge_backend}" in
+    object|hadd)
+        ;;
+    *)
+        echo "ERROR: MERGE_BACKEND must be 'object' or 'hadd', got '${merge_backend}'" >&2
         exit 1
         ;;
 esac
@@ -142,6 +153,35 @@ shuffle_jobs() {
         BEGIN { srand(seed) }
         { print rand() "\t" $0 }
     ' | sort -k1,1n | cut -f2-
+}
+
+merge_files() {
+    local output_file="$1"
+    shift
+
+    case "${merge_backend}" in
+        object)
+            local merge_macro="${project_base}/AnalysisScripts/MergeAnalysisObjects.C"
+            if [[ ! -f "${merge_macro}" ]]; then
+                echo "ERROR: object merge backend requested, but macro not found: ${merge_macro}" >&2
+                return 1
+            fi
+
+            local input_list
+            input_list="$(mktemp "/tmp/make_subsamples_XXXXXX.txt")"
+            printf '%s\n' "$@" > "${input_list}"
+
+            root -l -b <<ROOTCMDS
+.L ${merge_macro}+
+int __merge_result = MergeAnalysisObjects("${input_list}", "${output_file}", true);
+if (__merge_result != 0) { gSystem->Exit(__merge_result); }
+.q
+ROOTCMDS
+            ;;
+        hadd)
+            hadd -f "${output_file}" "$@"
+            ;;
+    esac
 }
 
 make_tune_subsamples() {
@@ -274,7 +314,7 @@ make_tune_subsamples() {
             fi
 
             echo "Merging ${rootfile} with ${#files[@]} files"
-            hadd -f "${sub_dir}/${rootfile}" "${files[@]}"
+            merge_files "${sub_dir}/${rootfile}" "${files[@]}"
         done
 
         echo "Finished ${tune} subsample ${s}"

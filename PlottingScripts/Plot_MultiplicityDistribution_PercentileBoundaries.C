@@ -335,6 +335,32 @@ TH1D* LoadMultiplicityHistogram(const PlotConfig& config,
     return hist;
 }
 
+TH1D* LoadSharedMultiplicityHistogram(const PlotConfig& config,
+                                      const std::string& tune,
+                                      bool normalize,
+                                      bool strictInputs)
+{
+    std::vector<std::string> attemptedFlavors;
+    for (const char* flavor : {"BEAUTY", "CHARM"}) {
+        attemptedFlavors.push_back(flavor);
+        TH1D* hist = LoadMultiplicityHistogram(config, tune, flavor, normalize, false);
+        if (!hist) continue;
+
+        hist->SetName(Form("hMultiplicity_SHARED_%s", tune.c_str()));
+        return hist;
+    }
+
+    if (strictInputs) {
+        std::ostringstream message;
+        message << "Could not find a shared multiplicity input for tune " << tune
+                << ". Tried flavors:";
+        for (const auto& flavor : attemptedFlavors) message << " " << flavor;
+        throw std::runtime_error(message.str());
+    }
+
+    return nullptr;
+}
+
 Color_t TuneColor(const std::string& tune)
 {
     if (tune == "MONASH") return kBlack;
@@ -530,6 +556,84 @@ void DrawFlavorCanvas(const PlotConfig& config,
     for (TObject* object : keepAlive) delete object;
 }
 
+void DrawSharedCanvas(const PlotConfig& config,
+                      bool normalize,
+                      bool strictInputs)
+{
+    const int nTunes = static_cast<int>(config.tunes.size());
+    if (nTunes == 0) throw std::runtime_error("No PYTHIA_TUNES configured");
+
+    TCanvas* canvas = new TCanvas("cMultiplicityPercentiles_SHARED",
+                                  "Shared multiplicity percentile boundaries",
+                                  520 * nTunes, 640);
+    canvas->Divide(nTunes, 1, 0.001, 0.001);
+    std::vector<TObject*> keepAlive;
+
+    for (int iTune = 0; iTune < nTunes; ++iTune) {
+        const std::string tune = config.tunes[iTune];
+        canvas->cd(iTune + 1);
+        gPad->SetLogx();
+        gPad->SetLogy();
+        gPad->SetTicks(1, 1);
+        gPad->SetTopMargin(0.08);
+        gPad->SetBottomMargin(0.12);
+        gPad->SetLeftMargin(iTune == 0 ? 0.14 : 0.08);
+        gPad->SetRightMargin(0.03);
+
+        TH1D* hist = LoadSharedMultiplicityHistogram(config, tune, normalize, strictInputs);
+        if (!hist) {
+            DrawMissingInputMessage("SHARED", tune);
+            continue;
+        }
+
+        const double xMin = 1.0;
+        const double xMax = std::max(UpperX(hist), 10.0);
+        const double yMin = std::max(PositiveMinimum(hist) * 0.45, normalize ? 1.0e-10 : 0.45);
+        const double yMax = std::max(hist->GetMaximum() * 3.0, yMin * 10.0);
+
+        TH1F* frame = gPad->DrawFrame(xMin, yMin, xMax, yMax);
+        frame->SetTitle("");
+        frame->GetXaxis()->SetTitle("Charged-particle multiplicity N_{ch}");
+        frame->GetYaxis()->SetTitle(normalize ? "Normalized events" : "Counts");
+        frame->GetXaxis()->SetTitleOffset(1.1);
+        frame->GetYaxis()->SetTitleOffset(1.25);
+
+        TGraph* graph = BuildMultiplicityGraph(hist, tune, xMin, xMax);
+        keepAlive.push_back(hist);
+        keepAlive.push_back(graph);
+        graph->Draw("L same");
+
+        const std::map<double, double> thresholds =
+            CalculateThresholds(hist, config.percentileClasses);
+        DrawClassDecorations(config.percentileClasses, thresholds, xMin, xMax, yMin, yMax);
+        graph->Draw("L same");
+        gPad->RedrawAxis();
+
+        TLatex title;
+        title.SetNDC();
+        title.SetTextAlign(22);
+        title.SetTextSize(0.045);
+        title.DrawLatex(0.50, 0.955, tune.c_str());
+    }
+
+    if (gSystem->mkdir(config.outputDir.c_str(), true) != 0 &&
+        gSystem->AccessPathName(config.outputDir.c_str())) {
+        throw std::runtime_error("Could not create output directory: " + config.outputDir);
+    }
+
+    const std::string suffix = normalize ? "normalized" : "counts";
+    const std::string outBase =
+        JoinPath({config.outputDir,
+                  std::string("MultiplicityDistributionPercentileBoundaries_SHARED_") +
+                      suffix});
+
+    canvas->SaveAs((outBase + ".png").c_str());
+    canvas->SaveAs((outBase + ".pdf").c_str());
+    canvas->SaveAs((outBase + ".C").c_str());
+    delete canvas;
+    for (TObject* object : keepAlive) delete object;
+}
+
 void SetPlotStyle()
 {
     gStyle->SetOptStat(0);
@@ -555,6 +659,25 @@ void Plot_MultiplicityDistribution_PercentileBoundaries(
     std::cout << "Using Hadronization base: " << config.hadronizationBase << std::endl;
     std::cout << "Using analyzed data dir: " << config.baseDir << std::endl;
     std::cout << "Writing multiplicity plots to: " << config.outputDir << std::endl;
+
+    DrawSharedCanvas(config, normalize, strictInputs);
+}
+
+void Plot_MultiplicityDistribution_PercentileBoundaries_ByFlavor(
+    const char* configuration =
+        "PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json",
+    const char* outputDir = "PlottingScripts/Plots/MultiplicityDistribution",
+    bool normalize = false,
+    bool strictInputs = false)
+{
+    using namespace MultiplicityPercentilePlot;
+
+    SetPlotStyle();
+    const PlotConfig config = ReadConfig(configuration, outputDir);
+
+    std::cout << "Using Hadronization base: " << config.hadronizationBase << std::endl;
+    std::cout << "Using analyzed data dir: " << config.baseDir << std::endl;
+    std::cout << "Writing by-flavor multiplicity debug plots to: " << config.outputDir << std::endl;
 
     DrawFlavorCanvas(config, "BEAUTY", normalize, strictInputs);
     DrawFlavorCanvas(config, "CHARM", normalize, strictInputs);
