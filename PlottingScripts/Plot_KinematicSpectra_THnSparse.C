@@ -116,6 +116,21 @@ struct LoadedHistogram {
     std::string tune;
 };
 
+std::string SourceKindName(SourceKind sourceKind)
+{
+    switch (sourceKind) {
+        case SourceKind::Multiplicity:
+            return "Multiplicity";
+        case SourceKind::TriggerKinematics:
+            return "Trigger";
+        case SourceKind::AssociateKinematics:
+            return "Associate";
+        case SourceKind::Correlations:
+            return "Correlation";
+    }
+    return "Other";
+}
+
 std::string JoinPath(const std::vector<std::string>& pieces)
 {
     std::string path;
@@ -243,6 +258,55 @@ std::string StripRootExtension(std::string fileName)
         fileName.resize(fileName.size() - suffix.size());
     }
     return fileName;
+}
+
+std::string SpectrumDirectoryName(const SpectrumDef& spectrum)
+{
+    if (spectrum.sourceKind == SourceKind::Multiplicity) return "Multiplicity";
+    return SanitizeToken(spectrum.key);
+}
+
+std::string OutputSubdirectory(const SpectrumDef& spectrum)
+{
+    if (spectrum.sourceKind == SourceKind::Multiplicity) {
+        return SpectrumDirectoryName(spectrum);
+    }
+    return JoinPath({SourceKindName(spectrum.sourceKind), SpectrumDirectoryName(spectrum)});
+}
+
+std::string TriggerParticleLatex(Flavor flavor)
+{
+    return flavor == Flavor::Beauty ? "#it{B}^{+}" : "#it{D}^{+}";
+}
+
+std::string AssociateParticleLatex(const std::string& fileName)
+{
+    const std::map<std::string, std::string> labels = {
+        {"BplusBminus.root", "#it{B}^{-}"},
+        {"BplusBplus.root", "#it{B}^{+}"},
+        {"BplusLb.root", "#Lambda_{b}"},
+        {"BplusLbbar.root", "#bar{#Lambda}_{b}"},
+        {"BplusSigmabzero.root", "#Sigma_{b}^{0}"},
+        {"BplusSigmabzerobar.root", "#bar{#Sigma}_{b}^{0}"},
+        {"DplusDminus.root", "#it{D}^{-}"},
+        {"DplusDplus.root", "#it{D}^{+}"},
+        {"DplusLambdacplusbar.root", "#bar{#Lambda}_{c}^{-}"},
+        {"DplusLambdacplus.root", "#Lambda_{c}^{+}"}
+    };
+
+    const auto found = labels.find(fileName);
+    if (found != labels.end()) return found->second;
+    return StripRootExtension(fileName);
+}
+
+std::string PairParticleLatex(Flavor flavor, const std::string& fileName)
+{
+    return TriggerParticleLatex(flavor) + " " + AssociateParticleLatex(fileName);
+}
+
+std::string RoleName(FileRole role)
+{
+    return role == FileRole::OS ? "OS" : "SS";
 }
 
 std::string CompleteRootDirForFlavor(const PlotConfig& config, Flavor flavor)
@@ -649,12 +713,17 @@ void StyleHistogram(TH1D* hist,
     hist->SetMarkerColor(TuneColor(tune));
     hist->SetMarkerStyle(TuneMarker(tune));
     hist->SetLineWidth(2);
+    hist->SetMarkerSize(0.9);
     hist->GetXaxis()->SetTitle(spectrum.xTitle.c_str());
     hist->GetYaxis()->SetTitle(normalizeShape
                                ? spectrum.yTitleShape.c_str()
                                : spectrum.yTitleCounts.c_str());
-    hist->GetXaxis()->SetTitleOffset(1.05);
-    hist->GetYaxis()->SetTitleOffset(1.25);
+    hist->GetXaxis()->SetTitleOffset(1.08);
+    hist->GetYaxis()->SetTitleOffset(1.52);
+    hist->GetXaxis()->SetTitleSize(0.045);
+    hist->GetYaxis()->SetTitleSize(0.045);
+    hist->GetXaxis()->SetLabelSize(0.040);
+    hist->GetYaxis()->SetLabelSize(0.040);
 }
 
 double PositiveMinimum(const std::vector<LoadedHistogram>& loaded)
@@ -720,16 +789,16 @@ void DrawTuneOverlay(const PlotConfig& config,
         }
     }
 
-    const int width = 760;
-    const int height = 620;
+    const int width = 860;
+    const int height = 680;
     TCanvas* canvas = new TCanvas(("c_" + outputStem).c_str(),
                                   (spectrum.title + " " + request.displayLabel).c_str(),
                                   width, height);
     canvas->SetTicks(1, 1);
-    canvas->SetLeftMargin(0.13);
-    canvas->SetRightMargin(0.04);
-    canvas->SetBottomMargin(0.12);
-    canvas->SetTopMargin(0.09);
+    canvas->SetLeftMargin(0.16);
+    canvas->SetRightMargin(0.045);
+    canvas->SetBottomMargin(0.14);
+    canvas->SetTopMargin(0.13);
     if (spectrum.logY) canvas->SetLogy();
 
     if (loaded.empty()) {
@@ -739,9 +808,10 @@ void DrawTuneOverlay(const PlotConfig& config,
         const double minY = spectrum.logY ? std::max(PositiveMinimum(loaded) * 0.35, 1.0e-12) : 0.0;
         const double upper = spectrum.logY ? maxY * 8.0 : maxY * 1.28;
 
-        TLegend* legend = new TLegend(0.62, 0.70, 0.91, 0.88);
+        TLegend* legend = new TLegend(0.62, 0.705, 0.91, 0.855);
         legend->SetBorderSize(0);
         legend->SetFillStyle(0);
+        legend->SetTextSize(0.035);
 
         bool first = true;
         for (auto& item : loaded) {
@@ -757,16 +827,17 @@ void DrawTuneOverlay(const PlotConfig& config,
         TLatex title;
         title.SetNDC();
         title.SetTextAlign(13);
-        title.SetTextSize(0.038);
-        title.DrawLatex(0.15, 0.94, request.displayLabel.c_str());
+        title.SetTextSize(0.034);
+        title.DrawLatex(0.16, 0.965, request.displayLabel.c_str());
     }
 
-    if (gSystem->mkdir(config.outputDir.c_str(), true) != 0 &&
-        gSystem->AccessPathName(config.outputDir.c_str())) {
-        throw std::runtime_error("Could not create output directory: " + config.outputDir);
+    const std::string outputCategoryDir = JoinPath({config.outputDir, OutputSubdirectory(spectrum)});
+    if (gSystem->mkdir(outputCategoryDir.c_str(), true) != 0 &&
+        gSystem->AccessPathName(outputCategoryDir.c_str())) {
+        throw std::runtime_error("Could not create output directory: " + outputCategoryDir);
     }
 
-    const std::string outBase = JoinPath({config.outputDir, outputStem});
+    const std::string outBase = JoinPath({outputCategoryDir, outputStem});
     canvas->SaveAs((outBase + ".png").c_str());
     canvas->SaveAs((outBase + ".pdf").c_str());
     canvas->SaveAs((outBase + ".C").c_str());
@@ -777,7 +848,7 @@ void DrawTuneOverlay(const PlotConfig& config,
 
 std::string TriggerLabelForFlavor(Flavor flavor)
 {
-    return flavor == Flavor::Beauty ? "B^{+} trigger" : "D^{+} trigger";
+    return TriggerParticleLatex(flavor) + " trigger";
 }
 
 std::vector<SampleRequest> BuildTriggerRequests(const PlotConfig& config)
@@ -785,11 +856,15 @@ std::vector<SampleRequest> BuildTriggerRequests(const PlotConfig& config)
     std::vector<SampleRequest> requests;
     if (!config.beautyPairs.empty()) {
         requests.push_back({Flavor::Beauty, FileRole::OS, config.beautyPairs.front().osFileName,
-                            "Beauty " + TriggerLabelForFlavor(Flavor::Beauty), false});
+                            FlavorName(Flavor::Beauty) + ": " +
+                                TriggerLabelForFlavor(Flavor::Beauty),
+                            false});
     }
     if (!config.charmPairs.empty()) {
         requests.push_back({Flavor::Charm, FileRole::OS, config.charmPairs.front().osFileName,
-                            "Charm " + TriggerLabelForFlavor(Flavor::Charm), false});
+                            FlavorName(Flavor::Charm) + ": " +
+                                TriggerLabelForFlavor(Flavor::Charm),
+                            false});
     }
     return requests;
 }
@@ -806,9 +881,7 @@ std::vector<SampleRequest> BuildAssociateRequests(const PlotConfig& config)
                 seen.insert(osKey);
                 requests.push_back({pair.flavor, FileRole::OS, pair.osFileName,
                                     flavor + " associate OS: " +
-                                        (pair.associateOSLabel.empty()
-                                             ? StripRootExtension(pair.osFileName)
-                                             : pair.associateOSLabel),
+                                        AssociateParticleLatex(pair.osFileName),
                                     false});
             }
 
@@ -817,9 +890,7 @@ std::vector<SampleRequest> BuildAssociateRequests(const PlotConfig& config)
                 seen.insert(ssKey);
                 requests.push_back({pair.flavor, FileRole::SS, pair.ssFileName,
                                     flavor + " associate SS: " +
-                                        (pair.associateSSLabel.empty()
-                                             ? StripRootExtension(pair.ssFileName)
-                                             : pair.associateSSLabel),
+                                        AssociateParticleLatex(pair.ssFileName),
                                     false});
             }
         }
@@ -841,7 +912,8 @@ std::vector<SampleRequest> BuildCorrelationRequests(const PlotConfig& config)
             if (!pair.osFileName.empty() && !seen.count(osKey)) {
                 seen.insert(osKey);
                 requests.push_back({pair.flavor, FileRole::OS, pair.osFileName,
-                                    flavor + " correlation OS: " + StripRootExtension(pair.osFileName),
+                                    flavor + " correlation OS: " +
+                                        PairParticleLatex(pair.flavor, pair.osFileName),
                                     false});
             }
 
@@ -849,7 +921,8 @@ std::vector<SampleRequest> BuildCorrelationRequests(const PlotConfig& config)
             if (!pair.ssFileName.empty() && !seen.count(ssKey)) {
                 seen.insert(ssKey);
                 requests.push_back({pair.flavor, FileRole::SS, pair.ssFileName,
-                                    flavor + " correlation SS: " + StripRootExtension(pair.ssFileName),
+                                    flavor + " correlation SS: " +
+                                        PairParticleLatex(pair.flavor, pair.ssFileName),
                                     false});
             }
         }
@@ -865,6 +938,8 @@ void SetPlotStyle()
     gStyle->SetOptStat(0);
     gStyle->SetTitleFont(42, "XYZ");
     gStyle->SetLabelFont(42, "XYZ");
+    gStyle->SetTitleSize(0.045, "XYZ");
+    gStyle->SetLabelSize(0.040, "XYZ");
     gStyle->SetLegendBorderSize(0);
     gStyle->SetErrorX(0.0);
 }
@@ -887,7 +962,7 @@ void Plot_KinematicSpectra_THnSparse(
 
     std::cout << "Using Hadronization base: " << config.hadronizationBase << std::endl;
     std::cout << "Using analyzed data dir: " << config.baseDir << std::endl;
-    std::cout << "Writing kinematic spectra to: " << config.outputDir << std::endl;
+    std::cout << "Writing kinematic spectra under: " << config.outputDir << std::endl;
     std::cout << "Subsample errors: "
               << ((useSubsampleErrors && config.calculateErrors) ? "enabled" : "disabled")
               << std::endl;

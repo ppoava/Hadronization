@@ -97,6 +97,20 @@ KINEMATIC_OUTPUT_DIR=PlottingScripts/Plots/KinematicSpectraFull \
 
 The default kinematic output is shape-normalized. Set `KINEMATIC_NORMALIZE=false` to draw bin-width-normalized counts. Set `KINEMATIC_CORRELATIONS=false` to skip the optional `Delta phi` and `Delta eta` spectra.
 
+Kinematic spectra are written into subdirectories by plot family:
+
+```text
+PlottingScripts/Plots/KinematicSpectra/Multiplicity
+PlottingScripts/Plots/KinematicSpectra/Trigger/pT
+PlottingScripts/Plots/KinematicSpectra/Trigger/eta
+PlottingScripts/Plots/KinematicSpectra/Trigger/phi
+PlottingScripts/Plots/KinematicSpectra/Associate/pT
+PlottingScripts/Plots/KinematicSpectra/Associate/eta
+PlottingScripts/Plots/KinematicSpectra/Associate/phi
+PlottingScripts/Plots/KinematicSpectra/Correlation/deltaPhi
+PlottingScripts/Plots/KinematicSpectra/Correlation/deltaEta
+```
+
 Event-level spectra that are independent of the selected heavy-flavour pair are intentionally drawn once. In particular, `summed MULTIPLICITY` comes from the same HF event sample for charm and beauty, so the paper macro writes one shared multiplicity plot per tune rather than duplicate charm and beauty versions. Trigger spectra are still split by charm/beauty because the trigger particle differs (`D+` versus `B+`), while associate spectra are split by pair file.
 
 ## THnSparse Configs
