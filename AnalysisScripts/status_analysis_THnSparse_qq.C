@@ -200,8 +200,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	// Set up the THnSparses for single particle kinematics and for correlations
 	// φ η pT mult
 	Int_t nBinsSingle[4] = {100, 100, 100, 100};
-	Double_t vMinSingle[4] = {-PI / 2, -4, 0, 0};
-	Double_t vMaxSingle[4] = {3 * PI / 2, 4, 50, 400};
+	Double_t vMinSingle[4] = {-PI, -4, 0, 0};
+	Double_t vMaxSingle[4] = {PI, 4, 50, 400};
 	THnSparseD *hTrKinematics = new THnSparseD("hTrKinematics", "hTrKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
 	THnSparseD *hAsKinematics = new THnSparseD("hAsKinematics", "hAsKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
 	hTrKinematics->GetAxis(0)->SetTitle("#phi");

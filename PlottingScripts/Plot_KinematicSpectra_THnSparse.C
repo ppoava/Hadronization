@@ -474,6 +474,97 @@ SpectrumDef MultiplicitySpectrum()
             "Counts", "Normalized events", SourceKind::Multiplicity, -1, true};
 }
 
+double Pi()
+{
+    return std::acos(-1.0);
+}
+
+bool IsSingleParticlePhiSpectrum(const SpectrumDef& spectrum)
+{
+    return spectrum.key == "phi" &&
+           (spectrum.sourceKind == SourceKind::TriggerKinematics ||
+            spectrum.sourceKind == SourceKind::AssociateKinematics);
+}
+
+bool NearlyEqual(double a, double b, double tolerance = 1.0e-6)
+{
+    return std::abs(a - b) < tolerance;
+}
+
+double WrapToMinusPiPi(double phi)
+{
+    const double pi = Pi();
+    const double twoPi = 2.0 * pi;
+    while (phi < -pi) phi += twoPi;
+    while (phi >= pi) phi -= twoPi;
+    return phi;
+}
+
+TH1D* RemapPhiHistogramToMinusPiPi(TH1D* hist)
+{
+    if (!hist) return nullptr;
+
+    const double pi = Pi();
+    TAxis* axis = hist->GetXaxis();
+    if (NearlyEqual(axis->GetXmin(), -pi) && NearlyEqual(axis->GetXmax(), pi)) {
+        return hist;
+    }
+
+    const std::string originalName = hist->GetName();
+    const int nBins = hist->GetNbinsX();
+    TH1D* remapped = new TH1D((originalName + "_minusPiPi").c_str(), "",
+                              nBins, -pi, pi);
+    remapped->SetDirectory(nullptr);
+    remapped->Sumw2();
+
+    for (int bin = 1; bin <= nBins; ++bin) {
+        const double wrappedCenter = WrapToMinusPiPi(axis->GetBinCenter(bin));
+        const int targetBin = remapped->GetXaxis()->FindFixBin(wrappedCenter);
+        if (targetBin < 1 || targetBin > remapped->GetNbinsX()) continue;
+
+        const double content = remapped->GetBinContent(targetBin) + hist->GetBinContent(bin);
+        const double error2 = std::pow(remapped->GetBinError(targetBin), 2) +
+                              std::pow(hist->GetBinError(bin), 2);
+        remapped->SetBinContent(targetBin, content);
+        remapped->SetBinError(targetBin, std::sqrt(error2));
+    }
+
+    // Older complete-root files booked phi as [-pi/2, 3pi/2], so raw
+    // Pythia phi in [-pi, -pi/2] ended up in the THnSparse underflow bin.
+    // Distribute that underflow over the missing display bins. New files
+    // booked directly as [-pi, pi] return above and do not use this branch.
+    if (axis->GetXmin() > -pi && hist->GetBinContent(0) != 0.0) {
+        std::vector<int> missingBins;
+        for (int bin = 1; bin <= remapped->GetNbinsX(); ++bin) {
+            if (remapped->GetXaxis()->GetBinCenter(bin) < axis->GetXmin()) {
+                missingBins.push_back(bin);
+            }
+        }
+
+        if (!missingBins.empty()) {
+            const double underflowContent = hist->GetBinContent(0);
+            const double underflowError = hist->GetBinError(0);
+            const double perBinContent =
+                underflowContent / static_cast<double>(missingBins.size());
+            const double perBinError =
+                underflowError / std::sqrt(static_cast<double>(missingBins.size()));
+
+            for (int bin : missingBins) {
+                const double content = remapped->GetBinContent(bin) + perBinContent;
+                const double error2 = std::pow(remapped->GetBinError(bin), 2) +
+                                      std::pow(perBinError, 2);
+                remapped->SetBinContent(bin, content);
+                remapped->SetBinError(bin, std::sqrt(error2));
+            }
+        }
+    }
+
+    remapped->SetEntries(hist->GetEntries());
+    delete hist;
+    remapped->SetName(originalName.c_str());
+    return remapped;
+}
+
 void NormalizeShape(TH1D* hist)
 {
     if (!hist) return;
@@ -550,6 +641,9 @@ TH1D* ProjectSparseAxis(TFile* file,
     hist->SetTitle("");
     hist->SetDirectory(nullptr);
     hist->Sumw2();
+    if (IsSingleParticlePhiSpectrum(spectrum)) {
+        hist = RemapPhiHistogramToMinusPiPi(hist);
+    }
     return hist;
 }
 
@@ -724,6 +818,15 @@ void StyleHistogram(TH1D* hist,
     hist->GetYaxis()->SetTitleSize(0.045);
     hist->GetXaxis()->SetLabelSize(0.040);
     hist->GetYaxis()->SetLabelSize(0.040);
+    if (IsSingleParticlePhiSpectrum(spectrum)) {
+        TAxis* axis = hist->GetXaxis();
+        axis->SetNdivisions(4, false);
+        axis->ChangeLabel(1, -1, -1, -1, -1, -1, "-#pi");
+        axis->ChangeLabel(2, -1, -1, -1, -1, -1, "-#pi/2");
+        axis->ChangeLabel(3, -1, -1, -1, -1, -1, "0");
+        axis->ChangeLabel(4, -1, -1, -1, -1, -1, "#pi/2");
+        axis->ChangeLabel(5, -1, -1, -1, -1, -1, "#pi");
+    }
 }
 
 double PositiveMinimum(const std::vector<LoadedHistogram>& loaded)
