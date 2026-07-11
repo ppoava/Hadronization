@@ -1,6 +1,6 @@
 {
   "VERBOSE": true,
-  "calculate_errors": true,
+  "calculate_errors": false,
   "bb_bar_complete_root_dir_sub_samples":"/Users/pv280546/alice/Hadronization/AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
   "cc_bar_complete_root_dir_sub_samples":"/Users/pv280546/alice/Hadronization/AnalyzedData/SUBSAMPLES_700/combined_root_subSamples",
   "nSubSamples": 8,
@@ -11,47 +11,123 @@
       "MONASH",
       "JUNCTIONS"
   ],
-  "bb_bar_complete_root_dir": "complete_root_21_06_2026",
-  "cc_bar_complete_root_dir": "complete_root_21_06_2026",
+  "bb_bar_complete_root_dir": "complete_root_09_07_2026",
+  "cc_bar_complete_root_dir": "complete_root_09_07_2026",
 
   "beauty_correlations_to_analyse": [
     {
-      "trigger": "Bˆ{+}",
-      "associateOS": "B-",
-      "associateSS": "Bˆ{+}",
-      "OS": "BplusBminus.root",
-      "SS": "BplusBplus.root"
+      "trigger": "B^{+}",
+      "configs": [
+        {
+          "trigger": "B^{+}",
+          "associateOS": "B-",
+          "associateSS": "B^{+}",
+          "OS": "BplusBminus.root",
+          "SS": "BplusBplus.root"
+        },
+        {
+          "trigger": "B^{+}",
+          "associateOS": "Lambda_b",
+          "associateSS": "Lambda_b-bar",
+          "OS": "BplusLb.root",
+          "SS": "BplusLbbar.root"
+        },
+        {
+          "trigger": "B^{+}",
+          "associateOS": "Sigma_b0",
+          "associateSS": "Sigma_b(0)-bar",
+          "OS": "BplusSigmabzero.root",
+          "SS": "BplusSigmabzerobar.root"
+        }
+      ]
     },
     {
-      "trigger": "Bˆ{+}",
-      "associateOS": "Lambda_b",
-      "associateSS": "Lambda_b-bar",
-      "OS": "BplusLb.root",
-      "SS": "BplusLbbar.root"
-    },
-    {
-      "trigger": "Bˆ{+}",
-      "associateOS": "Sigma_b0",
-      "associateSS": "Sigma_b(0)-bar",
-      "OS": "BplusSigmabzero.root",
-      "SS": "BplusSigmabzerobar.root"
+      "trigger": "Lambda_b-bar",
+      "configs": [
+        {
+          "trigger": "Lambda_b-bar",
+          "associateOS": "B-",
+          "associateSS": "B^{+}",
+          "OS": "LbbarBminus.root",
+          "SS": "LbbarBplus.root"
+        },
+        {
+          "trigger": "Lambda_b-bar",
+          "associateOS": "Bc-",
+          "associateSS": "Bc+",
+          "OS": "LbbarBcminus.root",
+          "SS": "LbbarBcplus.root"
+        },
+        {
+          "trigger": "Lambda_b-bar",
+          "associateOS": "B_s^0",
+          "associateSS": "B_s^0-bar",
+          "OS": "LbbarBszero.root",
+          "SS": "LbbarBszerobar.root"
+        },
+        {
+          "trigger": "Lambda_b-bar",
+          "associateOS": "B^{0}",
+          "associateSS": "B^{0}-bar",
+          "OS": "LbbarBzero.root",
+          "SS": "LbbarBzerobar.root"
+        },
+        {
+          "trigger": "Lambda_b-bar",
+          "associateOS": "Lambda_b",
+          "associateSS": "Lambda_b-bar",
+          "OS": "LbbarLb.root",
+          "SS": "LbbarLbbar.root"
+        }
+      ]
     }
   ],
 
   "charm_correlations_to_analyse": [
     {
-      "trigger": "Dˆ{+}",
-      "associateOS": "D-",
-      "associateSS": "Dˆ{+}",
-      "OS": "DplusDminus.root",
-      "SS": "DplusDplus.root"
+      "trigger": "D^{+}",
+      "configs": [
+        {
+          "trigger": "D^{+}",
+          "associateOS": "D-",
+          "associateSS": "D^{+}",
+          "OS": "DplusDminus.root",
+          "SS": "DplusDplus.root"
+        },
+        {
+          "trigger": "D^{+}",
+          "associateOS": "Lambda_c(+)-bar",
+          "associateSS": "Lambda_c(+)",
+          "OS": "DplusLambdacplusbar.root",
+          "SS": "DplusLambdacplus.root"
+        }
+      ]
     },
     {
-      "trigger": "Dˆ{+}",
-      "associateOS": "Lambda_c(+)-bar",
-      "associateSS": "Lambda_c(+)",
-      "OS": "DplusLambdacplusbar.root",
-      "SS": "DplusLambdacplus.root"
+      "trigger": "Lambda_c(+)",
+      "configs": [
+        {
+          "trigger": "Lambda_c(+)",
+          "associateOS": "D-",
+          "associateSS": "D^{+}",
+          "OS": "LambdacplusDminus.root",
+          "SS": "LambdacplusDplus.root"
+        },
+        {
+          "trigger": "Lambda_c(+)",
+          "associateOS": "D^{0}",
+          "associateSS": "D^{0}-bar",
+          "OS": "LambdacplusDzero.root",
+          "SS": "LambdacplusDzerobar.root"
+        },
+        {
+          "trigger": "Lambda_c(+)",
+          "associateOS": "Lambda_c(+)-bar",
+          "associateSS": "Lambda_c(+)",
+          "OS": "LambdacplusLambdacplusbar.root",
+          "SS": "LambdacplusLambdacplus.root"
+        }
+      ]
     }
   ],
 
@@ -219,6 +295,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -330,6 +407,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -433,6 +511,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -506,6 +585,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -571,6 +651,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -682,6 +763,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -785,6 +867,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -849,6 +932,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -932,6 +1016,7 @@
         "MONASH"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1038,6 +1123,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1145,6 +1231,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1247,6 +1334,7 @@
         "MONASH"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1353,6 +1441,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1460,6 +1549,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1563,6 +1653,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1631,6 +1722,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1704,6 +1796,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1764,6 +1857,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "BEAUTY",
+      "TriggerToUse": "B^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1829,6 +1923,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1893,6 +1988,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "NONE",
       "denominator_TUNE": "NONE",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -1957,6 +2053,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [
@@ -2013,6 +2110,7 @@
         "JUNCTIONS"
       ],
       "FLAVOUR": "CHARM",
+      "TriggerToUse": "D^{+}",
       "nominator_TUNE": "JUNCTIONS",
       "denominator_TUNE": "MONASH",
       "baryons_to_plot_in_baryon/meson_ratio": [

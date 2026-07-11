@@ -51,7 +51,6 @@ struct TriggerAssociateOSandSS {
     std::string SS;
 };
 
-
 struct HistogramAndTriggerPtHistogramNames {
     std::string hDPhi;
     std::string hTrPt;
@@ -79,10 +78,18 @@ struct BinsFromTHnSparse {
 };
 
 
+
 struct YieldsAndErrors {
     std::vector<std::vector<std::vector<Double_t>>> vYields;
     std::vector<std::vector<std::vector<Double_t>>> vYieldsErrors;
     std::vector<std::vector<std::vector<Double_t>>> vYieldsRatioErrors;
+};
+
+
+struct YieldsAndErrorsMap {
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYields;
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsErrors;
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsRatioErrors;
 };
 
 
@@ -91,6 +98,7 @@ struct canvasConfigs {
     std::string drawFunctionToUse; // name of functions defined in improvedPlotting()
     std::vector<std::string> vCanvasTUNES; // tune to be drawn on given canvas
     std::string FLAVOUR; // just one allowed, but could implement with a new function
+    std::string TriggerToUse; // which trigger to use in the yield plots?
     Int_t indexNominatorTUNE; // used for TUNE ratio plots, e.g. MONASH/JUNCTIONS to study enhancement explicitly
     Int_t indexDenominatorTUNE;
     std::vector<std::string> vBaryonNames; // baryons to be drawn (only for baryon/meson ratio plots!!!)
@@ -169,9 +177,11 @@ struct CONFIGS {
     std::string bbBarDir_subSamples;
     std::string ccBarDir_subSamples;
 
-    // (BplusBminus.root,BplusBplus.root), ...
+    // (BplusBminus.root,BplusBplus.root), added in a map with {trigger, {configs}}
     std::vector<TriggerAssociateOSandSS> vBeautyTriggerAssociateOSandSS;
     std::vector<TriggerAssociateOSandSS> vCharmTriggerAssociateOSandSS;
+    std::map<std::string, std::vector<TriggerAssociateOSandSS>> beautyConfigs;
+    std::map<std::string, std::vector<TriggerAssociateOSandSS>> charmConfigs;
 
     // Which bins will be plotted?
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames; // legacy
@@ -340,6 +350,28 @@ bool isInVector(const std::string& value, const std::vector<std::string>& vec) {
 }
 
 
+YieldsAndErrors YieldsAndErrorsForGivenTrigger(const std::string& trigger, const YieldsAndErrorsMap& mapYieldsAndErrors, bool CALCULATE_ERRORS) {
+    YieldsAndErrors yieldsAndErrors;
+
+    std::cout << "Requested trigger: " << trigger << std::endl;
+    std::cout << "Available keys in mapYields:" << std::endl;
+    for (const auto& [key, value] : mapYieldsAndErrors.mapYields)
+        std::cout << "  [" << key << "]\n";
+    std::cout << "mapYieldsErrors keys:" << std::endl;
+    for (const auto& [key, value] : mapYieldsAndErrors.mapYieldsErrors)
+        std::cout << "  [" << key << "]\n";
+    std::cout << "mapYieldsRatioErrors keys:" << std::endl;
+    for (const auto& [key, value] : mapYieldsAndErrors.mapYieldsRatioErrors)
+        std::cout << "  [" << key << "]\n";
+
+    yieldsAndErrors.vYields = mapYieldsAndErrors.mapYields.at(trigger);
+    if (CALCULATE_ERRORS) { yieldsAndErrors.vYieldsErrors = mapYieldsAndErrors.mapYieldsErrors.at(trigger); }
+    if (CALCULATE_ERRORS) { yieldsAndErrors.vYieldsRatioErrors = mapYieldsAndErrors.mapYieldsRatioErrors.at(trigger); }
+
+    return yieldsAndErrors;
+}
+
+
 // TODO: must be possible to do this more efficiently.. not really necessary for now to improve..
 // TODO: get colour from predefined list (for the tunes)?
 // User defined function that gives the ultimate freedom to come up with legend entries
@@ -415,11 +447,13 @@ CONFIGS readConfig(const char* configurations) {
         path_to_complete_root_dir = base_dir + "/" + TUNE + "/" + ccBarDir;
         path_to_complete_root_dir_sub_samples = ccBarDir_sub_samples + "_" + TUNE;
         std::cout << "Full path charm " << TUNE << ": " << path_to_complete_root_dir << std::endl;
-        std::cout << "Full path charm sub samples" << TUNE << ": " << path_to_complete_root_dir_sub_samples << std::endl;
+        std::cout << "Full path charm sub samples " << TUNE << ": " << path_to_complete_root_dir_sub_samples << std::endl;
     }
     std::cout << std::endl;
 
-    // Which correlations need to be analysed?
+    // toremove
+    std::vector<TriggerAssociateOSandSS> vBeautyTriggerAssociateOSandSS;
+    /*
     std::vector<TriggerAssociateOSandSS> vBeautyTriggerAssociateOSandSS;
     for (const auto& configPair : config["beauty_correlations_to_analyse"]) {
         TriggerAssociateOSandSS pair;
@@ -433,7 +467,28 @@ CONFIGS readConfig(const char* configurations) {
     for (const auto& pair : vBeautyTriggerAssociateOSandSS) {
         std::cout << "OS File: " << pair.OS << ", SS File: " << pair.SS << std::endl;
     }
+    */
+
+   // Which correlations need to be analysed?
+    std::map<std::string, std::vector<TriggerAssociateOSandSS>> beautyConfigs;
+    for (const auto& triggerEntry : config["beauty_correlations_to_analyse"]) {
+        auto& configs = beautyConfigs[triggerEntry["trigger"].get<std::string>()];
+        // Fill the map with the configs for the specific trigger
+        for (const auto& cfg : triggerEntry["configs"]) {
+            configs.push_back({
+                cfg["trigger"].get<std::string>(),
+                cfg["associateOS"].get<std::string>(),
+                cfg["associateSS"].get<std::string>(),
+                cfg["OS"].get<std::string>(),
+                cfg["SS"].get<std::string>()
+            });
+            std::cout << "OS File: " << cfg["OS"] << ", SS File: " << cfg["SS"] << std::endl;
+        }
+    }
+
+    // toremove
     std::vector<TriggerAssociateOSandSS> vCharmTriggerAssociateOSandSS;
+    /*
     for (const auto& configPair : config["charm_correlations_to_analyse"]) {
         TriggerAssociateOSandSS pair;
         pair.trigger = configPair["trigger"].get<std::string>();
@@ -447,6 +502,23 @@ CONFIGS readConfig(const char* configurations) {
         std::cout << "OS File: " << pair.OS << ", SS File: " << pair.SS << std::endl;
     }
     std::cout << std::endl;
+    */
+
+   std::map<std::string, std::vector<TriggerAssociateOSandSS>> charmConfigs;
+    for (const auto& triggerEntry : config["charm_correlations_to_analyse"]) {
+        auto& configs = charmConfigs[triggerEntry["trigger"].get<std::string>()];
+        // Fill the map with the configs for the specific trigger
+        for (const auto& cfg : triggerEntry["configs"]) {
+            configs.push_back({
+                cfg["trigger"].get<std::string>(),
+                cfg["associateOS"].get<std::string>(),
+                cfg["associateSS"].get<std::string>(),
+                cfg["OS"].get<std::string>(),
+                cfg["SS"].get<std::string>()
+            });
+            std::cout << "OS File: " << cfg["OS"] << ", SS File: " << cfg["SS"] << std::endl;
+        }
+    }
 
     // Which histograms need to be analysed?
     // i.e. which dependencies (pT, mult, etc.)
@@ -499,6 +571,7 @@ CONFIGS readConfig(const char* configurations) {
         }
         pair.vCanvasTUNES = vCanvasTUNES;
         pair.FLAVOUR = configPair["FLAVOUR"].get<std::string>();
+        pair.TriggerToUse = configPair["TriggerToUse"].get<std::string>(); // must be identical to trigger name from 'histograms to draw' section! TODO: do something about that..
         std::string nominatorTuneName = configPair["nominator_TUNE"].get<std::string>();
         pair.indexNominatorTUNE = findTuneIndex(vTUNES, nominatorTuneName);
         if (pair.indexNominatorTUNE != -1) {
@@ -632,8 +705,10 @@ CONFIGS readConfig(const char* configurations) {
     configs_from_json.ccBarDir = ccBarDir;
     configs_from_json.bbBarDir_subSamples = bbBarDir_sub_samples;
     configs_from_json.ccBarDir_subSamples = ccBarDir_sub_samples;
-    configs_from_json.vBeautyTriggerAssociateOSandSS = vBeautyTriggerAssociateOSandSS;
-    configs_from_json.vCharmTriggerAssociateOSandSS = vCharmTriggerAssociateOSandSS;
+    configs_from_json.vBeautyTriggerAssociateOSandSS = vBeautyTriggerAssociateOSandSS; // toremove
+    configs_from_json.vCharmTriggerAssociateOSandSS = vCharmTriggerAssociateOSandSS; // toremove
+    configs_from_json.beautyConfigs = beautyConfigs;
+    configs_from_json.charmConfigs = charmConfigs;
     // configs_from_json.vHistogramAndTriggerPtHistogramNames = vHistogramAndTriggerPtHistogramNames;
     configs_from_json.vBinsFromTHnSparse = vBinsFromTHnSparse;
     configs_from_json.vCanvasConfigs = vCanvasConfigs;
@@ -656,6 +731,23 @@ CONFIGS readConfig(const char* configurations) {
     std::cout << "- vBinsFromTHnSparse.size() = " << vBinsFromTHnSparse.size() << std::endl;
     // vCanvasConfigs
     // TODO: give overview of canvases to be drawn and their settings etc.
+    // Check if specific trigger configurations are read correctly
+    std::cout << "Beauty triggers:\n";
+    for (const auto& [trigger, configs] : beautyConfigs) {
+        std::cout << "* Trigger: " << trigger << std::endl;;
+        for (const auto& cfg : configs) {
+            std::cout << "  OS associate: " << cfg.associateOS
+                    << ", SS associate: " << cfg.associateSS << std::endl;;
+        }
+    }
+    std::cout << "Charm triggers:\n";
+    for (const auto& [trigger, configs] : charmConfigs) {
+        std::cout << "* Trigger: " << trigger << std::endl;;
+        for (const auto& cfg : configs) {
+            std::cout << "  OS associate: " << cfg.associateOS
+                    << ", SS associate: " << cfg.associateSS << std::endl;;
+        }
+    }
     std::cout << std::endl;
 
     return configs_from_json;
@@ -703,7 +795,7 @@ Double_t calculateOneYield(bool VERBOSE, TH1D *hDPhiOS, TH1D *hTrPtOS, TH1D *hDP
 // The output is a 3D vector with the structure
 // v[TUNE][ASSOCIATE][DEPENDENCY]
 // TODO: change the .size() to variables nTUNES, etc. Like in the plotting function below
-YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLAVOUR) {
+YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* FLAVOUR) {
 
     std::cout << "*** Calculating yields for " << FLAVOUR << " ***" << std::endl;
 
@@ -721,293 +813,333 @@ YieldsAndErrors calculateYieldsVector(CONFIGS configs_from_json, const char* FLA
     if (strcmp(FLAVOUR, "BEAUTY") == 0) { complete_root_dir_sub_samples = configs_from_json.bbBarDir_subSamples; }
     if (strcmp(FLAVOUR, "CHARM")  == 0) { complete_root_dir_sub_samples = configs_from_json.ccBarDir_subSamples; }
     std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS;
-    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; }
-    if (strcmp(FLAVOUR, "CHARM")  == 0) { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; }
-    // remove this line later
-    std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames;
+    std::map<std::string, std::vector<TriggerAssociateOSandSS>> histConfigs;
+    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; } //toremove
+    if (strcmp(FLAVOUR, "CHARM")  == 0) { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; } //toremove
+    if (strcmp(FLAVOUR, "BEAUTY")  == 0) { histConfigs = configs_from_json.beautyConfigs; }
+    if (strcmp(FLAVOUR, "CHARM")  == 0) { histConfigs = configs_from_json.charmConfigs; }
+    std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames; // remove this line later (toremove)
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
 
     // TODO: make these vectors into arrays, don't think vector is necessary
     // and the subYields are stored in an array anyways
-    std::vector<std::vector<std::vector<Double_t>>> vYields;
-    std::vector<std::vector<std::vector<Double_t>>> vYieldsErrors;
-    std::vector<std::vector<std::vector<Double_t>>> vYieldsRatioErrors;
-    Double_t vSubYields[vTUNES.size()][vTriggerAssociateOSandSS.size()][vBinsFromTHnSparse.size()][nSubSamples];
+    YieldsAndErrorsMap mapYieldsAndErrors;
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYields;
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsErrors;
+    std::map<std::string, std::vector<std::vector<std::vector<Double_t>>>> mapYieldsRatioErrors;
 
     // TODO: make vTUNES.size into nTUNES, like in the plotting functions
-    // Loop over TUNES
-    for (Int_t i=0; i<vTUNES.size(); i++) {
+
+    // Loop over TRIGGERS
+    // Output is put back in a map with structure {trigger, {vYields}}
+    // So that it is easy to find back the vYields with the corresponding trigger particle
+    for (const auto& [trigger, configs] : histConfigs) {
+
+        
+        std::cout << "starting loop over " << trigger << std::endl;
+        std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS = configs;
+        // COMMENT: the subsampling will also be affected by these changes
+        // I need to make sure things are propagated with Inaki's improvements to the subsampling
+        // (based on older code)
+        std::vector<std::vector<std::vector<Double_t>>> vYields;
+        std::vector<std::vector<std::vector<Double_t>>> vYieldsErrors;
+        std::vector<std::vector<std::vector<Double_t>>> vYieldsRatioErrors;
+        Double_t vSubYields[vTUNES.size()][vTriggerAssociateOSandSS.size()][vBinsFromTHnSparse.size()][nSubSamples];
 
 
-        std::string TUNE = vTUNES[i];
-        std::cout << "starting loop over " << TUNE << std::endl;
-        std::cout << std::endl;
+        // Loop over TUNES
+        for (Int_t i=0; i<vTUNES.size(); i++) {
 
 
-        // Loop over ASSOCIATES
-        for (Int_t j=0; j<vTriggerAssociateOSandSS.size(); j++) {
-
-
-            TriggerAssociateOSandSS fileNamesOSandSS = vTriggerAssociateOSandSS[j];
-            std::cout << "starting loop over OS file: " << fileNamesOSandSS.OS << " and SS file: " << fileNamesOSandSS.SS << std::endl;
-            TFile *OStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.OS).c_str());
-            TFile *SStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.SS).c_str());
+            std::string TUNE = vTUNES[i];
+            std::cout << "starting loop over " << TUNE << std::endl;
             std::cout << std::endl;
 
-            // This is where we calculate the multiplicity
-            TH1D *hSummedMultiplicity = (TH1D*)OStree->Get("summed MULTIPLICITY");
-            Double_t fullIntegral = 0;
-            fullIntegral = hSummedMultiplicity->Integral();
-            std::set<double> requestedPercentiles;
-            std::map<double,double> percentileToMultiplicity;
 
-            for (const auto& bin : vBinsFromTHnSparse)
-            {
-                requestedPercentiles.insert(bin.multiplicityMin);
-                requestedPercentiles.insert(bin.multiplicityMax);
-            }
+            // Loop over ASSOCIATES
+            for (Int_t j=0; j<vTriggerAssociateOSandSS.size(); j++) {
 
-            for (double percentile : requestedPercentiles)
-            {
-                percentileToMultiplicity[percentile] =
-                    GetMultiplicityThreshold(
-                        hSummedMultiplicity,
-                        percentile
-                    );
-            }
 
-            // Debug
-            if (VERBOSE) {
-                for (const auto& [percentile, mult] : percentileToMultiplicity) {
-                    std::cout
-                    << percentile
-                    << "% -> multiplicity "
-                    << mult
-                    << std::endl;
+                TriggerAssociateOSandSS fileNamesOSandSS = vTriggerAssociateOSandSS[j];
+                std::cout << "starting loop over OS file: " << fileNamesOSandSS.OS << " and SS file: " << fileNamesOSandSS.SS << std::endl;
+                TFile *OStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.OS).c_str());
+                TFile *SStree = new TFile((base_dir + "/" + TUNE + "/" + complete_root_dir + "_" + TUNE + "/" + fileNamesOSandSS.SS).c_str());
+                std::cout << std::endl;
+
+                // This is where we calculate the multiplicity
+                TH1D *hSummedMultiplicity = (TH1D*)OStree->Get("summed MULTIPLICITY");
+                Double_t fullIntegral = 0;
+                fullIntegral = hSummedMultiplicity->Integral();
+                std::set<double> requestedPercentiles;
+                std::map<double,double> percentileToMultiplicity;
+
+                for (const auto& bin : vBinsFromTHnSparse)
+                {
+                    requestedPercentiles.insert(bin.multiplicityMin);
+                    requestedPercentiles.insert(bin.multiplicityMax);
                 }
-            }
 
-            // Loop over DEPENDENCIES
-            for (Int_t k=0; k<vBinsFromTHnSparse.size(); k++) {
+                for (double percentile : requestedPercentiles)
+                {
+                    percentileToMultiplicity[percentile] =
+                        GetMultiplicityThreshold(
+                            hSummedMultiplicity,
+                            percentile
+                        );
+                }
 
-                BinsFromTHnSparse binFromTHnSparse = vBinsFromTHnSparse[k];
+                // Debug
                 if (VERBOSE) {
-                    std::cout
-                        << "Analysing bin " << k
-                        << " | TrPhi=[" << binFromTHnSparse.triggerPhiMin
-                        << ", " << binFromTHnSparse.triggerPhiMax << "]"
-                        << " | AssocPhi=[" << binFromTHnSparse.assocPhiMin
-                        << ", " << binFromTHnSparse.assocPhiMax << "]"
-                        << " | TrEta=[" << binFromTHnSparse.triggerEtaMin
-                        << ", " << binFromTHnSparse.triggerEtaMax << "]"
-                        << " | AssocEta=[" << binFromTHnSparse.assocEtaMin
-                        << ", " << binFromTHnSparse.assocEtaMax << "]"
-                        << " | TrPt=[" << binFromTHnSparse.triggerPtMin
-                        << ", " << binFromTHnSparse.triggerPtMax << "]"
-                        << " | AssocPt=[" << binFromTHnSparse.assocPtMin
-                        << ", " << binFromTHnSparse.assocPtMax << "]"
-                        << " | Mult%=[" << binFromTHnSparse.multiplicityMin
-                        << ", " << binFromTHnSparse.multiplicityMax << "]"
-                        << " | Mult=[" << percentileToMultiplicity[binFromTHnSparse.multiplicityMax]
-                        << ", "<< percentileToMultiplicity[binFromTHnSparse.multiplicityMin] << "]"
-                    << std::endl;
-                    std::cout << std::endl;
-                }
-
-                // Add correct multiplicity cut to project out the relevant histograms from the THnSparse
-                BinsFromTHnSparse cuts;
-                cuts.triggerPtMin = binFromTHnSparse.triggerPtMin;
-                cuts.triggerPtMax = binFromTHnSparse.triggerPtMax;
-                cuts.assocPtMin = binFromTHnSparse.assocPtMin;
-                cuts.assocPtMax = binFromTHnSparse.assocPtMax;
-                // Definition of multiplicity is 'reversed' w.r.t. json
-                // The way below it cuts on [lower_multiplicity, higher_multiplicity]
-                // Which is what we want
-                cuts.multiplicityMin = percentileToMultiplicity[binFromTHnSparse.multiplicityMax];
-                cuts.multiplicityMax = percentileToMultiplicity[binFromTHnSparse.multiplicityMin];
-
-                // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
-                // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
-                THnSparseD *hCorrelationsOS = (THnSparseD*)OStree->Get("hCorrelations");
-                THnSparseD *hCorrelationsSS = (THnSparseD*)SStree->Get("hCorrelations");
-                THnSparseD *hTrKinematicsOS = (THnSparseD*)OStree->Get("hTrKinematics");
-                THnSparseD *hTrKinematicsSS = (THnSparseD*)SStree->Get("hTrKinematics"); // in principle the same as OS...
-
-                // Apply cuts to THnSparses
-                // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
-                // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
-                TH1D *hDPhiOS = GetCorrelationHistograms(hCorrelationsOS, cuts);
-                TH1D *hDPhiSS = GetCorrelationHistograms(hCorrelationsSS, cuts);
-                TH1D *hTrPtOS = GetTriggerPtHistograms(hTrKinematicsOS, cuts);
-                TH1D *hTrPtSS = GetTriggerPtHistograms(hTrKinematicsSS, cuts);
-
-                if (VERBOSE) {
-                    std::cout << "hDPhiOS->GetEntries() = " << hDPhiOS->GetEntries() << std::endl;
-                    std::cout << "hDPhiSS0>GetEntries() = " << hDPhiSS->GetEntries() << std::endl;
-                }
-
-                // Prevent double-counting
-	            if (strcmp((fileNamesOSandSS.trigger).c_str(), 
-                           (fileNamesOSandSS.associateSS).c_str()) == 0) { 
-                    hDPhiSS->Scale(0.5); } 
-
-
-                // Calculate yield value and assign to appropriate place in vector
-                Double_t yield = calculateOneYield(VERBOSE, hDPhiOS, hTrPtOS, hDPhiSS, hTrPtSS, FLAVOUR, i, j, k, 0);
-                if (i >= vYields.size()) { vYields.resize(i + 1); }
-                if (j >= vYields[i].size()) { vYields[i].resize(j + 1); }
-                if (k >= vYields[i][j].size()) { vYields[i][j].resize(k + 1); }
-                vYields[i][j][k] = yield; 
-                if (VERBOSE) { 
-                    std::cout << "vYields[" << i << "][" << j << "][" << k << "] = " << vYields[i][j][k] << std::endl;
-                    std::cout << std::endl;
-                }
-
-
-                // If requested: draw correlation plots
-                // This part is hard-coded for now, but could get its own configuration section in the json
-                // to customise what should be drawn and how already in the json
-                if (DRAW_CORRELATION_PLOTS) {
-                    TCanvas *c_correlations = new TCanvas (Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), 800, 600);
-                    c_correlations->cd();
-                    hDPhiOS->SetTitle(Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()));
-                    hDPhiOS->Draw();
-                }
-
-
-                // Calculate the error on the yield by subsampling with N samples
-                // Not the most efficient way, but it is straightforward and clear
-                // and anyways the files are quite small so it doesn't take too long
-                if (CALCULATE_ERRORS) {
-                    
-
-                    // Error estimation is independent of binning, however one needs to make sure the 
-                    // yield values are within the min and max bin ranges
-                    TH1D *hSubYields = new TH1D(Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, vYields[i][j][k]/5, vYields[i][j][k]*5);
-                    TH1D *hSubRatioYields = new TH1D(Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, (vYields[i][j][k]/vYields[i][0][k])/5, (vYields[i][j][k]/vYields[i][0][k])*5);
-
-
-                    for (Int_t l = 1; l < nSubSamples+1; l++) {
-
-
-                        TFile *OStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.OS).c_str());
-                        TFile *SStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.SS).c_str());
-
-                        // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
-                        // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
-                        THnSparseD *hCorrelationsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hCorrelations");
-                        THnSparseD *hCorrelationsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hCorrelations");
-                        THnSparseD *hTrKinematicsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hTrKinematics");
-                        THnSparseD *hTrKinematicsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hTrKinematics"); // in principle the same as OS...
-
-                        // Apply cuts to THnSparses
-                        // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
-                        // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
-                        TH1D *hDPhiOS_subSamples = GetCorrelationHistograms(hCorrelationsOS_subSamples, cuts);
-                        TH1D *hDPhiSS_subSamples = GetCorrelationHistograms(hCorrelationsSS_subSamples, cuts);
-                        TH1D *hTrPtOS_subSamples = GetTriggerPtHistograms(hCorrelationsOS_subSamples, cuts);
-                        TH1D *hTrPtSS_subSamples = GetTriggerPtHistograms(hCorrelationsSS_subSamples, cuts);
-
-                        // TODO: when subsampling ok, remove this part
-                        // HistogramAndTriggerPtHistogramNames hDPhiAndhTrPtNames = vHistogramAndTriggerPtHistogramNames[k];
-                        /* LEGACY CODE
-                            TH1D *hDPhiOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
-                            TH1D *hDPhiSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
-                            TH1D *hTrPtOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
-                            TH1D *hTrPtSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
-                        LEGACY CODE */ 
-
-                        Double_t subYield = calculateOneYield(VERBOSE, hDPhiOS_subSamples, hTrPtOS_subSamples, hDPhiSS_subSamples, hTrPtSS_subSamples,
-                                                              FLAVOUR, i, j, k, l);
-                        vSubYields[i][j][k][l] = subYield;
-                        if (VERBOSE) {
-                            std::cout << "vSubYields[" << i << "][" << j << "][" << k << "][" << l << "] = " << subYield << std::endl;
-                            std::cout << std::endl;
-                        }
-
-                        hSubYields->Fill(subYield);
-                        hSubRatioYields->Fill((vSubYields[i][j][k][l])/(vSubYields[i][0][k][l]));
-
-                        // TODO: debug checks not appearing anymore due to memory deletion?
-                        TCanvas *cTestHDPhiOS;
-                        if (i==0 && j==0 && k==0 && l==1) {
-                            cTestHDPhiOS = new TCanvas(Form("testHDPhiOS_%s", FLAVOUR), "testHDPhiOS",600,800);
-                            cTestHDPhiOS->cd();
-                            hDPhiOS_subSamples->Draw("hist");
-                        }
-                        if (i==0 && j==0 && k==0 && l==2) {
-                            cTestHDPhiOS->cd();
-                            hDPhiOS_subSamples->Draw("same hist");
-                        }
-
-                        // Free memory
-                        OStree_subSamples->Close();
-                        SStree_subSamples->Close();
-                        // TODO: Close and delete more things? Memory issuse?
-                        // Seems to automatically close histograms too?
-
-
-                    } // Loop over SUBSAMPLES
-
-
-                    TCanvas *cTestSubYields;
-                    TCanvas *cTestSubRatioYields;
-                    if (i==1 && j==4 && k==0) {
-                            cTestSubYields = new TCanvas(Form("testSubYields_%s", FLAVOUR), "testSubYields",600,800);
-                            cTestSubYields->cd();
-                            hSubYields->Draw("hist");
-                        }
-                    if (i==1 && j==4 && k==0) {
-                        cTestSubRatioYields = new TCanvas(Form("testSubRatioYields_%s", FLAVOUR), "testSubRatioYields",600,800);
-                        cTestSubRatioYields->cd();
-                        hSubRatioYields->Draw("hist");
+                    for (const auto& [percentile, mult] : percentileToMultiplicity) {
+                        std::cout
+                        << percentile
+                        << "% -> multiplicity "
+                        << mult
+                        << std::endl;
                     }
-                    Double_t yieldError = hSubYields->GetStdDev();
-                    Double_t yieldRatioError = hSubRatioYields->GetStdDev();
-                    if (i >= vYieldsErrors.size()) { vYieldsErrors.resize(i + 1); }
-                    if (j >= vYieldsErrors[i].size()) { vYieldsErrors[i].resize(j + 1); }
-                    if (k >= vYieldsErrors[i][j].size()) { vYieldsErrors[i][j].resize(k + 1); }
-                    vYieldsErrors[i][j][k] = yieldError; 
-                    std::cout << "vYieldsErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsErrors[i][j][k] << std::endl;
-                    std::cout << std::endl;
-                    if (i >= vYieldsRatioErrors.size()) { vYieldsRatioErrors.resize(i + 1); }
-                    if (j >= vYieldsRatioErrors[i].size()) { vYieldsRatioErrors[i].resize(j + 1); }
-                    if (k >= vYieldsRatioErrors[i][j].size()) { vYieldsRatioErrors[i][j].resize(k + 1); }
-                    vYieldsRatioErrors[i][j][k] = yieldRatioError; 
-                    std::cout << "vYieldsRatioErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsRatioErrors[i][j][k] << std::endl;
-                    std::cout << std::endl;
+                }
+
+                // Loop over DEPENDENCIES
+                for (Int_t k=0; k<vBinsFromTHnSparse.size(); k++) {
+
+                    BinsFromTHnSparse binFromTHnSparse = vBinsFromTHnSparse[k];
+                    if (VERBOSE) {
+                        std::cout
+                            << "Analysing bin " << k
+                            << " | TrPhi=[" << binFromTHnSparse.triggerPhiMin
+                            << ", " << binFromTHnSparse.triggerPhiMax << "]"
+                            << " | AssocPhi=[" << binFromTHnSparse.assocPhiMin
+                            << ", " << binFromTHnSparse.assocPhiMax << "]"
+                            << " | TrEta=[" << binFromTHnSparse.triggerEtaMin
+                            << ", " << binFromTHnSparse.triggerEtaMax << "]"
+                            << " | AssocEta=[" << binFromTHnSparse.assocEtaMin
+                            << ", " << binFromTHnSparse.assocEtaMax << "]"
+                            << " | TrPt=[" << binFromTHnSparse.triggerPtMin
+                            << ", " << binFromTHnSparse.triggerPtMax << "]"
+                            << " | AssocPt=[" << binFromTHnSparse.assocPtMin
+                            << ", " << binFromTHnSparse.assocPtMax << "]"
+                            << " | Mult%=[" << binFromTHnSparse.multiplicityMin
+                            << ", " << binFromTHnSparse.multiplicityMax << "]"
+                            << " | Mult=[" << percentileToMultiplicity[binFromTHnSparse.multiplicityMax]
+                            << ", "<< percentileToMultiplicity[binFromTHnSparse.multiplicityMin] << "]"
+                        << std::endl;
+                        std::cout << std::endl;
+                    }
+
+                    // Add correct multiplicity cut to project out the relevant histograms from the THnSparse
+                    BinsFromTHnSparse cuts;
+                    cuts.triggerPtMin = binFromTHnSparse.triggerPtMin;
+                    cuts.triggerPtMax = binFromTHnSparse.triggerPtMax;
+                    cuts.assocPtMin = binFromTHnSparse.assocPtMin;
+                    cuts.assocPtMax = binFromTHnSparse.assocPtMax;
+                    // Definition of multiplicity is 'reversed' w.r.t. json
+                    // The way below it cuts on [lower_multiplicity, higher_multiplicity]
+                    // Which is what we want
+                    cuts.multiplicityMin = percentileToMultiplicity[binFromTHnSparse.multiplicityMax];
+                    cuts.multiplicityMax = percentileToMultiplicity[binFromTHnSparse.multiplicityMin];
+
+                    // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
+                    // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
+                    THnSparseD *hCorrelationsOS = (THnSparseD*)OStree->Get("hCorrelations");
+                    THnSparseD *hCorrelationsSS = (THnSparseD*)SStree->Get("hCorrelations");
+                    THnSparseD *hTrKinematicsOS = (THnSparseD*)OStree->Get("hTrKinematics");
+                    THnSparseD *hTrKinematicsSS = (THnSparseD*)SStree->Get("hTrKinematics"); // in principle the same as OS...
+
+                    // Apply cuts to THnSparses
+                    // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
+                    // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
+                    TH1D *hDPhiOS = GetCorrelationHistograms(hCorrelationsOS, cuts);
+                    TH1D *hDPhiSS = GetCorrelationHistograms(hCorrelationsSS, cuts);
+                    TH1D *hTrPtOS = GetTriggerPtHistograms(hTrKinematicsOS, cuts);
+                    TH1D *hTrPtSS = GetTriggerPtHistograms(hTrKinematicsSS, cuts);
+
+                    if (VERBOSE) {
+                        std::cout << "hDPhiOS->GetEntries() = " << hDPhiOS->GetEntries() << std::endl;
+                        std::cout << "hDPhiSS0>GetEntries() = " << hDPhiSS->GetEntries() << std::endl;
+                    }
+
+                    // Prevent double-counting
+                    if (strcmp((fileNamesOSandSS.trigger).c_str(), 
+                            (fileNamesOSandSS.associateSS).c_str()) == 0) { 
+                        hDPhiSS->Scale(0.5); } 
 
 
-                } // calculate errors
+                    // Calculate yield value and assign to appropriate place in vector
+                    Double_t yield = calculateOneYield(VERBOSE, hDPhiOS, hTrPtOS, hDPhiSS, hTrPtSS, FLAVOUR, i, j, k, 0);
+                    if (i >= vYields.size()) { vYields.resize(i + 1); }
+                    if (j >= vYields[i].size()) { vYields[i].resize(j + 1); }
+                    if (k >= vYields[i][j].size()) { vYields[i][j].resize(k + 1); }
+                    vYields[i][j][k] = yield; 
+                    if (VERBOSE) { 
+                        std::cout << "vYields[" << i << "][" << j << "][" << k << "] = " << vYields[i][j][k] << std::endl;
+                        std::cout << std::endl;
+                    }
 
 
-            } // Loop over DEPENDENCIES
+                    // If requested: draw correlation plots
+                    // This part is hard-coded for now, but could get its own configuration section in the json
+                    // to customise what should be drawn and how already in the json
+                    // TODO: this needs to be automised and configurable in the json as well
+                    if (DRAW_CORRELATION_PLOTS) {
+                        TCanvas *c_correlations = new TCanvas (Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), 800, 600);
+                        c_correlations->cd();
+                        hDPhiOS->SetTitle(Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()));
+                        hDPhiOS->Draw();
+                    }
 
 
-            // TODO: cannot seem to draw 'test' plots for the yields anymore when this is enabled?
-            // Free memory
-            // OStree->Close();
-            // SStree->Close();
+                    // Calculate the error on the yield by subsampling with N samples
+                    // Not the most efficient way, but it is straightforward and clear
+                    // and anyways the files are quite small so it doesn't take too long
+                    if (CALCULATE_ERRORS) {
+                        
+
+                        // Error estimation is independent of binning, however one needs to make sure the 
+                        // yield values are within the min and max bin ranges
+                        TH1D *hSubYields = new TH1D(Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, vYields[i][j][k]/5, vYields[i][j][k]*5);
+                        TH1D *hSubRatioYields = new TH1D(Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), Form("hSubRatioYields_%s_%i%i%i", FLAVOUR, i, j, k), 50, (vYields[i][j][k]/vYields[i][0][k])/5, (vYields[i][j][k]/vYields[i][0][k])*5);
 
 
-        } // Loop over ASSOCIATES
+                        for (Int_t l = 1; l < nSubSamples+1; l++) {
 
 
-    } // Loop over TUNES
+                            TFile *OStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.OS).c_str());
+                            TFile *SStree_subSamples = new TFile((complete_root_dir_sub_samples + "_" + TUNE + "/" + Form("combined_root_%i",l) + "/" + fileNamesOSandSS.SS).c_str());
+
+                            // Retreive the histograms from the correlations THnSparse (Δφ, Δη, TrPt, AsPt, multiplicity)
+                            // THnSparseD *hAsKinematics = (THnSparseD*)OStree->Get("hAsKinematics");
+                            THnSparseD *hCorrelationsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hCorrelations");
+                            THnSparseD *hCorrelationsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hCorrelations");
+                            THnSparseD *hTrKinematicsOS_subSamples = (THnSparseD*)OStree_subSamples->Get("hTrKinematics");
+                            THnSparseD *hTrKinematicsSS_subSamples = (THnSparseD*)SStree_subSamples->Get("hTrKinematics"); // in principle the same as OS...
+
+                            // Apply cuts to THnSparses
+                            // Retreive the TH1 hDPhiOS/SS and hTrPtOS/SS objects as before
+                            // Maybe add one element 'binLabel' to the BinsFromTHnSparse struct?
+                            TH1D *hDPhiOS_subSamples = GetCorrelationHistograms(hCorrelationsOS_subSamples, cuts);
+                            TH1D *hDPhiSS_subSamples = GetCorrelationHistograms(hCorrelationsSS_subSamples, cuts);
+                            TH1D *hTrPtOS_subSamples = GetTriggerPtHistograms(hCorrelationsOS_subSamples, cuts);
+                            TH1D *hTrPtSS_subSamples = GetTriggerPtHistograms(hCorrelationsSS_subSamples, cuts);
+
+                            // TODO: when subsampling ok, remove this part
+                            // HistogramAndTriggerPtHistogramNames hDPhiAndhTrPtNames = vHistogramAndTriggerPtHistogramNames[k];
+                            /* LEGACY CODE
+                                TH1D *hDPhiOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
+                                TH1D *hDPhiSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hDPhi).c_str());
+                                TH1D *hTrPtOS_subSamples = (TH1D*)OStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
+                                TH1D *hTrPtSS_subSamples = (TH1D*)SStree_subSamples->Get((hDPhiAndhTrPtNames.hTrPt).c_str());
+                            LEGACY CODE */ 
+
+                            Double_t subYield = calculateOneYield(VERBOSE, hDPhiOS_subSamples, hTrPtOS_subSamples, hDPhiSS_subSamples, hTrPtSS_subSamples,
+                                                                FLAVOUR, i, j, k, l);
+                            vSubYields[i][j][k][l] = subYield;
+                            if (VERBOSE) {
+                                std::cout << "vSubYields[" << i << "][" << j << "][" << k << "][" << l << "] = " << subYield << std::endl;
+                                std::cout << std::endl;
+                            }
+
+                            hSubYields->Fill(subYield);
+                            hSubRatioYields->Fill((vSubYields[i][j][k][l])/(vSubYields[i][0][k][l]));
+
+                            // TODO: debug checks not appearing anymore due to memory deletion?
+                            TCanvas *cTestHDPhiOS;
+                            if (i==0 && j==0 && k==0 && l==1) {
+                                cTestHDPhiOS = new TCanvas(Form("testHDPhiOS_%s", FLAVOUR), "testHDPhiOS",600,800);
+                                cTestHDPhiOS->cd();
+                                hDPhiOS_subSamples->Draw("hist");
+                            }
+                            if (i==0 && j==0 && k==0 && l==2) {
+                                cTestHDPhiOS->cd();
+                                hDPhiOS_subSamples->Draw("same hist");
+                            }
+
+                            // Free memory
+                            OStree_subSamples->Close();
+                            SStree_subSamples->Close();
+                            // TODO: Close and delete more things? Memory issuse?
+                            // Seems to automatically close histograms too?
+
+
+                        } // Loop over SUBSAMPLES
+
+
+                        TCanvas *cTestSubYields;
+                        TCanvas *cTestSubRatioYields;
+                        if (i==1 && j==4 && k==0) {
+                                cTestSubYields = new TCanvas(Form("testSubYields_%s", FLAVOUR), "testSubYields",600,800);
+                                cTestSubYields->cd();
+                                hSubYields->Draw("hist");
+                            }
+                        if (i==1 && j==4 && k==0) {
+                            cTestSubRatioYields = new TCanvas(Form("testSubRatioYields_%s", FLAVOUR), "testSubRatioYields",600,800);
+                            cTestSubRatioYields->cd();
+                            hSubRatioYields->Draw("hist");
+                        }
+                        Double_t yieldError = hSubYields->GetStdDev();
+                        Double_t yieldRatioError = hSubRatioYields->GetStdDev();
+                        if (i >= vYieldsErrors.size()) { vYieldsErrors.resize(i + 1); }
+                        if (j >= vYieldsErrors[i].size()) { vYieldsErrors[i].resize(j + 1); }
+                        if (k >= vYieldsErrors[i][j].size()) { vYieldsErrors[i][j].resize(k + 1); }
+                        vYieldsErrors[i][j][k] = yieldError; 
+                        std::cout << "vYieldsErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsErrors[i][j][k] << std::endl;
+                        std::cout << std::endl;
+                        if (i >= vYieldsRatioErrors.size()) { vYieldsRatioErrors.resize(i + 1); }
+                        if (j >= vYieldsRatioErrors[i].size()) { vYieldsRatioErrors[i].resize(j + 1); }
+                        if (k >= vYieldsRatioErrors[i][j].size()) { vYieldsRatioErrors[i][j].resize(k + 1); }
+                        vYieldsRatioErrors[i][j][k] = yieldRatioError; 
+                        std::cout << "vYieldsRatioErrors[" << i << "][" << j << "][" << k << "] = " << vYieldsRatioErrors[i][j][k] << std::endl;
+                        std::cout << std::endl;
+
+
+                    } // calculate errors
+
+
+                } // Loop over DEPENDENCIES
+
+
+                // TODO: cannot seem to draw 'test' plots for the yields anymore when this is enabled?
+                // Free memory
+                // OStree->Close();
+                // SStree->Close();
+
+
+            } // Loop over ASSOCIATES
+
+
+        } // Loop over TUNES
+
+
+        // Store the {trigger, vYields} objects in the map
+        std::cout << "storing trigger " << trigger << " in yields map" << std::endl;
+        mapYields[trigger] = std::move(vYields);
+        mapYieldsErrors[trigger] = std::move(vYieldsErrors);
+        mapYieldsRatioErrors[trigger] = std::move(vYieldsRatioErrors);
+
+        // Retreive the vYields for this trigger
+        mapYieldsAndErrors.mapYields = mapYields;
+        if (CALCULATE_ERRORS) { mapYieldsAndErrors.mapYieldsErrors = mapYieldsErrors; }
+        if (CALCULATE_ERRORS) { mapYieldsAndErrors.mapYieldsRatioErrors = mapYieldsRatioErrors; }
+
+
+    } // Loop over TRIGGERS
 
 
     // TODO: make the names better
+    // legacy, toremove
+    /*
     YieldsAndErrors vYieldsAndErrors;
     vYieldsAndErrors.vYields = vYields;
     if (CALCULATE_ERRORS) { vYieldsAndErrors.vYieldsErrors = vYieldsErrors; }
     if (CALCULATE_ERRORS) { vYieldsAndErrors.vYieldsRatioErrors = vYieldsRatioErrors; }
-    return vYieldsAndErrors;
+    */
+    
+    return mapYieldsAndErrors;
 
 
 } // calculateYieldsVector()
 
 
-TPad* drawBalancingPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrors vYieldsAndErrors) {
+TPad* drawBalancingPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrorsMap mapYieldsAndErrors) {
 
 
     std::cout << "*** Drawing balancing plots for " << FLAVOUR << " ***" << std::endl;
@@ -1022,10 +1154,13 @@ TPad* drawBalancingPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsA
     std::vector<std::string> vTUNES = configs_from_json.vTUNES;
     std::vector<std::string> vCanvasTUNES = canvasConfigs.vCanvasTUNES;
     std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS;
-    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; }
-    if (strcmp(FLAVOUR, "CHARM" ) == 0)  { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; }
+    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.beautyConfigs.at(canvasConfigs.TriggerToUse); }
+    if (strcmp(FLAVOUR, "CHARM") ==  0) { vTriggerAssociateOSandSS = configs_from_json.charmConfigs.at(canvasConfigs.TriggerToUse); }
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames;
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
+
+    // Function that transforms the map storing trigger and vYieldsAndErrors into just vYieldsAndErrors
+    auto vYieldsAndErrors = YieldsAndErrorsForGivenTrigger(canvasConfigs.TriggerToUse, mapYieldsAndErrors, CALCULATE_ERRORS);
 
     Int_t nTUNES = vTUNES.size();
     Int_t nAssociates = vTriggerAssociateOSandSS.size();
@@ -1215,7 +1350,7 @@ TPad* drawBalancingPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsA
 } // drawBalancingPlots()
 
 
-TPad* drawBalancingPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrors vYieldsAndErrors,
+TPad* drawBalancingPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrorsMap mapYieldsAndErrors,
                                   Int_t indexNominatorTUNE, Int_t indexDenominatorTUNE) {
 
 
@@ -1229,12 +1364,15 @@ TPad* drawBalancingPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOU
     std::string base_dir = configs_from_json.base_dir;
     std::vector<std::string> vTUNES = configs_from_json.vTUNES; // TODO: put the name of the tune in output for clarity?
     std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS;
-    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; }
-    if (strcmp(FLAVOUR, "CHARM") == 0)  { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; }
+    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.beautyConfigs.at(canvasConfigs.TriggerToUse); }
+    if (strcmp(FLAVOUR, "CHARM") ==  0) { vTriggerAssociateOSandSS = configs_from_json.charmConfigs.at(canvasConfigs.TriggerToUse); }
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames;
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
 
     std::cout << " and TUNE = " << vTUNES[indexNominatorTUNE] << "/" << vTUNES[indexDenominatorTUNE] << " ***" << std::endl;
+
+    // Function that transforms the map storing trigger and vYieldsAndErrors into just vYieldsAndErrors
+    auto vYieldsAndErrors = YieldsAndErrorsForGivenTrigger(canvasConfigs.TriggerToUse, mapYieldsAndErrors, CALCULATE_ERRORS);
 
     Int_t nAssociates = vTriggerAssociateOSandSS.size();
     // Int_t nDependencies = vHistogramAndTriggerPtHistogramNames.size();
@@ -1403,7 +1541,7 @@ TPad* drawBalancingPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOU
 } // drawBalancingPlotsTUNERatios()
 
 
-TPad* drawBalancingBaryonMesonRatioPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrors vYieldsAndErrors) {
+TPad* drawBalancingBaryonMesonRatioPlots(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrorsMap mapYieldsAndErrors) {
 
 
     std::cout << "*** Drawing balancing baryon/meson ratio plots for " << FLAVOUR << " ***" << std::endl;
@@ -1416,10 +1554,13 @@ TPad* drawBalancingBaryonMesonRatioPlots(CONFIGS configs_from_json, const char* 
     std::string base_dir = configs_from_json.base_dir;
     std::vector<std::string> vTUNES = configs_from_json.vTUNES;
     std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS;
-    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; }
-    if (strcmp(FLAVOUR, "CHARM") == 0)  { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; }
+    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.beautyConfigs.at(canvasConfigs.TriggerToUse); }
+    if (strcmp(FLAVOUR, "CHARM") ==  0) { vTriggerAssociateOSandSS = configs_from_json.charmConfigs.at(canvasConfigs.TriggerToUse); }
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames;
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
+
+    // Function that transforms the map storing trigger and vYieldsAndErrors into just vYieldsAndErrors
+    auto vYieldsAndErrors = YieldsAndErrorsForGivenTrigger(canvasConfigs.TriggerToUse, mapYieldsAndErrors, CALCULATE_ERRORS);
 
     Int_t nTUNES = vTUNES.size();
     Int_t nAssociates = vTriggerAssociateOSandSS.size();
@@ -1615,7 +1756,7 @@ TPad* drawBalancingBaryonMesonRatioPlots(CONFIGS configs_from_json, const char* 
 } // drawBalancingBaryonMesonRatioPlots()
 
 
-TPad* drawBalancingBaryonMesonRatioPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrors vYieldsAndErrors,
+TPad* drawBalancingBaryonMesonRatioPlotsTUNERatios(CONFIGS configs_from_json, const char* FLAVOUR, YieldsAndErrorsMap mapYieldsAndErrors,
                                                   Int_t indexNominatorTUNE, Int_t indexDenominatorTUNE) {
 
 
@@ -1629,12 +1770,15 @@ TPad* drawBalancingBaryonMesonRatioPlotsTUNERatios(CONFIGS configs_from_json, co
     std::string base_dir = configs_from_json.base_dir;
     std::vector<std::string> vTUNES = configs_from_json.vTUNES;
     std::vector<TriggerAssociateOSandSS> vTriggerAssociateOSandSS;
-    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.vBeautyTriggerAssociateOSandSS; }
-    if (strcmp(FLAVOUR, "CHARM") == 0)  { vTriggerAssociateOSandSS = configs_from_json.vCharmTriggerAssociateOSandSS; }
+    if (strcmp(FLAVOUR, "BEAUTY") == 0) { vTriggerAssociateOSandSS = configs_from_json.beautyConfigs.at(canvasConfigs.TriggerToUse); }
+    if (strcmp(FLAVOUR, "CHARM") ==  0) { vTriggerAssociateOSandSS = configs_from_json.charmConfigs.at(canvasConfigs.TriggerToUse); }
     std::vector<HistogramAndTriggerPtHistogramNames> vHistogramAndTriggerPtHistogramNames = configs_from_json.vHistogramAndTriggerPtHistogramNames;
     std::vector<BinsFromTHnSparse> vBinsFromTHnSparse = configs_from_json.vBinsFromTHnSparse;
 
     std::cout << " and TUNE = " << vTUNES[indexNominatorTUNE] << "/" << vTUNES[indexDenominatorTUNE] << " ***" << std::endl;
+
+    // Function that transforms the map storing trigger and vYieldsAndErrors into just vYieldsAndErrors
+    auto vYieldsAndErrors = YieldsAndErrorsForGivenTrigger(canvasConfigs.TriggerToUse, mapYieldsAndErrors, CALCULATE_ERRORS);
 
     Int_t nAssociates = vTriggerAssociateOSandSS.size();
     // Int_t nDependencies = vHistogramAndTriggerPtHistogramNames.size();
@@ -1826,11 +1970,11 @@ int improvedPlotting_THnSparse(const char* configuration) {
 
     // Calculate the 3D yield vector
     // TODO: define this below in loop
-    YieldsAndErrors vYields; // used in loop over canvas settings
-    YieldsAndErrors vYieldsBeauty;
-    YieldsAndErrors vYieldsCharm;
-    vYieldsBeauty = calculateYieldsVector(configs_from_json,"BEAUTY");
-    vYieldsCharm =  calculateYieldsVector(configs_from_json,"CHARM");
+    YieldsAndErrorsMap mapYields; // used in loop over canvas settings
+    YieldsAndErrorsMap mapYieldsBeauty;
+    YieldsAndErrorsMap mapYieldsCharm;
+    mapYieldsBeauty = calculateYieldsVector(configs_from_json,"BEAUTY");
+    mapYieldsCharm =  calculateYieldsVector(configs_from_json,"CHARM");
 
     // Draw the balancing plots using the 3D yield vector and configurations given
     std::vector<canvasConfigs> vCanvasConfigs = configs_from_json.vCanvasConfigs;
@@ -1845,28 +1989,29 @@ int improvedPlotting_THnSparse(const char* configuration) {
         std::string drawFunctionToUse = canvasConfigs.drawFunctionToUse;
         std::vector<std::string> vCanvasTUNES = canvasConfigs.vCanvasTUNES;
         std::string FLAVOUR = canvasConfigs.FLAVOUR;
+        std::string TriggerToUse = canvasConfigs.TriggerToUse;
         Int_t indexNominatorTUNE = canvasConfigs.indexNominatorTUNE;
         Int_t indexDenominatorTUNE = canvasConfigs.indexDenominatorTUNE;
         // TODO: alternatively, just don't define vYieldsBeauty above, 
         // it's a bit redundant now..
         // TODO: add more error messages and checks
-        if (strcmp(FLAVOUR.c_str(), "BEAUTY") == 0) { vYields = vYieldsBeauty; }
-        if (strcmp(FLAVOUR.c_str(), "CHARM" ) == 0) { vYields = vYieldsCharm;  }
+        if (strcmp(FLAVOUR.c_str(), "BEAUTY") == 0) { mapYields = mapYieldsBeauty; }
+        if (strcmp(FLAVOUR.c_str(), "CHARM" ) == 0) { mapYields = mapYieldsCharm;  }
 
         if (strcmp(drawFunctionToUse.c_str(), "drawBalancingPlots") == 0) { 
-            TPad *cMiniPad = drawBalancingPlots(configs_from_json, FLAVOUR.c_str(), vYields); 
+            TPad *cMiniPad = drawBalancingPlots(configs_from_json, FLAVOUR.c_str(), mapYields); 
             cMiniCanvasMap[canvasName] = cMiniPad;
         }
         if (strcmp(drawFunctionToUse.c_str(), "drawBalancingPlotsTUNERatios") == 0) { 
-            TPad *cMiniPad = drawBalancingPlotsTUNERatios(configs_from_json,FLAVOUR.c_str(), vYields, indexNominatorTUNE, indexDenominatorTUNE);
+            TPad *cMiniPad = drawBalancingPlotsTUNERatios(configs_from_json,FLAVOUR.c_str(), mapYields, indexNominatorTUNE, indexDenominatorTUNE);
             cMiniCanvasMap[canvasName] = cMiniPad; 
         }
         if (strcmp(drawFunctionToUse.c_str(), "drawBalancingBaryonMesonRatioPlots") == 0) { 
-            TPad *cMiniPad = drawBalancingBaryonMesonRatioPlots(configs_from_json,FLAVOUR.c_str(), vYields);
+            TPad *cMiniPad = drawBalancingBaryonMesonRatioPlots(configs_from_json,FLAVOUR.c_str(), mapYields);
             cMiniCanvasMap[canvasName] = cMiniPad; 
         }
         if (strcmp(drawFunctionToUse.c_str(), "drawBalancingBaryonMesonRatioPlotsTUNERatios") == 0) { 
-            TPad *cMiniPad = drawBalancingBaryonMesonRatioPlotsTUNERatios(configs_from_json,FLAVOUR.c_str(), vYields, indexNominatorTUNE, indexDenominatorTUNE); 
+            TPad *cMiniPad = drawBalancingBaryonMesonRatioPlotsTUNERatios(configs_from_json,FLAVOUR.c_str(), mapYields, indexNominatorTUNE, indexDenominatorTUNE); 
             cMiniCanvasMap[canvasName] = cMiniPad;
         }
     } // Loop over canvas settings
