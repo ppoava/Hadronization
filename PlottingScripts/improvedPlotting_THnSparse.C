@@ -396,6 +396,27 @@ void createCustomLegendEntry_BeautyJUNCTIONS(TLegend *legend, std::string displa
 */
 
 
+// Function that creates mini pads in case you do not want to use TCanvas->Divide()
+// TODO: apply this function everywhere where required...
+TPad* createMiniPad(const char* name,
+                    double x1, double y1,
+                    double x2, double y2)
+{
+    TPad *pad = new TPad(name, name, x1, y1, x2, y2);
+
+    pad->SetTickx(1);
+    pad->SetTicky(1);
+    pad->SetTopMargin(0.05);
+    pad->SetBottomMargin(0.12);
+    pad->SetLeftMargin(0.14);
+    pad->SetRightMargin(0.02);
+
+    pad->Draw();
+
+    return pad;
+}
+
+
 CONFIGS readConfig(const char* configurations) {
 
     std::cout << std::endl;
@@ -981,10 +1002,69 @@ YieldsAndErrorsMap calculateYieldsVector(CONFIGS configs_from_json, const char* 
                     // to customise what should be drawn and how already in the json
                     // TODO: this needs to be automised and configurable in the json as well
                     if (DRAW_CORRELATION_PLOTS) {
-                        TCanvas *c_correlations = new TCanvas (Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()), 800, 600);
-                        c_correlations->cd();
-                        hDPhiOS->SetTitle(Form("c_correlations %s minus %s", fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str()));
-                        hDPhiOS->Draw();
+                        if (VERBOSE) {
+                            TCanvas *c_correlations = new TCanvas (Form("%s c_correlations %s minus %s for [%f, %f]", TUNE.c_str(), fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), Form("%s c_correlations %s minus %s for [%f, %f]", TUNE.c_str(), fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), 800, 600);
+                            c_correlations->cd();
+                            hDPhiOS->SetTitle(Form("%s c_correlations %s minus %s for [%f, %f]", TUNE.c_str(), fileNamesOSandSS.OS.c_str(), fileNamesOSandSS.SS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax));
+                            hDPhiOS->Draw();
+                        }
+
+                        // Hard-coded: we only want to show correlations for B+B- and D+D-
+                        // TODO: put an option in the configuration.json to give a list of desired correlations to draw
+                        if (TUNE == "MONASH" &&
+                           (strcmp(fileNamesOSandSS.OS.c_str(), "BplusBminus.root") == 0) ||
+                            strcmp(fileNamesOSandSS.OS.c_str(), "DplusDminus.root") == 0) { 
+                                TCanvas *c_correlations_OS_SS = new TCanvas(Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), 800, 600);
+                                TPad *cMiniPadOS = createMiniPad("cMiniPadOS", 0.00, 0.00, 0.50, 1.00);
+                                TPad *cMiniPadOSSS = createMiniPad("cMiniPadSS", 0.50, 0.00, 1.00, 1.00);
+                                TH1D *hTemplateOS = (TH1D*)hDPhiOS->Clone("hTemplateOS");
+                                TH1D *hTemplateOSSS = (TH1D*)hDPhiSS->Clone("hTemplateOSSS");
+
+                                cMiniPadOS->cd();
+                                hTemplateOS->SetStats(0);
+                                hTemplateOS->SetTitle(Form("OS: %s%s", fileNamesOSandSS.trigger.c_str(), fileNamesOSandSS.associateOS.c_str()));
+                                hTemplateOS->GetXaxis()->SetTitle(hDPhiOS->GetXaxis()->GetTitle());
+                                hTemplateOS->GetYaxis()->SetTitle(hDPhiOS->GetYaxis()->GetTitle());
+                                hTemplateOS->GetYaxis()->SetRangeUser(0.,1.2*hDPhiOS->GetMaximum());
+                                if (strcmp(fileNamesOSandSS.OS.c_str(), "BplusBminus.root") == 0) { hDPhiOS->SetLineColor(kRed); }
+                                if (strcmp(fileNamesOSandSS.OS.c_str(), "DplusDminus.root") == 0) { hDPhiOS->SetLineColor(kBlue); }
+                                hTemplateOS->Draw("PE");
+                                hDPhiOS->Draw("PE SAME");
+
+                                cMiniPadOSSS->cd();
+                                hTemplateOSSS->SetStats(0);
+                                hTemplateOSSS->SetTitle(Form("SS: %s%s", fileNamesOSandSS.trigger.c_str(), fileNamesOSandSS.associateSS.c_str()));
+                                hTemplateOSSS->GetXaxis()->SetTitle(hDPhiOS->GetXaxis()->GetTitle());
+                                hTemplateOSSS->GetYaxis()->SetTitle(hDPhiOS->GetYaxis()->GetTitle());
+                                Double_t ymin = 0;
+                                if (hDPhiSS->GetMinimum() != 0) { ymin = 0.1*std::min(hDPhiOS->GetMinimum(), hDPhiSS->GetMinimum()); }
+                                else { ymin = 0.1*std::min(hDPhiOS->GetMinimum(), hDPhiSS->GetMinimum())+1e-6; }
+                                
+                                Double_t ymax = 10*std::max(hDPhiOS->GetMaximum(), hDPhiSS->GetMaximum());
+                                hTemplateOSSS->GetYaxis()->SetRangeUser(ymin, ymax);
+                                gPad->SetLogy();
+                                if (strcmp(fileNamesOSandSS.OS.c_str(), "BplusBminus.root") == 0) { hDPhiSS->SetLineColor(kRed); }
+                                if (strcmp(fileNamesOSandSS.OS.c_str(), "DplusDminus.root") == 0) { hDPhiSS->SetLineColor(kBlue); }
+                                // hDPhiOS->SetLineStyle(1);
+                                hDPhiSS->SetLineStyle(2);
+
+                                hTemplateOSSS->Draw("PE");
+                                hDPhiOS->Draw("PE SAME");
+                                hDPhiSS->Draw("PE SAME");
+
+                                TLegend *leg = new TLegend(0.60,0.75,0.88,0.88);
+                                leg->SetBorderSize(0);
+                                leg->SetFillStyle(0);
+                                leg->AddEntry((TObject*)0,
+                                Form("%.1f #leq N_{ch} percentile #leq %.1f", binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax), "");
+                                leg->AddEntry(hDPhiOS,"OS","l");
+                                leg->AddEntry(hDPhiSS,"SS","l");
+                                leg->Draw();
+
+                                c_correlations_OS_SS->cd();
+                                // TODO: hardcoded writePath
+                                writeCanvasToFiles(VERBOSE, c_correlations_OS_SS, "/Users/pv280546/Desktop/Plots", Form("c_correlations_OS_SS %s for [%f, %f]", fileNamesOSandSS.OS.c_str(), binFromTHnSparse.multiplicityMin, binFromTHnSparse.multiplicityMax));
+                        }
                     }
 
 
