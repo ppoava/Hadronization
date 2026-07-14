@@ -298,8 +298,6 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	{
 		cout << "Have not found any trigger particle with id: " << id_trigger << endl;
 		output->Close();
-		delete output;
-		delete ch1;
 		return;
 	}
 	hTrKinematics->Write();
@@ -307,12 +305,6 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	hCorrelations->Write();
 	output->Write();
 	output->Close();
-	delete hTrKinematics;
-	delete hAsKinematics;
-	delete hCorrelations;
-	delete hMULTIPLICITY;
-	delete output;
-	delete ch1;
 	cout << "The total number of triggers is: " << nTrigger << endl;
 
 	cout << "File: " << fOut << " has been created!" << endl;
