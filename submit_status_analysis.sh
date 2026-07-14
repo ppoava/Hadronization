@@ -14,7 +14,7 @@ set -euo pipefail
 #   RAW_INPUT_BASE      default: /data/alice/ipardoza/Hadronization/RootFiles/HF
 #   ANALYSIS_OUTPUT_BASE default: /data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF
 #   HADRONIZATION_BASE  default: directory containing this script
-#   STATUS_ANALYSIS_REQUEST_MEMORY default: 4GB
+#   STATUS_ANALYSIS_REQUEST_MEMORY default: 8GB
 #   DRY_RUN             set to 1/true to write the submit file without condor_submit
 
 usage() {
@@ -57,7 +57,7 @@ raw_input_base="${RAW_INPUT_BASE:-/data/alice/ipardoza/Hadronization/RootFiles/H
 analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
 analysis_scripts_dir="${project_base}/AnalysisScripts"
 dry_run="${DRY_RUN:-0}"
-request_memory="${STATUS_ANALYSIS_REQUEST_MEMORY:-4GB}"
+request_memory="${STATUS_ANALYSIS_REQUEST_MEMORY:-8GB}"
 
 requested_tune="${1:-}"
 number_of_files="${2:-1}"
