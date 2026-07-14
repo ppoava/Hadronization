@@ -30,6 +30,8 @@ Double_t DeltaPhi(Double_t phi1, Double_t phi2)
 
 void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const char *fOut, const char *outputDir, const char *title)
 {
+	(void)title;
+
 	// This functions takes the trigger and associate id and creates a ROOT output file with the same filename
 	// containing the histograms produced in this macro
 
@@ -85,9 +87,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	vector<Double_t> *vStatus = 0;
 	vector<Double_t> *vEta = 0;
 	vector<Double_t> *vY = 0;
-	vector<Double_t> *vMother1 = 0;
 	vector<Double_t> *vMotherID = 0;
-	Int_t nMPIs = 0;
 	Int_t MULTIPLICITY = 0;
 	// Int_t nJets = 0;
 
@@ -99,9 +99,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	ch1->SetBranchAddress("ETA", &vEta);
 	ch1->SetBranchAddress("Y", &vY);
 	ch1->SetBranchAddress("STATUS", &vStatus);
-	ch1->SetBranchAddress("MOTHER", &vMother1);
 	ch1->SetBranchAddress("MOTHERID", &vMotherID);
-	ch1->SetBranchAddress("nMPIs", &nMPIs);
 	ch1->SetBranchAddress("MULTIPLICITY", &MULTIPLICITY);
 	// ch1->SetBranchAddress("nJets", &nJets);
 
@@ -110,8 +108,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	// a indicates associate particle variables
 	Int_t aID, pID;
 	Double_t px, py;
-	Double_t pPt, pPhi, pCharge, pStatus, pEta, pY, pMother, pMotherPhi, pMotherID;
-	Double_t aPt, aPhi, aCharge, aStatus, aEta, aY, aMother, aMotherPhi, aMotherID;
+	Double_t pPt, pPhi, pCharge, pStatus, pEta, pY, pMotherID;
+	Double_t aPt, aPhi, aCharge, aStatus, aEta, aY, aMotherID;
 	int nTrigger = 0;
 
 	// Besides pT dependence, it is also interesting to look at the data as a function of multiplicity and (pseudo)rapidity
@@ -242,8 +240,6 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 			pStatus = (*vStatus)[ipart];
 			pEta = (*vEta)[ipart];
 			pY = (*vY)[ipart]; // not to be confused with the y-component of the momentum, denoted py!
-			pMother = (*vMother1)[ipart];
-			pMotherPhi = (*vPhi)[pMother];
 			pMotherID = (*vMotherID)[ipart];
 
 			if (pID == id_trigger && pPt >= 1.)
@@ -273,8 +269,6 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 					aStatus = (*vStatus)[jpart];
 					aEta = (*vEta)[jpart];
 					aY = (*vY)[jpart];
-					aMother = (*vMother1)[jpart];
-					aMotherPhi = (*vPhi)[aMother];
 					aMotherID = (*vMotherID)[jpart];
 
 					if (aID == id_associate && aPt >= 1.)
@@ -304,6 +298,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	{
 		cout << "Have not found any trigger particle with id: " << id_trigger << endl;
 		output->Close();
+		delete output;
+		delete ch1;
 		return;
 	}
 	hTrKinematics->Write();
@@ -311,6 +307,12 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	hCorrelations->Write();
 	output->Write();
 	output->Close();
+	delete hTrKinematics;
+	delete hAsKinematics;
+	delete hCorrelations;
+	delete hMULTIPLICITY;
+	delete output;
+	delete ch1;
 	cout << "The total number of triggers is: " << nTrigger << endl;
 
 	cout << "File: " << fOut << " has been created!" << endl;

@@ -14,6 +14,7 @@ set -euo pipefail
 #   RAW_INPUT_BASE      default: /data/alice/ipardoza/Hadronization/RootFiles/HF
 #   ANALYSIS_OUTPUT_BASE default: /data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF
 #   HADRONIZATION_BASE  default: directory containing this script
+#   STATUS_ANALYSIS_REQUEST_MEMORY default: 4GB
 #   DRY_RUN             set to 1/true to write the submit file without condor_submit
 
 usage() {
@@ -41,6 +42,8 @@ Environment overrides:
   RAW_INPUT_BASE       Raw HF ROOT input base directory.
   ANALYSIS_OUTPUT_BASE Per-job THnSparse analysis output base directory.
   HADRONIZATION_BASE   Hadronization checkout containing AnalysisScripts.
+  STATUS_ANALYSIS_REQUEST_MEMORY
+                       Condor memory request for each status-analysis job.
   DRY_RUN              Set to 1/true to write the submit file without condor_submit.
 USAGE
 }
@@ -54,6 +57,7 @@ raw_input_base="${RAW_INPUT_BASE:-/data/alice/ipardoza/Hadronization/RootFiles/H
 analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
 analysis_scripts_dir="${project_base}/AnalysisScripts"
 dry_run="${DRY_RUN:-0}"
+request_memory="${STATUS_ANALYSIS_REQUEST_MEMORY:-4GB}"
 
 requested_tune="${1:-}"
 number_of_files="${2:-1}"
@@ -100,7 +104,7 @@ universe = vanilla
 executable = ${project_base}/run_status_analysis.sh
 
 request_cpus = 1
-request_memory = 2GB
+request_memory = ${request_memory}
 request_disk = 2GB
 
 +UseOS = "el9"
