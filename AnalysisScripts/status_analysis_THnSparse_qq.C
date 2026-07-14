@@ -318,22 +318,77 @@ int status_analysis_THnSparse_qq(const char *fIn, const char *outputDir)
 
 	// Trigger and associate can be chosen as desired, correlations will be created and put into the output ROOT file as named in the function argument
 
-	// TRIGGER = D+
-
+	// TRIGGER = D+ (c)
 	status_file(411, 411, fIn, "DplusDplus.root", outputDir, "D^{+}D^{+}");
 	status_file(411, -411, fIn, "DplusDminus.root", outputDir, "D^{+}D^{-}");
+	status_file(411, 421, fIn, "DplusDzero.root", outputDir, "D^{+}D^{0}");
+	status_file(411, -421, fIn, "DplusDzerobar.root", outputDir, "D^{+}#barD^{0}");
 	status_file(411, 4122, fIn, "DplusLambdacplus.root", outputDir, "D^{+}#Lambda_{c}^{+}");
 	status_file(411, -4122, fIn, "DplusLambdacplusbar.root", outputDir, "D^{+}#bar#Lambda_{c}^{+}");
 	// status_file(411, 4212, fIn, "DplusSigmacplus.root", outputDir, "D^{+}#Sigma_{c}^{+}");
 	// status_file(411, -4212, fIn, "DplusSigmacplusbar.root", outputDir, "D^{+}#bar#Sigma_{c}^{+}");
 
-	// TRIGGER = B+
+	// TRIGGER = D0 (c)
+	status_file(421, 411, fIn, "DzeroDplus.root", outputDir, "D^{0}D^{+}");
+	status_file(421, -411, fIn, "DzeroDminus.root", outputDir, "D^{0}D^{-}");
+	status_file(421, 421, fIn, "DzeroDzero.root", outputDir, "D^{0}D^{0}");
+	status_file(421, -421, fIn, "DzeroDzerobar.root", outputDir, "D^{0}#barD^{0}");
+	status_file(421, 431, fIn, "DzeroDsplus.root", outputDir, "D^{0}D_{s}^{+}");
+	status_file(421, -431, fIn, "DzeroDsminus.root", outputDir, "D^{0}D_{s}^{-}");
+	status_file(421, 4122, fIn, "DzeroLambdacplus.root", outputDir, "D^{0}#Lambda_{c}^{+}");
+	status_file(421, -4122, fIn, "DzeroLambdacplusbar.root", outputDir, "D^{0}#bar#Lambda_{c}^{+}");
+	// status_file(421, 4212, fIn, "DzeroSigmacplus.root", outputDir, "D^{0}#Sigma_{c}^{+}");
+	// status_file(421, -4212, fIn, "DzeroSigmacplusbar.root", outputDir, "D^{0}#bar#Sigma_{c}^{+}");
+
+	// TRIGGER = Lc+ (c)
+	status_file(4122, 411, fIn, "LambdacplusDplus.root", outputDir, "#Lambda_{c}^{+}D^{+}");
+	status_file(4122, -411, fIn, "LambdacplusDminus.root", outputDir, "#Lambda_{c}^{+}D^{-}");
+	status_file(4122, 421, fIn, "LambdacplusDzero.root", outputDir, "#Lambda_{c}^{+}D^{0}");
+	status_file(4122, -421, fIn, "LambdacplusDzerobar.root", outputDir, "#Lambda_{c}^{+}#barD^{0}");
+	status_file(4122, 431, fIn, "LambdacplusDsplus.root", outputDir, "#Lambda_{c}^{+}D_{s}^{+}");
+	status_file(4122, -431, fIn, "LambdacplusDsminus.root", outputDir, "#Lambda_{c}^{+}D_{s}^{-}");
+	status_file(4122, 4122, fIn, "LambdacplusLambdacplus.root", outputDir, "#Lambda_{c}^{+}#Lambda_{c}^{+}");
+	status_file(4122, -4122, fIn, "LambdacplusLambdacplusbar.root", outputDir, "#Lambda_{c}^{+}#bar#Lambda_{c}^{+}");
+
+	// TRIGGER = B+ (b-bar)
 	status_file(521,521, fIn, "BplusBplus.root", outputDir, "B^{+}B^{+}");
 	status_file(521, -521, fIn, "BplusBminus.root", outputDir, "B^{+}B^{-}");
+	status_file(521, 511, fIn, "BplusBzero.root", outputDir, "B^{+}B^{0}");
+	status_file(521, -511, fIn, "BplusBzerobar.root", outputDir, "B^{+}#barB^{0}");
+	status_file(521, 531, fIn, "BplusBszero.root", outputDir, "B^{+}B_{s}^{0}");
+	status_file(521, -531, fIn, "BplusBszerobar.root", outputDir, "B^{+}#barB_{s}^{0}");
+	status_file(521, 541, fIn, "BplusBcplus.root", outputDir, "B^{+}B_{c}^{+}");
+	status_file(521, -541, fIn, "BplusBcminus.root", outputDir, "B^{+}B_{c}^{-}");
 	status_file(521, 5122, fIn, "BplusLb.root", outputDir, "B^{+}#Lambda_{b}^{0}");
 	status_file(521, -5122, fIn, "BplusLbbar.root", outputDir, "B^{+}#bar#Lambda_{b}^{0}");
 	status_file(521, 5212, fIn, "BplusSigmabzero.root", outputDir, "B^{+}#Sigma_{b}^{0}");
 	status_file(521, -5212, fIn, "BplusSigmabzerobar.root", outputDir, "B^{+}#bar#Sigma_{b}^{0}");
+
+	// TRIGGER = B0 (b-bar)
+	status_file(511, 521, fIn, "BzeroBplus.root", outputDir, "B^{0}B^{+}");
+	status_file(511, -521, fIn, "BzeroBminus.root", outputDir, "B^{0}B^{-}");
+	status_file(511, 511, fIn, "BzeroBzero.root", outputDir, "B^{0}B^{0}");
+	status_file(511, -511, fIn, "BzeroBzerobar.root", outputDir, "B^{0}#barB^{0}");
+	status_file(511, 531, fIn, "BzeroBszero.root", outputDir, "B^{0}B_{s}^{0}");
+	status_file(511, -531, fIn, "BzeroBszerobar.root", outputDir, "B^{0}#barB_{s}^{0}");
+	status_file(511, 541, fIn, "BzeroBcplus.root", outputDir, "B^{0}B_{c}^{+}");
+	status_file(511, -541, fIn, "BzeroBcminus.root", outputDir, "B^{0}B_{c}^{-}");
+	status_file(511, 5122, fIn, "BzeroLb.root", outputDir, "B^{0}#Lambda_{b}^{0}");
+	status_file(511, -5122, fIn, "BzeroLbbar.root", outputDir, "B^{0}#bar#Lambda_{b}^{0}");
+	status_file(521, 5212, fIn, "BzeroSigmabzero.root", outputDir, "B^{0}#Sigma_{b}^{0}");
+	status_file(521, -5212, fIn, "BzeroSigmabzerobar.root", outputDir, "B^{0}#bar#Sigma_{b}^{0}");
+
+	// TRIGGER = Lbbar (b-bar)
+	status_file(-5122, 521, fIn, "LbbarBplus.root", outputDir, "#bar#Lambda_{b}^{0}B^{+}");
+	status_file(-5122, -521, fIn, "LbbarBminus.root", outputDir, "#bar#Lambda_{b}^{0}B^{-}");
+	status_file(-5122, 511, fIn, "LbbarBzero.root", outputDir, "#bar#Lambda_{b}^{0}B^{0}");
+	status_file(-5122, -511, fIn, "LbbarBzerobar.root", outputDir, "#bar#Lambda_{b}^{0}#barB^{0}");
+	status_file(-5122, 531, fIn, "LbbarBszero.root", outputDir, "#bar#Lambda_{b}^{0}B_{s}^{0}");
+	status_file(-5122, -531, fIn, "LbbarBszerobar.root", outputDir, "#bar#Lambda_{b}^{0}#barB_{s}^{0}");
+	status_file(-5122, 541, fIn, "LbbarBcplus.root", outputDir, "#bar#Lambda_{b}^{0}B_{c}^{+}");
+	status_file(-5122, -541, fIn, "LbbarBcminus.root", outputDir, "#bar#Lambda_{b}^{0}B_{c}^{-}");
+	status_file(-5122, 5122, fIn, "LbbarLb.root", outputDir, "#bar#Lambda_{b}^{0}#Lambda_{b}^{0}");
+	status_file(-5122, -5122, fIn, "LbbarLbbar.root", outputDir, "#bar#Lambda_{b}^{0}#bar#Lambda_{b}^{0}");
 
 	return 0;
 }
