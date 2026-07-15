@@ -46,6 +46,8 @@ Environment overrides:
   SUBSAMPLE_MODE       partition (default) or bootstrap.
   MERGE_BACKEND        object (default), hadd, hadd-chunked, or hybrid.
   HADD_JOBS            Parallel hadd workers when MERGE_BACKEND=hadd (default: 4).
+  HADD_FINAL_JOBS      Parallel hadd workers for the final merge of chunk files
+                       when using hadd-chunked or hybrid fallback (default: 4).
   HADD_CHUNK_SIZE      Number of input files per intermediate chunk when using
                        hadd-chunked or hybrid fallback (default: 10).
   MERGE_OBJECT_FALLBACK_REGEX
@@ -112,6 +114,7 @@ output_base_dir="${analyzed_data_base}/SUBSAMPLES_${subsample_tag}"
 subsample_mode="${SUBSAMPLE_MODE:-partition}"
 merge_backend="${MERGE_BACKEND:-object}"
 hadd_jobs="${HADD_JOBS:-4}"
+hadd_final_jobs="${HADD_FINAL_JOBS:-4}"
 hadd_chunk_size="${HADD_CHUNK_SIZE:-10}"
 merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero|Lambdacplus).*\\.root$}"
 
@@ -135,6 +138,11 @@ esac
 
 if ! [[ "${hadd_jobs}" =~ ^[0-9]+$ ]] || [[ "${hadd_jobs}" -lt 1 ]]; then
     echo "ERROR: HADD_JOBS must be a positive integer, got '${hadd_jobs}'" >&2
+    exit 1
+fi
+
+if ! [[ "${hadd_final_jobs}" =~ ^[0-9]+$ ]] || [[ "${hadd_final_jobs}" -lt 1 ]]; then
+    echo "ERROR: HADD_FINAL_JOBS must be a positive integer, got '${hadd_final_jobs}'" >&2
     exit 1
 fi
 
@@ -249,6 +257,11 @@ ROOTCMDS
                 hadd_args+=(-j "${hadd_jobs}")
             fi
 
+            local final_hadd_args=(-f -v 0)
+            if [[ "${hadd_final_jobs}" -gt 1 ]]; then
+                final_hadd_args+=(-j "${hadd_final_jobs}")
+            fi
+
             local tmp_dir
             tmp_dir="$(mktemp -d "/tmp/hadronization_hadd_chunks_XXXXXX")"
             local -a partials=()
@@ -281,7 +294,7 @@ ROOTCMDS
 
             if [[ "${#partials[@]}" -eq 1 ]]; then
                 mv -f "${partials[0]}" "${tmp_output}"
-            elif ! hadd "${hadd_args[@]}" "${tmp_output}" "${partials[@]}"; then
+            elif ! hadd "${final_hadd_args[@]}" "${tmp_output}" "${partials[@]}"; then
                 rm -rf "${tmp_dir}" "${tmp_output}"
                 return 1
             fi
