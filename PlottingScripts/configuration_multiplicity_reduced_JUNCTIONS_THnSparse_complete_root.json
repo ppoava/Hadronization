@@ -15,41 +15,51 @@
   "cc_bar_complete_root_dir": "complete_root_21_06_2026",
   "beauty_correlations_to_analyse": [
     {
-      "trigger": "Bˆ{+}",
-      "associateOS": "B-",
-      "associateSS": "Bˆ{+}",
-      "OS": "BplusBminus.root",
-      "SS": "BplusBplus.root"
-    },
-    {
-      "trigger": "Bˆ{+}",
-      "associateOS": "Lambda_b",
-      "associateSS": "Lambda_b-bar",
-      "OS": "BplusLb.root",
-      "SS": "BplusLbbar.root"
-    },
-    {
-      "trigger": "Bˆ{+}",
-      "associateOS": "Sigma_b0",
-      "associateSS": "Sigma_b(0)-bar",
-      "OS": "BplusSigmabzero.root",
-      "SS": "BplusSigmabzerobar.root"
+      "trigger": "B^{+}",
+      "configs": [
+        {
+          "trigger": "B^{+}",
+          "associateOS": "B-",
+          "associateSS": "B^{+}",
+          "OS": "BplusBminus.root",
+          "SS": "BplusBplus.root"
+        },
+        {
+          "trigger": "B^{+}",
+          "associateOS": "Lambda_b",
+          "associateSS": "Lambda_b-bar",
+          "OS": "BplusLb.root",
+          "SS": "BplusLbbar.root"
+        },
+        {
+          "trigger": "B^{+}",
+          "associateOS": "Sigma_b0",
+          "associateSS": "Sigma_b(0)-bar",
+          "OS": "BplusSigmabzero.root",
+          "SS": "BplusSigmabzerobar.root"
+        }
+      ]
     }
   ],
   "charm_correlations_to_analyse": [
     {
-      "trigger": "Dˆ{+}",
-      "associateOS": "D-",
-      "associateSS": "Dˆ{+}",
-      "OS": "DplusDminus.root",
-      "SS": "DplusDplus.root"
-    },
-    {
-      "trigger": "Dˆ{+}",
-      "associateOS": "Lambda_c(+)-bar",
-      "associateSS": "Lambda_c(+)",
-      "OS": "DplusLambdacplusbar.root",
-      "SS": "DplusLambdacplus.root"
+      "trigger": "D^{+}",
+      "configs": [
+        {
+          "trigger": "D^{+}",
+          "associateOS": "D-",
+          "associateSS": "D^{+}",
+          "OS": "DplusDminus.root",
+          "SS": "DplusDplus.root"
+        },
+        {
+          "trigger": "D^{+}",
+          "associateOS": "Lambda_c(+)-bar",
+          "associateSS": "Lambda_c(+)",
+          "OS": "DplusLambdacplusbar.root",
+          "SS": "DplusLambdacplus.root"
+        }
+      ]
     }
   ],
   "histograms_to_analyse": [
