@@ -44,10 +44,12 @@ Environment overrides:
   ANALYZED_DATA_BASE   Destination base for AnalyzedData.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
   SUBSAMPLE_MODE       partition (default) or bootstrap.
-  MERGE_BACKEND        object (default), hadd, or hybrid.
+  MERGE_BACKEND        object (default), hadd, hadd-chunked, or hybrid.
   HADD_JOBS            Parallel hadd workers when MERGE_BACKEND=hadd (default: 4).
+  HADD_CHUNK_SIZE      Number of input files per intermediate chunk when using
+                       hadd-chunked or hybrid fallback (default: 10).
   MERGE_OBJECT_FALLBACK_REGEX
-                       ROOT filename regex merged with the object backend when
+                       ROOT filename regex merged with the chunked backend when
                        MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero).*\.root$).
 
 The default partition mode shuffles the available jobs once per tune and then
@@ -110,6 +112,7 @@ output_base_dir="${analyzed_data_base}/SUBSAMPLES_${subsample_tag}"
 subsample_mode="${SUBSAMPLE_MODE:-partition}"
 merge_backend="${MERGE_BACKEND:-object}"
 hadd_jobs="${HADD_JOBS:-4}"
+hadd_chunk_size="${HADD_CHUNK_SIZE:-10}"
 merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero).*\\.root$}"
 
 case "${subsample_mode}" in
@@ -122,16 +125,21 @@ case "${subsample_mode}" in
 esac
 
 case "${merge_backend}" in
-    object|hadd|hybrid)
+    object|hadd|hadd-chunked|hybrid)
         ;;
     *)
-        echo "ERROR: MERGE_BACKEND must be 'object', 'hadd', or 'hybrid', got '${merge_backend}'" >&2
+        echo "ERROR: MERGE_BACKEND must be 'object', 'hadd', 'hadd-chunked', or 'hybrid', got '${merge_backend}'" >&2
         exit 1
         ;;
 esac
 
 if ! [[ "${hadd_jobs}" =~ ^[0-9]+$ ]] || [[ "${hadd_jobs}" -lt 1 ]]; then
     echo "ERROR: HADD_JOBS must be a positive integer, got '${hadd_jobs}'" >&2
+    exit 1
+fi
+
+if ! [[ "${hadd_chunk_size}" =~ ^[0-9]+$ ]] || [[ "${hadd_chunk_size}" -lt 1 ]]; then
+    echo "ERROR: HADD_CHUNK_SIZE must be a positive integer, got '${hadd_chunk_size}'" >&2
     exit 1
 fi
 
@@ -176,7 +184,7 @@ merge_files() {
     if [[ "${merge_backend}" == "hybrid" ]]; then
         effective_backend="hadd"
         if [[ "${rootfile}" =~ ${merge_object_fallback_regex} ]]; then
-            effective_backend="object"
+            effective_backend="hadd-chunked"
         fi
         echo "Merge backend for ${rootfile}: ${effective_backend}"
     fi
@@ -229,6 +237,57 @@ ROOTCMDS
                 rm -f "${tmp_output}"
                 return 1
             fi
+            ;;
+        hadd-chunked)
+            local tmp_output
+            tmp_output="$(mktemp "/tmp/hadronization_hadd_XXXXXX.root")"
+            rm -f "${tmp_output}"
+            mkdir -p "$(dirname "${output_file}")"
+
+            local hadd_args=(-f -v 0)
+            if [[ "${hadd_jobs}" -gt 1 ]]; then
+                hadd_args+=(-j "${hadd_jobs}")
+            fi
+
+            local tmp_dir
+            tmp_dir="$(mktemp -d "/tmp/hadronization_hadd_chunks_XXXXXX")"
+            local -a partials=()
+            local -a chunk=()
+            local input
+            local chunk_index=0
+
+            for input in "$@"; do
+                chunk+=("${input}")
+                if [[ "${#chunk[@]}" -ge "${hadd_chunk_size}" ]]; then
+                    local partial="${tmp_dir}/partial_${chunk_index}.root"
+                    if ! hadd "${hadd_args[@]}" "${partial}" "${chunk[@]}"; then
+                        rm -rf "${tmp_dir}" "${tmp_output}"
+                        return 1
+                    fi
+                    partials+=("${partial}")
+                    chunk=()
+                    chunk_index=$((chunk_index + 1))
+                fi
+            done
+
+            if [[ "${#chunk[@]}" -gt 0 ]]; then
+                local partial="${tmp_dir}/partial_${chunk_index}.root"
+                if ! hadd "${hadd_args[@]}" "${partial}" "${chunk[@]}"; then
+                    rm -rf "${tmp_dir}" "${tmp_output}"
+                    return 1
+                fi
+                partials+=("${partial}")
+            fi
+
+            if [[ "${#partials[@]}" -eq 1 ]]; then
+                mv -f "${partials[0]}" "${tmp_output}"
+            elif ! hadd "${hadd_args[@]}" "${tmp_output}" "${partials[@]}"; then
+                rm -rf "${tmp_dir}" "${tmp_output}"
+                return 1
+            fi
+
+            mv -f "${tmp_output}" "${output_file}"
+            rm -rf "${tmp_dir}"
             ;;
     esac
 }
