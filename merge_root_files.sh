@@ -31,6 +31,7 @@ Environment overrides:
   ANALYZED_DATA_BASE   Destination base for complete_root directories.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
   MERGE_BACKEND         object (default) or hadd.
+  HADD_JOBS             Parallel hadd workers when MERGE_BACKEND=hadd (default: 4).
 USAGE
 }
 
@@ -53,6 +54,7 @@ requested_tune="$(printf '%s' "${requested_tune}" | tr '[:lower:]' '[:upper:]')"
 analysis_output_base="${ANALYSIS_OUTPUT_BASE:-/data/alice/pveen_new/PanosPaper/RootFiles/AnalysisResults/HF}"
 analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
 merge_backend="${MERGE_BACKEND:-object}"
+hadd_jobs="${HADD_JOBS:-4}"
 
 case "${merge_backend}" in
     object|hadd)
@@ -62,6 +64,11 @@ case "${merge_backend}" in
         exit 1
         ;;
 esac
+
+if ! [[ "${hadd_jobs}" =~ ^[0-9]+$ ]] || [[ "${hadd_jobs}" -lt 1 ]]; then
+    echo "ERROR: HADD_JOBS must be a positive integer, got '${hadd_jobs}'" >&2
+    exit 1
+fi
 
 if [[ -f "${project_base}/setupEnv.sh" ]]; then
     # shellcheck disable=SC1091
@@ -112,7 +119,12 @@ ROOTCMDS
             rm -f "${tmp_output}"
             mkdir -p "$(dirname "${output_file}")"
 
-            if hadd -f -v 0 "${tmp_output}" "$@"; then
+            local hadd_args=(-f -v 0)
+            if [[ "${hadd_jobs}" -gt 1 ]]; then
+                hadd_args+=(-j "${hadd_jobs}")
+            fi
+
+            if hadd "${hadd_args[@]}" "${tmp_output}" "$@"; then
                 mv -f "${tmp_output}" "${output_file}"
             else
                 rm -f "${tmp_output}"
