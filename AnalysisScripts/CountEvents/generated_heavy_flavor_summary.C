@@ -7,6 +7,13 @@
 //   root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/JUNCTIONS","junctions_generated_hf_summary.csv")'
 //   root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/CLOSEPACKING","closepacking_generated_hf_summary.csv")'
 //
+// Full three-tune LaTeX table:
+//   root -l -b <<'ROOTCMDS'
+//   .L AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C+
+//   generated_heavy_flavor_summary_latex_table("RootFiles/HF", "Paper/Tables/generated_heavy_flavor_summary.tex");
+//   .q
+//   ROOTCMDS
+//
 // Counting criteria and assumptions:
 // - The input is the current unified generated-event tree named "tree" by
 //   default, with one entry per event written by the producer.
@@ -64,6 +71,39 @@ struct Species {
   char flavor = ' ';
   Long64_t rawYield = 0;
 };
+
+struct TuneSummary {
+  std::string label;
+  int inputFiles = 0;
+  Long64_t totalEvents = 0;
+  Long64_t totalBeautyContent = 0;
+  Long64_t totalCharmContent = 0;
+  Long64_t treeEntriesCrossCheck = 0;
+  std::vector<Species> species;
+};
+
+bool FillFromProducerHistograms(const std::vector<std::string>& files,
+                                const std::string& treeName,
+                                std::vector<Species>& species,
+                                Long64_t& totalEvents,
+                                Long64_t& totalBeautyContent,
+                                Long64_t& totalCharmContent,
+                                Long64_t& treeEntriesCrossCheck,
+                                std::string& failureReason);
+
+std::vector<Species> DefaultSpecies()
+{
+  return {
+    {"B+", 521, 'b', 0},
+    {"B-", -521, 'b', 0},
+    {"Lambda_b0", 5122, 'b', 0},
+    {"anti-Lambda_b0", -5122, 'b', 0},
+    {"D+", 411, 'c', 0},
+    {"D-", -411, 'c', 0},
+    {"Lambda_c+", 4122, 'c', 0},
+    {"anti-Lambda_c-", -4122, 'c', 0},
+  };
+}
 
 bool EndsWith(const std::string& value, const std::string& suffix)
 {
@@ -258,6 +298,154 @@ Long64_t HistogramPdgYield(TH1* h, int pdg)
   return RoundedCount(h->GetBinContent(bin));
 }
 
+TuneSummary SummarizeTuneFromProducerHistograms(const std::string& label,
+                                                const std::string& inputDir,
+                                                const std::string& treeName)
+{
+  std::vector<std::string> files;
+  CollectRootFiles(inputDir, files);
+  std::sort(files.begin(), files.end());
+
+  if (files.empty()) {
+    throw std::runtime_error("No ROOT files found for " + label + " under " + inputDir);
+  }
+
+  TuneSummary summary;
+  summary.label = label;
+  summary.inputFiles = static_cast<int>(files.size());
+  summary.species = DefaultSpecies();
+
+  std::string failureReason;
+  const bool ok = FillFromProducerHistograms(files,
+                                             treeName,
+                                             summary.species,
+                                             summary.totalEvents,
+                                             summary.totalBeautyContent,
+                                             summary.totalCharmContent,
+                                             summary.treeEntriesCrossCheck,
+                                             failureReason);
+  if (!ok) {
+    throw std::runtime_error("Could not summarize " + label + " with producer histograms: " + failureReason);
+  }
+
+  return summary;
+}
+
+void AddTuneSummary(TuneSummary& total, const TuneSummary& part)
+{
+  if (total.species.empty()) total.species = DefaultSpecies();
+
+  total.inputFiles += part.inputFiles;
+  total.totalEvents += part.totalEvents;
+  total.totalBeautyContent += part.totalBeautyContent;
+  total.totalCharmContent += part.totalCharmContent;
+  total.treeEntriesCrossCheck += part.treeEntriesCrossCheck;
+
+  for (size_t i = 0; i < total.species.size() && i < part.species.size(); ++i) {
+    total.species[i].rawYield += part.species[i].rawYield;
+  }
+}
+
+std::string LatexInteger(Long64_t value)
+{
+  const bool negative = value < 0;
+  std::string digits = std::to_string(negative ? -value : value);
+  std::string grouped;
+
+  for (size_t i = 0; i < digits.size(); ++i) {
+    const size_t remaining = digits.size() - i;
+    if (i > 0 && remaining % 3 == 0) {
+      grouped += "\\,";
+    }
+    grouped += digits[i];
+  }
+
+  if (negative) grouped = "-" + grouped;
+  return "$" + grouped + "$";
+}
+
+std::string LatexSpeciesName(const std::string& name)
+{
+  if (name == "B+") return "$B^{+}$";
+  if (name == "B-") return "$B^{-}$";
+  if (name == "Lambda_b0") return "$\\Lambda_{b}^{0}$";
+  if (name == "anti-Lambda_b0") return "$\\overline{\\Lambda}_{b}^{0}$";
+  if (name == "D+") return "$D^{+}$";
+  if (name == "D-") return "$D^{-}$";
+  if (name == "Lambda_c+") return "$\\Lambda_{c}^{+}$";
+  if (name == "anti-Lambda_c-") return "$\\overline{\\Lambda}_{c}^{-}$";
+  return name;
+}
+
+void WriteLatexSummaryTable(const std::vector<TuneSummary>& tuneSummaries,
+                            const TuneSummary& overall,
+                            const std::string& outputTex)
+{
+  EnsureParentDirectory(outputTex);
+  std::ofstream tex(outputTex);
+  if (!tex) {
+    throw std::runtime_error("Could not open LaTeX output for writing: " + outputTex);
+  }
+
+  tex << "% Auto-generated by AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C\n";
+  tex << "% Requires \\usepackage{booktabs}.\n";
+  tex << "\\begin{table}[tbp]\n";
+  tex << "\\centering\n";
+  tex << "\\caption{Generated-event sample sizes and selected heavy-flavour hadron yields for the three PYTHIA tunes. "
+         "The $N_{b+\\bar{b}}$ and $N_{c+\\bar{c}}$ rows denote the accepted final-hadron heavy-flavour valence content stored by the current production, not independent pre-hadronization parton counters.}\n";
+  tex << "\\label{tab:generated-heavy-flavour-summary}\n";
+  tex << "\\begin{tabular}{lrrrr}\n";
+  tex << "\\toprule\n";
+  tex << "Quantity";
+  for (const TuneSummary& tune : tuneSummaries) {
+    tex << " & " << tune.label;
+  }
+  tex << " & Overall \\\\\n";
+  tex << "\\midrule\n";
+
+  auto writeRow = [&](const std::string& label,
+                      Long64_t monash,
+                      Long64_t junctions,
+                      Long64_t closepacking,
+                      Long64_t total) {
+    tex << label
+        << " & " << LatexInteger(monash)
+        << " & " << LatexInteger(junctions)
+        << " & " << LatexInteger(closepacking)
+        << " & " << LatexInteger(total)
+        << " \\\\\n";
+  };
+
+  writeRow("Events",
+           tuneSummaries.at(0).totalEvents,
+           tuneSummaries.at(1).totalEvents,
+           tuneSummaries.at(2).totalEvents,
+           overall.totalEvents);
+  writeRow("$N_{b+\\bar{b}}$",
+           tuneSummaries.at(0).totalBeautyContent,
+           tuneSummaries.at(1).totalBeautyContent,
+           tuneSummaries.at(2).totalBeautyContent,
+           overall.totalBeautyContent);
+  writeRow("$N_{c+\\bar{c}}$",
+           tuneSummaries.at(0).totalCharmContent,
+           tuneSummaries.at(1).totalCharmContent,
+           tuneSummaries.at(2).totalCharmContent,
+           overall.totalCharmContent);
+
+  tex << "\\midrule\n";
+  for (size_t i = 0; i < overall.species.size(); ++i) {
+    writeRow(LatexSpeciesName(overall.species[i].name),
+             tuneSummaries.at(0).species.at(i).rawYield,
+             tuneSummaries.at(1).species.at(i).rawYield,
+             tuneSummaries.at(2).species.at(i).rawYield,
+             overall.species.at(i).rawYield);
+  }
+
+  tex << "\\bottomrule\n";
+  tex << "\\end{tabular}\n";
+  tex << "\\end{table}\n";
+}
+
 bool FillFromProducerHistograms(const std::vector<std::string>& files,
                                 const std::string& treeName,
                                 std::vector<Species>& species,
@@ -337,16 +525,7 @@ void generated_heavy_flavor_summary(const char* inputPath = "RootFiles/HF",
     throw std::runtime_error("No ROOT files found under input path: " + resolvedInput);
   }
 
-  std::vector<Species> species = {
-    {"B+", 521, 'b', 0},
-    {"B-", -521, 'b', 0},
-    {"Lambda_b0", 5122, 'b', 0},
-    {"anti-Lambda_b0", -5122, 'b', 0},
-    {"D+", 411, 'c', 0},
-    {"D-", -411, 'c', 0},
-    {"Lambda_c+", 4122, 'c', 0},
-    {"anti-Lambda_c-", -4122, 'c', 0},
-  };
+  std::vector<Species> species = DefaultSpecies();
 
   std::map<int, size_t> speciesByPdg;
   for (size_t i = 0; i < species.size(); ++i) {
@@ -556,4 +735,61 @@ void generated_heavy_flavor_summary(const char* inputPath = "RootFiles/HF",
 
   csv.close();
   std::cout << "CSV written to: " << resolvedOutput << "\n";
+}
+
+void generated_heavy_flavor_summary_latex_table(const char* inputBaseDir = "RootFiles/HF",
+                                                const char* outputTex = "Paper/Tables/generated_heavy_flavor_summary.tex",
+                                                const char* treeName = "tree")
+{
+  using namespace GeneratedHeavyFlavorSummaryDetail;
+
+  const std::string resolvedInputBase = ResolveFromBase(inputBaseDir ? inputBaseDir : "RootFiles/HF");
+  const std::string resolvedOutput = ResolveFromBase(outputTex ? outputTex : "generated_heavy_flavor_summary.tex");
+  const std::string treeNameValue = treeName && treeName[0] != '\0' ? treeName : "tree";
+
+  const std::vector<std::string> tuneNames = {"MONASH", "JUNCTIONS", "CLOSEPACKING"};
+  std::vector<TuneSummary> tuneSummaries;
+  tuneSummaries.reserve(tuneNames.size());
+
+  TuneSummary overall;
+  overall.label = "Overall";
+  overall.species = DefaultSpecies();
+
+  std::cout << "\nGenerated heavy-flavour LaTeX table summary\n";
+  std::cout << "===========================================\n";
+  std::cout << "Input base: " << resolvedInputBase << "\n";
+  std::cout << "Tree: " << treeNameValue << "\n";
+  std::cout << "Counting backend: producer histograms\n\n";
+
+  for (const std::string& tuneName : tuneNames) {
+    const std::string tuneDir = resolvedInputBase + "/" + tuneName;
+    TuneSummary summary = SummarizeTuneFromProducerHistograms(tuneName, tuneDir, treeNameValue);
+
+    std::cout << std::left << std::setw(14) << tuneName
+              << " files=" << std::setw(4) << summary.inputFiles
+              << " events=" << summary.totalEvents
+              << " b+bbar content=" << summary.totalBeautyContent
+              << " c+cbar content=" << summary.totalCharmContent;
+    if (summary.treeEntriesCrossCheck > 0) {
+      std::cout << " tree entries=" << summary.treeEntriesCrossCheck;
+    }
+    std::cout << "\n";
+
+    AddTuneSummary(overall, summary);
+    tuneSummaries.push_back(summary);
+  }
+
+  std::cout << std::left << std::setw(14) << "Overall"
+            << " files=" << std::setw(4) << overall.inputFiles
+            << " events=" << overall.totalEvents
+            << " b+bbar content=" << overall.totalBeautyContent
+            << " c+cbar content=" << overall.totalCharmContent;
+  if (overall.treeEntriesCrossCheck > 0) {
+    std::cout << " tree entries=" << overall.treeEntriesCrossCheck;
+  }
+  std::cout << "\n\n";
+
+  WriteLatexSummaryTable(tuneSummaries, overall, resolvedOutput);
+  std::cout << "LaTeX table written to: " << resolvedOutput << "\n";
+  std::cout << "NOTE: b+bbar and c+cbar are accepted final-hadron valence-content counts from the current production, not true pre-hadronization parton counters.\n";
 }

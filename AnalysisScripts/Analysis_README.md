@@ -152,6 +152,16 @@ root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("R
 root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/MONASH","monash_tree_scan.csv","tree","stored","tree")'
 ```
 
+For the paper-ready table across all three tunes, call the LaTeX-table entry point after loading the macro:
+
+```bash
+root -l -b <<'ROOTCMDS'
+.L AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C+
+generated_heavy_flavor_summary_latex_table("RootFiles/HF", "Paper/Tables/generated_heavy_flavor_summary.tex");
+.q
+ROOTCMDS
+```
+
 The current generated tree stores accepted final-state heavy hadrons and pions, not the full PYTHIA parton-level event record. Because of that, this macro normalizes the species yields to the accepted final-hadron heavy-flavour valence content available in the tree: each beauty-only hadron contributes one `b` or `bbar` unit, each charm-only hadron contributes one `c` or `cbar` unit, and each `Bc` hadron contributes one unit to both. A true generated pre-hadronization `b` or `c` quark count would require adding dedicated quark counters to the producer.
 
 ## Failure Modes
