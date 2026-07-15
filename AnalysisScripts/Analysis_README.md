@@ -137,11 +137,22 @@ AnalyzedData/08-04-2026_100M_Separate
 
 ## Count Events Utility
 
-`AnalysisScripts/CountEvents/count_events.sh` runs `count_events_bb_cc.C` from the repository base and then removes the ACLiC artifacts produced by that macro. It is written for the old split bbbar and ccbar layout. If you need the same count for the combined-HF raw files, it should be adapted to inspect `RootFiles/HF/MONASH` and `RootFiles/HF/JUNCTIONS`.
+`AnalysisScripts/CountEvents/count_events.sh` runs `count_events_bb_cc.C` from the repository base and then removes the ACLiC artifacts produced by that macro. It is written for the old split bbbar and ccbar layout.
 
 ```bash
 ./AnalysisScripts/CountEvents/count_events.sh
 ```
+
+For the current combined-HF raw files, use `generated_heavy_flavor_summary.C`. It recursively scans one raw ROOT file or a directory of raw ROOT files, counts total processed events, reports the requested B, D, `Lambda_b`, and `Lambda_c` particle and antiparticle yields, prints a table, and writes the same table to CSV. In the default `auto` backend it uses the producer-level histograms, which are filled from the same stored final-state particles as the tree and are much faster for full 100M samples. Use the optional fifth argument `"tree"` if you specifically need a tree scan.
+
+```bash
+root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/MONASH","monash_generated_hf_summary.csv")'
+root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/JUNCTIONS","junctions_generated_hf_summary.csv")'
+root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/CLOSEPACKING","closepacking_generated_hf_summary.csv")'
+root -l -b -q 'AnalysisScripts/CountEvents/generated_heavy_flavor_summary.C++("RootFiles/HF/MONASH","monash_tree_scan.csv","tree","stored","tree")'
+```
+
+The current generated tree stores accepted final-state heavy hadrons and pions, not the full PYTHIA parton-level event record. Because of that, this macro normalizes the species yields to the accepted final-hadron heavy-flavour valence content available in the tree: each beauty-only hadron contributes one `b` or `bbar` unit, each charm-only hadron contributes one `c` or `cbar` unit, and each `Bc` hadron contributes one unit to both. A true generated pre-hadronization `b` or `c` quark count would require adding dedicated quark counters to the producer.
 
 ## Failure Modes
 
