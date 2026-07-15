@@ -112,7 +112,7 @@ ROOTCMDS
             rm -f "${tmp_output}"
             mkdir -p "$(dirname "${output_file}")"
 
-            if hadd -f "${tmp_output}" "$@"; then
+            if hadd -f -v 0 "${tmp_output}" "$@"; then
                 mv -f "${tmp_output}" "${output_file}"
             else
                 rm -f "${tmp_output}"
