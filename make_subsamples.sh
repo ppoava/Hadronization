@@ -44,8 +44,11 @@ Environment overrides:
   ANALYZED_DATA_BASE   Destination base for AnalyzedData.
   HADRONIZATION_BASE   Hadronization checkout, used for setupEnv.sh and AnalyzedData default.
   SUBSAMPLE_MODE       partition (default) or bootstrap.
-  MERGE_BACKEND        object (default) or hadd.
+  MERGE_BACKEND        object (default), hadd, or hybrid.
   HADD_JOBS            Parallel hadd workers when MERGE_BACKEND=hadd (default: 4).
+  MERGE_OBJECT_FALLBACK_REGEX
+                       ROOT filename regex merged with the object backend when
+                       MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero).*\.root$).
 
 The default partition mode shuffles the available jobs once per tune and then
 splits them into non-overlapping subsamples. Use SUBSAMPLE_MODE=bootstrap only
@@ -107,6 +110,7 @@ output_base_dir="${analyzed_data_base}/SUBSAMPLES_${subsample_tag}"
 subsample_mode="${SUBSAMPLE_MODE:-partition}"
 merge_backend="${MERGE_BACKEND:-object}"
 hadd_jobs="${HADD_JOBS:-4}"
+merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero).*\\.root$}"
 
 case "${subsample_mode}" in
     partition|bootstrap)
@@ -118,10 +122,10 @@ case "${subsample_mode}" in
 esac
 
 case "${merge_backend}" in
-    object|hadd)
+    object|hadd|hybrid)
         ;;
     *)
-        echo "ERROR: MERGE_BACKEND must be 'object' or 'hadd', got '${merge_backend}'" >&2
+        echo "ERROR: MERGE_BACKEND must be 'object', 'hadd', or 'hybrid', got '${merge_backend}'" >&2
         exit 1
         ;;
 esac
@@ -165,8 +169,19 @@ shuffle_jobs() {
 merge_files() {
     local output_file="$1"
     shift
+    local rootfile
+    rootfile="$(basename "${output_file}")"
+    local effective_backend="${merge_backend}"
 
-    case "${merge_backend}" in
+    if [[ "${merge_backend}" == "hybrid" ]]; then
+        effective_backend="hadd"
+        if [[ "${rootfile}" =~ ${merge_object_fallback_regex} ]]; then
+            effective_backend="object"
+        fi
+        echo "Merge backend for ${rootfile}: ${effective_backend}"
+    fi
+
+    case "${effective_backend}" in
         object)
             local merge_macro="${project_base}/AnalysisScripts/MergeAnalysisObjects.C"
             if [[ ! -f "${merge_macro}" ]]; then
@@ -177,13 +192,25 @@ merge_files() {
             local input_list
             input_list="$(mktemp "/tmp/make_subsamples_XXXXXX.txt")"
             printf '%s\n' "$@" > "${input_list}"
+            local tmp_output
+            tmp_output="$(mktemp "/tmp/hadronization_object_XXXXXX.root")"
+            rm -f "${tmp_output}"
+            mkdir -p "$(dirname "${output_file}")"
 
             root -l -b <<ROOTCMDS
 .L ${merge_macro}+
-int __merge_result = MergeAnalysisObjects("${input_list}", "${output_file}", true);
+int __merge_result = MergeAnalysisObjects("${input_list}", "${tmp_output}", true);
 if (__merge_result != 0) { gSystem->Exit(__merge_result); }
 .q
 ROOTCMDS
+            local merge_status=$?
+            rm -f "${input_list}"
+            if [[ ${merge_status} -eq 0 ]]; then
+                mv -f "${tmp_output}" "${output_file}"
+            else
+                rm -f "${tmp_output}"
+                return "${merge_status}"
+            fi
             ;;
         hadd)
             local tmp_output
