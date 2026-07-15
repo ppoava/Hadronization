@@ -179,7 +179,16 @@ if (__merge_result != 0) { gSystem->Exit(__merge_result); }
 ROOTCMDS
             ;;
         hadd)
-            hadd -f "${output_file}" "$@"
+            local tmp_output
+            tmp_output="$(mktemp "/tmp/hadronization_hadd_XXXXXX.root")"
+            mkdir -p "$(dirname "${output_file}")"
+
+            if hadd -f "${tmp_output}" "$@"; then
+                mv -f "${tmp_output}" "${output_file}"
+            else
+                rm -f "${tmp_output}"
+                return 1
+            fi
             ;;
     esac
 }
