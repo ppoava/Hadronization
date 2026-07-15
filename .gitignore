@@ -22,9 +22,15 @@
 
 # Ignore job outputs and logs
 logs/
+/Logs/
 Jobs/
 compile_hf.log
 Jobs/HF/**/hf_*.root
+
+# Local production scratch and backup directories
+/AnalyzedData/_merge_benchmark/
+/AnalyzedData/interrupted_*/
+/AnalyzedData/pre_pr9_v4_backup_*/
 
 # Ignore ROOT ACLiC/build artifacts
 *_C.so
