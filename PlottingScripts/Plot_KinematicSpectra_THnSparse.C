@@ -403,15 +403,26 @@ std::vector<PairConfig> ReadPairs(const json& config, const char* key, Flavor fl
     std::vector<PairConfig> pairs;
     if (!config.contains(key) || !config[key].is_array()) return pairs;
 
-    for (const auto& entry : config[key]) {
+    const auto appendPair = [&pairs, flavor](const json& entry, const std::string& groupTrigger) {
         PairConfig pair;
         pair.flavor = flavor;
-        pair.triggerLabel = entry.value("trigger", "");
+        pair.triggerLabel = entry.value("trigger", groupTrigger);
         pair.associateOSLabel = entry.value("associateOS", "");
         pair.associateSSLabel = entry.value("associateSS", "");
         pair.osFileName = entry.value("OS", "");
         pair.ssFileName = entry.value("SS", "");
         if (!pair.osFileName.empty()) pairs.push_back(pair);
+    };
+
+    for (const auto& entry : config[key]) {
+        if (entry.contains("configs") && entry["configs"].is_array()) {
+            const std::string groupTrigger = entry.value("trigger", "");
+            for (const auto& nested : entry["configs"]) {
+                appendPair(nested, groupTrigger);
+            }
+        } else {
+            appendPair(entry, "");
+        }
     }
 
     return pairs;
