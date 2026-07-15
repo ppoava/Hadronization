@@ -181,6 +181,7 @@ ROOTCMDS
         hadd)
             local tmp_output
             tmp_output="$(mktemp "/tmp/hadronization_hadd_XXXXXX.root")"
+            rm -f "${tmp_output}"
             mkdir -p "$(dirname "${output_file}")"
 
             if hadd -f "${tmp_output}" "$@"; then
