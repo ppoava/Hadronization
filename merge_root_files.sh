@@ -161,7 +161,7 @@ merge_tune() {
         done < <(
             find "${input_dir}" \
                 -mindepth 2 -maxdepth 2 \
-                -type f -name "${rootfile}"
+                -type f -name "${rootfile}" | sort
         )
 
         if [[ ${#files[@]} -eq 0 ]]; then

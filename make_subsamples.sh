@@ -323,6 +323,12 @@ make_tune_subsamples() {
                 continue
             fi
 
+            sorted_files=()
+            while IFS= read -r sorted_file; do
+                sorted_files+=("${sorted_file}")
+            done < <(printf '%s\n' "${files[@]}" | sort)
+            files=("${sorted_files[@]}")
+
             echo "Merging ${rootfile} with ${#files[@]} files"
             merge_files "${sub_dir}/${rootfile}" "${files[@]}"
         done
