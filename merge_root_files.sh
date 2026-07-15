@@ -36,7 +36,7 @@ Environment overrides:
                         hadd-chunked or hybrid fallback (default: 10).
   MERGE_OBJECT_FALLBACK_REGEX
                         ROOT filename regex merged with the chunked backend when
-                        MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero).*\.root$).
+                        MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero|Lambdacplus).*\.root$).
 USAGE
 }
 
@@ -61,7 +61,7 @@ analyzed_data_base="${ANALYZED_DATA_BASE:-${project_base}/AnalyzedData}"
 merge_backend="${MERGE_BACKEND:-object}"
 hadd_jobs="${HADD_JOBS:-4}"
 hadd_chunk_size="${HADD_CHUNK_SIZE:-10}"
-merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero).*\\.root$}"
+merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero|Lambdacplus).*\\.root$}"
 
 case "${merge_backend}" in
     object|hadd|hadd-chunked|hybrid)

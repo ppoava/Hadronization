@@ -50,7 +50,7 @@ Environment overrides:
                        hadd-chunked or hybrid fallback (default: 10).
   MERGE_OBJECT_FALLBACK_REGEX
                        ROOT filename regex merged with the chunked backend when
-                       MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero).*\.root$).
+                       MERGE_BACKEND=hybrid (default: ^(Dplus|Dzero|Lambdacplus).*\.root$).
 
 The default partition mode shuffles the available jobs once per tune and then
 splits them into non-overlapping subsamples. Use SUBSAMPLE_MODE=bootstrap only
@@ -113,7 +113,7 @@ subsample_mode="${SUBSAMPLE_MODE:-partition}"
 merge_backend="${MERGE_BACKEND:-object}"
 hadd_jobs="${HADD_JOBS:-4}"
 hadd_chunk_size="${HADD_CHUNK_SIZE:-10}"
-merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero).*\\.root$}"
+merge_object_fallback_regex="${MERGE_OBJECT_FALLBACK_REGEX:-^(Dplus|Dzero|Lambdacplus).*\\.root$}"
 
 case "${subsample_mode}" in
     partition|bootstrap)
