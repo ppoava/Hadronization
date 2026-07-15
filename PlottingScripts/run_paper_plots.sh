@@ -226,7 +226,17 @@ run_kinematic_spectra() {
 
   root -l -b <<ROOTCMDS
 .L PlottingScripts/Plot_KinematicSpectra_THnSparse.C+
-Plot_KinematicSpectra_THnSparse("${KINEMATIC_CONFIG}", "${KINEMATIC_OUTPUT_DIR}", ${KINEMATIC_NORMALIZE}, ${KINEMATIC_SUBSAMPLE_ERRORS}, ${KINEMATIC_STRICT}, ${KINEMATIC_CORRELATIONS}, "${KINEMATIC_PHI_POLICY}");
+int __kinematic_plot_result = 0;
+try {
+  Plot_KinematicSpectra_THnSparse("${KINEMATIC_CONFIG}", "${KINEMATIC_OUTPUT_DIR}", ${KINEMATIC_NORMALIZE}, ${KINEMATIC_SUBSAMPLE_ERRORS}, ${KINEMATIC_STRICT}, ${KINEMATIC_CORRELATIONS}, "${KINEMATIC_PHI_POLICY}");
+} catch (const std::exception& error) {
+  std::cerr << "ERROR: " << error.what() << std::endl;
+  __kinematic_plot_result = 1;
+} catch (...) {
+  std::cerr << "ERROR: unknown exception while running Plot_KinematicSpectra_THnSparse" << std::endl;
+  __kinematic_plot_result = 1;
+}
+if (__kinematic_plot_result != 0) { gSystem->Exit(__kinematic_plot_result); }
 .q
 ROOTCMDS
 }
