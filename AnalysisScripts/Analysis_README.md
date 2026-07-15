@@ -96,6 +96,13 @@ The shell wrappers at the repository root now treat `MONASH`, `JUNCTIONS`, and `
 ./make_subsamples.sh
 ```
 
+For large THnSparse outputs, `merge_root_files.sh` and `make_subsamples.sh` also support a hybrid merge backend. This is the recommended production setting when the charm-trigger pair files are large:
+
+```bash
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./merge_root_files.sh ALL Job700 21_06_2026
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./make_subsamples.sh
+```
+
 For a single tune, replace `ALL` with `MONASH`, `JUNCTIONS`, or `CLOSEPACKING`. The submit wrapper reads raw files from `RootFiles/HF/<TUNE>` by default on the production filesystem and selects the first requested number of available files sorted by numeric job id. The merge wrapper writes `AnalyzedData/complete_root_21_06_2026_<TUNE>`, and the subsample wrapper writes `AnalyzedData/SUBSAMPLES_700/combined_root_subSamples_<TUNE>`.
 
 Subsamples are non-overlapping shuffled partitions by default. With no arguments, `make_subsamples.sh` runs the final paper default: all three tunes, ten independent 10-job subsamples per tune, `Job700` input, and `SUBSAMPLES_700` output. This covers all 100 jobs per tune.

@@ -110,6 +110,13 @@ The current paper THnSparse plotting workflow uses pair-named ROOT files produce
 ./make_subsamples.sh
 ```
 
+For large THnSparse productions, the merge and subsample wrappers can use a hybrid ROOT merge backend. This keeps the object-preserving ROOT merger as the default path and uses chunked `hadd` for the heavy charm-trigger pair files:
+
+```bash
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./merge_root_files.sh ALL Job700 21_06_2026
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./make_subsamples.sh
+```
+
 For a smaller validation pass, replace `100` with the number of available raw files to process per tune. The submit wrapper sorts available files by numeric job id and selects the first N completed files, so this works even if some low job ids are still running. For example, the planned three-tune test run uses:
 
 ```bash

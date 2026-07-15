@@ -27,6 +27,13 @@ The root-level scripts create the expected input layout:
 ./make_subsamples.sh
 ```
 
+For the full 100-job THnSparse inputs, use the hybrid merge backend if plain `hadd` or serial object merging is too slow. It applies chunked `hadd` only to the heavy charm-trigger pair files and leaves the rest on the object-preserving merger:
+
+```bash
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./merge_root_files.sh ALL Job700 21_06_2026
+MERGE_BACKEND=hybrid HADD_JOBS=1 HADD_FINAL_JOBS=4 HADD_CHUNK_SIZE=10 ./make_subsamples.sh
+```
+
 For a smaller validation run, change the number of raw files passed to `submit_status_analysis.sh` and use distinct output tags when merging and subsampling. The submit wrapper sorts available files by numeric job id and selects the first N completed files for each tune; it does not require the selected files to be exactly job ids `0` through `N-1`.
 
 `make_subsamples.sh` uses non-overlapping shuffled partitions by default. With no arguments, it runs the final paper default: all three tunes, ten independent 10-job subsamples per tune, `Job700` input, and `SUBSAMPLES_700` output. This covers all 100 jobs per tune.
