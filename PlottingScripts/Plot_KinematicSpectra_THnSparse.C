@@ -16,6 +16,7 @@
 // ---------------------------------------------------------------------------
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -66,6 +67,12 @@ enum class SourceKind {
     TriggerKinematics,
     AssociateKinematics,
     Correlations
+};
+
+enum class PhiAxisPolicy {
+    Strict,
+    Native,
+    LegacyRepair
 };
 
 struct PairConfig {
@@ -486,9 +493,49 @@ bool IsSingleParticlePhiSpectrum(const SpectrumDef& spectrum)
             spectrum.sourceKind == SourceKind::AssociateKinematics);
 }
 
+bool IsDeltaPhiSpectrum(const SpectrumDef& spectrum)
+{
+    return spectrum.key == "deltaPhi" &&
+           spectrum.sourceKind == SourceKind::Correlations;
+}
+
 bool NearlyEqual(double a, double b, double tolerance = 1.0e-6)
 {
     return std::abs(a - b) < tolerance;
+}
+
+std::string ToLower(std::string value)
+{
+    std::transform(value.begin(), value.end(), value.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return value;
+}
+
+PhiAxisPolicy ParsePhiAxisPolicy(const char* value)
+{
+    const std::string policy = ToLower(value ? value : "strict");
+    if (policy == "strict") return PhiAxisPolicy::Strict;
+    if (policy == "native") return PhiAxisPolicy::Native;
+    if (policy == "legacy" || policy == "legacy-repair" || policy == "legacy_repair") {
+        return PhiAxisPolicy::LegacyRepair;
+    }
+
+    throw std::runtime_error(
+        "Unknown phi axis policy '" + policy +
+        "'. Use strict, native, or legacy-repair.");
+}
+
+std::string PhiAxisPolicyName(PhiAxisPolicy policy)
+{
+    switch (policy) {
+        case PhiAxisPolicy::Strict:
+            return "strict";
+        case PhiAxisPolicy::Native:
+            return "native";
+        case PhiAxisPolicy::LegacyRepair:
+            return "legacy-repair";
+    }
+    return "unknown";
 }
 
 double WrapToMinusPiPi(double phi)
@@ -500,7 +547,91 @@ double WrapToMinusPiPi(double phi)
     return phi;
 }
 
-TH1D* RemapPhiHistogramToMinusPiPi(TH1D* hist)
+bool AxisRangeIs(TAxis* axis, double xmin, double xmax)
+{
+    return axis && NearlyEqual(axis->GetXmin(), xmin) && NearlyEqual(axis->GetXmax(), xmax);
+}
+
+std::string AxisRangeString(TAxis* axis)
+{
+    if (!axis) return "[missing axis]";
+    std::ostringstream stream;
+    stream << "[" << axis->GetXmin() << ", " << axis->GetXmax() << "]";
+    return stream.str();
+}
+
+std::string FlowString(TH1D* hist)
+{
+    if (!hist) return "underflow=missing overflow=missing";
+    std::ostringstream stream;
+    stream << "underflow=" << hist->GetBinContent(0)
+           << " overflow=" << hist->GetBinContent(hist->GetNbinsX() + 1);
+    return stream.str();
+}
+
+void ValidateSingleParticlePhiAxis(TAxis* axis,
+                                   const std::string& filePath,
+                                   const std::string& sourceName,
+                                   PhiAxisPolicy policy)
+{
+    const double pi = Pi();
+    if (AxisRangeIs(axis, -pi, pi)) return;
+
+    std::ostringstream message;
+    message << "Single-particle absolute phi axis in " << sourceName
+            << " must be [-pi, pi] for final plots. File: " << filePath
+            << ". Stored axis is " << AxisRangeString(axis) << ". ";
+
+    if (policy == PhiAxisPolicy::Strict) {
+        message << "Regenerate the THnSparse status-analysis outputs with "
+                << "hTrKinematics/hAsKinematics booked as [-pi, pi], or rerun "
+                << "with KINEMATIC_PHI_POLICY=native/legacy-repair for diagnostics only.";
+        throw std::runtime_error(message.str());
+    }
+
+    std::cerr << "WARNING: " << message.str()
+              << "Using phi policy " << PhiAxisPolicyName(policy)
+              << "; do not use this as a final absolute-phi QA plot." << std::endl;
+}
+
+void ValidateDeltaPhiAxis(TAxis* axis,
+                          const std::string& filePath,
+                          const std::string& sourceName,
+                          bool strictInputs)
+{
+    const double pi = Pi();
+    if (AxisRangeIs(axis, -0.5 * pi, 1.5 * pi)) return;
+
+    std::ostringstream message;
+    message << "Correlation delta-phi axis in " << sourceName
+            << " should be [-pi/2, 3pi/2] for Paul's correlation convention. File: "
+            << filePath << ". Stored axis is " << AxisRangeString(axis) << ".";
+    if (strictInputs) throw std::runtime_error(message.str());
+    std::cerr << "WARNING: " << message.str() << std::endl;
+}
+
+void ValidateSingleParticlePhiFlow(TH1D* hist,
+                                   const std::string& filePath,
+                                   const std::string& sourceName,
+                                   bool strictInputs)
+{
+    if (!hist) return;
+    const double underflow = hist->GetBinContent(0);
+    const double overflow = hist->GetBinContent(hist->GetNbinsX() + 1);
+    if (underflow == 0.0 && overflow == 0.0) return;
+
+    std::ostringstream message;
+    message << "Single-particle absolute phi projection in " << sourceName
+            << " has nonzero flow bins (" << FlowString(hist) << "). File: "
+            << filePath << ". This means the plotted phi spectrum is not fully represented "
+            << "by normal bins.";
+    if (strictInputs) throw std::runtime_error(message.str());
+    std::cerr << "WARNING: " << message.str() << std::endl;
+}
+
+TH1D* RemapLegacyPhiHistogramToMinusPiPi(TH1D* hist,
+                                         const std::string& filePath,
+                                         const std::string& sourceName)
 {
     if (!hist) return nullptr;
 
@@ -529,10 +660,12 @@ TH1D* RemapPhiHistogramToMinusPiPi(TH1D* hist)
         remapped->SetBinError(targetBin, std::sqrt(error2));
     }
 
-    // Older complete-root files booked phi as [-pi/2, 3pi/2], so raw
-    // Pythia phi in [-pi, -pi/2] ended up in the THnSparse underflow bin.
-    // Distribute that underflow over the missing display bins. New files
-    // booked directly as [-pi, pi] return above and do not use this branch.
+    std::cerr << "WARNING: legacy single-particle phi repair for " << sourceName
+              << " in " << filePath << ". Stored axis is "
+              << AxisRangeString(axis) << " with " << FlowString(hist)
+              << ". The missing display interval is reconstructed from flow bins and "
+              << "is not suitable for final phi QA." << std::endl;
+
     if (axis->GetXmin() > -pi && hist->GetBinContent(0) != 0.0) {
         std::vector<int> missingBins;
         for (int bin = 1; bin <= remapped->GetNbinsX(); ++bin) {
@@ -563,6 +696,28 @@ TH1D* RemapPhiHistogramToMinusPiPi(TH1D* hist)
     delete hist;
     remapped->SetName(originalName.c_str());
     return remapped;
+}
+
+TH1D* HandleSingleParticlePhiHistogram(TH1D* hist,
+                                       const std::string& filePath,
+                                       const std::string& sourceName,
+                                       PhiAxisPolicy policy,
+                                       bool strictInputs)
+{
+    if (!hist) return nullptr;
+
+    const double pi = Pi();
+    TAxis* axis = hist->GetXaxis();
+    if (AxisRangeIs(axis, -pi, pi)) {
+        ValidateSingleParticlePhiFlow(hist, filePath, sourceName, strictInputs);
+        return hist;
+    }
+
+    if (policy == PhiAxisPolicy::LegacyRepair) {
+        return RemapLegacyPhiHistogramToMinusPiPi(hist, filePath, sourceName);
+    }
+
+    return hist;
 }
 
 void NormalizeShape(TH1D* hist)
@@ -612,7 +767,8 @@ TH1D* ProjectSparseAxis(TFile* file,
                         const std::string& filePath,
                         const SpectrumDef& spectrum,
                         const char* cloneName,
-                        bool strictInputs)
+                        bool strictInputs,
+                        PhiAxisPolicy phiAxisPolicy)
 {
     std::string sourceName;
     if (spectrum.sourceKind == SourceKind::TriggerKinematics) {
@@ -632,6 +788,13 @@ TH1D* ProjectSparseAxis(TFile* file,
                                  " for " + sourceName + " in " + filePath);
     }
 
+    TAxis* projectedAxis = sparse->GetAxis(spectrum.axis);
+    if (IsSingleParticlePhiSpectrum(spectrum)) {
+        ValidateSingleParticlePhiAxis(projectedAxis, filePath, sourceName, phiAxisPolicy);
+    } else if (IsDeltaPhiSpectrum(spectrum)) {
+        ValidateDeltaPhiAxis(projectedAxis, filePath, sourceName, strictInputs);
+    }
+
     ResetSparseRanges(sparse);
     TH1D* hist = dynamic_cast<TH1D*>(sparse->Projection(spectrum.axis, "E"));
     ResetSparseRanges(sparse);
@@ -642,7 +805,8 @@ TH1D* ProjectSparseAxis(TFile* file,
     hist->SetDirectory(nullptr);
     hist->Sumw2();
     if (IsSingleParticlePhiSpectrum(spectrum)) {
-        hist = RemapPhiHistogramToMinusPiPi(hist);
+        hist = HandleSingleParticlePhiHistogram(hist, filePath, sourceName,
+                                                phiAxisPolicy, strictInputs);
     }
     return hist;
 }
@@ -651,7 +815,8 @@ TH1D* LoadSpectrumFromFile(const std::string& filePath,
                            const SpectrumDef& spectrum,
                            const char* cloneName,
                            bool normalizeShape,
-                           bool strictInputs)
+                           bool strictInputs,
+                           PhiAxisPolicy phiAxisPolicy)
 {
     std::unique_ptr<TFile> file(OpenRootFile(filePath, strictInputs));
     if (!file) return nullptr;
@@ -660,7 +825,8 @@ TH1D* LoadSpectrumFromFile(const std::string& filePath,
     if (spectrum.sourceKind == SourceKind::Multiplicity) {
         hist = CloneMultiplicityHistogram(file.get(), filePath, cloneName, strictInputs);
     } else {
-        hist = ProjectSparseAxis(file.get(), filePath, spectrum, cloneName, strictInputs);
+        hist = ProjectSparseAxis(file.get(), filePath, spectrum, cloneName,
+                                 strictInputs, phiAxisPolicy);
     }
 
     if (!hist) return nullptr;
@@ -704,7 +870,8 @@ TH1D* LoadSpectrum(const PlotConfig& config,
                    const SpectrumDef& spectrum,
                    bool normalizeShape,
                    bool useSubsampleErrors,
-                   bool strictInputs)
+                   bool strictInputs,
+                   PhiAxisPolicy phiAxisPolicy)
 {
     const std::string completeDir = CompleteRootDirForFlavor(config, request.flavor);
     const std::string filePath =
@@ -714,7 +881,8 @@ TH1D* LoadSpectrum(const PlotConfig& config,
         SanitizeToken(request.displayLabel);
 
     TH1D* central =
-        LoadSpectrumFromFile(filePath, spectrum, cloneName.c_str(), normalizeShape, strictInputs);
+        LoadSpectrumFromFile(filePath, spectrum, cloneName.c_str(), normalizeShape,
+                             strictInputs, phiAxisPolicy);
     if (!central) return nullptr;
 
     if (useSubsampleErrors && config.calculateErrors && config.nSubSamples > 1) {
@@ -728,7 +896,7 @@ TH1D* LoadSpectrum(const PlotConfig& config,
                     const std::string subName = cloneName + "_sub" + std::to_string(iSub);
                     TH1D* subHist =
                         LoadSpectrumFromFile(subPath, spectrum, subName.c_str(),
-                                             normalizeShape, false);
+                                             normalizeShape, strictInputs, phiAxisPolicy);
                     if (subHist) subsamples.push_back(subHist);
                 } catch (const std::exception& error) {
                     if (strictInputs) {
@@ -818,14 +986,23 @@ void StyleHistogram(TH1D* hist,
     hist->GetYaxis()->SetTitleSize(0.045);
     hist->GetXaxis()->SetLabelSize(0.040);
     hist->GetYaxis()->SetLabelSize(0.040);
-    if (IsSingleParticlePhiSpectrum(spectrum)) {
+    if (IsSingleParticlePhiSpectrum(spectrum) || IsDeltaPhiSpectrum(spectrum)) {
         TAxis* axis = hist->GetXaxis();
+        const double pi = Pi();
         axis->SetNdivisions(4, false);
-        axis->ChangeLabel(1, -1, -1, -1, -1, -1, "-#pi");
-        axis->ChangeLabel(2, -1, -1, -1, -1, -1, "-#pi/2");
-        axis->ChangeLabel(3, -1, -1, -1, -1, -1, "0");
-        axis->ChangeLabel(4, -1, -1, -1, -1, -1, "#pi/2");
-        axis->ChangeLabel(5, -1, -1, -1, -1, -1, "#pi");
+        if (AxisRangeIs(axis, -pi, pi)) {
+            axis->ChangeLabel(1, -1, -1, -1, -1, -1, "-#pi");
+            axis->ChangeLabel(2, -1, -1, -1, -1, -1, "-#pi/2");
+            axis->ChangeLabel(3, -1, -1, -1, -1, -1, "0");
+            axis->ChangeLabel(4, -1, -1, -1, -1, -1, "#pi/2");
+            axis->ChangeLabel(5, -1, -1, -1, -1, -1, "#pi");
+        } else if (AxisRangeIs(axis, -0.5 * pi, 1.5 * pi)) {
+            axis->ChangeLabel(1, -1, -1, -1, -1, -1, "-#pi/2");
+            axis->ChangeLabel(2, -1, -1, -1, -1, -1, "0");
+            axis->ChangeLabel(3, -1, -1, -1, -1, -1, "#pi/2");
+            axis->ChangeLabel(4, -1, -1, -1, -1, -1, "#pi");
+            axis->ChangeLabel(5, -1, -1, -1, -1, -1, "3#pi/2");
+        }
     }
 }
 
@@ -873,13 +1050,14 @@ void DrawTuneOverlay(const PlotConfig& config,
                      const std::string& outputStem,
                      bool normalizeShape,
                      bool useSubsampleErrors,
-                     bool strictInputs)
+                     bool strictInputs,
+                     PhiAxisPolicy phiAxisPolicy)
 {
     std::vector<LoadedHistogram> loaded;
     for (const auto& tune : config.tunes) {
         try {
             TH1D* hist = LoadSpectrum(config, tune, request, spectrum, normalizeShape,
-                                      useSubsampleErrors, strictInputs);
+                                      useSubsampleErrors, strictInputs, phiAxisPolicy);
             if (!hist) continue;
             StyleHistogram(hist, tune, spectrum, normalizeShape);
             loaded.push_back({hist, tune});
@@ -1056,16 +1234,20 @@ void Plot_KinematicSpectra_THnSparse(
     bool normalizeShape = true,
     bool useSubsampleErrors = true,
     bool strictInputs = false,
-    bool includeCorrelationSpectra = true)
+    bool includeCorrelationSpectra = true,
+    const char* phiAxisPolicy = "strict")
 {
     using namespace KinematicSpectraPlot;
 
     SetPlotStyle();
     const PlotConfig config = ReadConfig(configuration, outputDir);
+    const PhiAxisPolicy parsedPhiAxisPolicy = ParsePhiAxisPolicy(phiAxisPolicy);
 
     std::cout << "Using Hadronization base: " << config.hadronizationBase << std::endl;
     std::cout << "Using analyzed data dir: " << config.baseDir << std::endl;
     std::cout << "Writing kinematic spectra under: " << config.outputDir << std::endl;
+    std::cout << "Single-particle phi axis policy: "
+              << PhiAxisPolicyName(parsedPhiAxisPolicy) << std::endl;
     std::cout << "Subsample errors: "
               << ((useSubsampleErrors && config.calculateErrors) ? "enabled" : "disabled")
               << std::endl;
@@ -1085,7 +1267,8 @@ void Plot_KinematicSpectra_THnSparse(
                     "MultiplicitySpectrum_Shared_" + suffix,
                     normalizeShape,
                     useSubsampleErrors,
-                    strictInputs);
+                    strictInputs,
+                    parsedPhiAxisPolicy);
 
     std::vector<SpectrumDef> triggerSpectra = KinematicSpectra();
     std::vector<SampleRequest> triggerRequests = BuildTriggerRequests(config);
@@ -1099,7 +1282,8 @@ void Plot_KinematicSpectra_THnSparse(
                                 FlavorNameUpper(request.flavor) + "_" + suffix,
                             normalizeShape,
                             useSubsampleErrors,
-                            strictInputs);
+                            strictInputs,
+                            parsedPhiAxisPolicy);
         }
     }
 
@@ -1116,7 +1300,8 @@ void Plot_KinematicSpectra_THnSparse(
                                 SanitizeToken(StripRootExtension(request.fileName)) + "_" + suffix,
                             normalizeShape,
                             useSubsampleErrors,
-                            strictInputs);
+                            strictInputs,
+                            parsedPhiAxisPolicy);
         }
     }
 
@@ -1132,7 +1317,8 @@ void Plot_KinematicSpectra_THnSparse(
                                     SanitizeToken(StripRootExtension(request.fileName)) + "_" + suffix,
                                 normalizeShape,
                                 useSubsampleErrors,
-                                strictInputs);
+                                strictInputs,
+                                parsedPhiAxisPolicy);
             }
         }
     }

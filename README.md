@@ -149,6 +149,8 @@ The paper plotting entry point is:
 
 `smoke` runs the multiplicity-boundary plot and the complete-root THnSparse config without subsampling. The default `all` target runs the multiplicity-boundary plot and the full THnSparse config.
 
+Kinematic spectra use strict final phi handling by default: absolute single-particle `phi` must be stored as `[-pi, pi]`, while correlation `Delta phi` remains in Paul's `[-pi/2, 3pi/2]` convention. Use `KINEMATIC_PHI_POLICY=native` or `KINEMATIC_PHI_POLICY=legacy-repair` only for diagnostics with old complete-root files.
+
 The current pT and multiplicity plots are made from `AnalyzedData`, not from `RootFiles`. If no date is passed, the plotting helpers search for the latest dated folder under `AnalyzedData`. In ordinary use, we pass the date explicitly so that no older production is selected by accident.
 
 ```bash

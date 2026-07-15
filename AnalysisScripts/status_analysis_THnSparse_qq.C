@@ -21,6 +21,18 @@
 using namespace std;
 using namespace TMath;
 
+const Double_t kAbsPhiMin = -PI;
+const Double_t kAbsPhiMax = PI;
+const Double_t kDeltaPhiMin = -PI / 2;
+const Double_t kDeltaPhiMax = 3 * PI / 2;
+
+Double_t AbsolutePhi(Double_t phi)
+{
+	// Pythia stores absolute particle phi naturally in [-pi, pi). Keep the
+	// single-particle kinematic THnSparses in that same convention.
+	return fmod(phi + 3 * PI, 2 * PI) - PI;
+}
+
 Double_t DeltaPhi(Double_t phi1, Double_t phi2)
 {
 	// Returns delta phi in range (-pi/2 3pi/2)
@@ -195,11 +207,13 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	// DPhi = Delta phi (angular correlations)
 	// Pr = primary status, Sc = secondary status (production mechanisms)
 
-	// Set up the THnSparses for single particle kinematics and for correlations
+	// Set up the THnSparses for single particle kinematics and for correlations.
+	// Absolute single-particle phi is stored in [-pi, pi]. Delta phi for pair
+	// correlations keeps the shifted [-pi/2, 3pi/2] display convention.
 	// φ η pT mult
 	Int_t nBinsSingle[4] = {100, 100, 100, 100};
-	Double_t vMinSingle[4] = {-PI, -4, 0, 0};
-	Double_t vMaxSingle[4] = {PI, 4, 50, 400};
+	Double_t vMinSingle[4] = {kAbsPhiMin, -4, 0, 0};
+	Double_t vMaxSingle[4] = {kAbsPhiMax, 4, 50, 400};
 	THnSparseD *hTrKinematics = new THnSparseD("hTrKinematics", "hTrKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
 	THnSparseD *hAsKinematics = new THnSparseD("hAsKinematics", "hAsKinematics (phi, eta, pt, mult)", 4, nBinsSingle, vMinSingle, vMaxSingle);
 	hTrKinematics->GetAxis(0)->SetTitle("#phi");
@@ -214,8 +228,8 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 	// Δφ Δη TrPt AsPt mult
 	// TODO: to be complete, one should add also the TrEta and AsEta
 	Int_t nBinsCorr[7] = {100, 100, 100, 100, 100, 100, 100};
-	Double_t vMinCorr[7] = {-PI / 2, -8, -4, -4, 0, 0, 0};
-	Double_t vMaxCorr[7] = {3 * PI / 2, 8, 4, 4, 50, 50, 400};
+	Double_t vMinCorr[7] = {kDeltaPhiMin, -8, -4, -4, 0, 0, 0};
+	Double_t vMaxCorr[7] = {kDeltaPhiMax, 8, 4, 4, 50, 50, 400};
 	THnSparseD *hCorrelations = new THnSparseD("hCorrelations", "hCorrelations (dPhi, dEta, trEta, asEta trPt, asPt, mult)", 7, nBinsCorr, vMinCorr, vMaxCorr);
 	hCorrelations->GetAxis(0)->SetTitle("#Delta#phi");
 	hCorrelations->GetAxis(1)->SetTitle("#Delta#eta");
@@ -235,7 +249,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 		for (int ipart = 0; ipart < nparticles; ipart++)
 		{
 			pID = (*vID)[ipart];
-			pPhi = (*vPhi)[ipart];
+			pPhi = AbsolutePhi((*vPhi)[ipart]);
 			pPt = (*vPt)[ipart];
 			pStatus = (*vStatus)[ipart];
 			pEta = (*vEta)[ipart];
@@ -264,7 +278,7 @@ void status_file(Int_t id_trigger, Int_t id_associate, const char *fIn, const ch
 					if (jpart == ipart)
 						continue; // Do not correlate with it self
 					aID = (*vID)[jpart];
-					aPhi = (*vPhi)[jpart];
+					aPhi = AbsolutePhi((*vPhi)[jpart]);
 					aPt = (*vPt)[jpart];
 					aStatus = (*vStatus)[jpart];
 					aEta = (*vEta)[jpart];

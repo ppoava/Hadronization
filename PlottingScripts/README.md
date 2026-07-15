@@ -104,6 +104,15 @@ KINEMATIC_OUTPUT_DIR=PlottingScripts/Plots/KinematicSpectraFull \
 
 The default kinematic output is shape-normalized. Set `KINEMATIC_NORMALIZE=false` to draw bin-width-normalized counts. Set `KINEMATIC_CORRELATIONS=false` to skip the optional `Delta phi` and `Delta eta` spectra.
 
+For final plots, single-particle absolute `phi` spectra are strict by default: `hTrKinematics` and `hAsKinematics` must have axis 0 booked as `[-pi, pi]`. Correlation `Delta phi` spectra keep Paul's shifted `[-pi/2, 3pi/2]` convention. Old complete-root files with absolute `phi` booked as `[-pi/2, 3pi/2]` can only be drawn for diagnostics:
+
+```bash
+KINEMATIC_PHI_POLICY=native ./PlottingScripts/run_paper_plots.sh kinematic-spectra
+KINEMATIC_PHI_POLICY=legacy-repair ./PlottingScripts/run_paper_plots.sh kinematic-spectra
+```
+
+Do not use `legacy-repair` plots as final absolute-phi QA, because the missing `[-pi, -pi/2]` interval is reconstructed from underflow.
+
 Kinematic spectra are written into subdirectories by plot family:
 
 ```text
@@ -176,7 +185,9 @@ Kinematic spectra:
 ```bash
 root -l -b <<'ROOT'
 .L PlottingScripts/Plot_KinematicSpectra_THnSparse.C+
-Plot_KinematicSpectra_THnSparse("PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json")
+Plot_KinematicSpectra_THnSparse("PlottingScripts/configuration_multiplicity_reduced_JUNCTIONS_THnSparse_complete_root.json",
+                                "PlottingScripts/Plots/KinematicSpectra",
+                                true, true, true, true, "strict")
 .q
 ROOT
 ```
