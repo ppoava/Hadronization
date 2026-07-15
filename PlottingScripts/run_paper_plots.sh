@@ -211,7 +211,17 @@ run_multiplicity_boundaries() {
 
   root -l -b <<ROOTCMDS
 .L PlottingScripts/Plot_MultiplicityDistribution_PercentileBoundaries.C+
-Plot_MultiplicityDistribution_PercentileBoundaries("${MULTIPLICITY_CONFIG}", "${MULTIPLICITY_OUTPUT_DIR}", ${MULTIPLICITY_NORMALIZE}, ${MULTIPLICITY_STRICT});
+int __multiplicity_plot_result = 0;
+try {
+  Plot_MultiplicityDistribution_PercentileBoundaries("${MULTIPLICITY_CONFIG}", "${MULTIPLICITY_OUTPUT_DIR}", ${MULTIPLICITY_NORMALIZE}, ${MULTIPLICITY_STRICT});
+} catch (const std::exception& error) {
+  std::cerr << "ERROR: " << error.what() << std::endl;
+  __multiplicity_plot_result = 1;
+} catch (...) {
+  std::cerr << "ERROR: unknown exception while running Plot_MultiplicityDistribution_PercentileBoundaries" << std::endl;
+  __multiplicity_plot_result = 1;
+}
+if (__multiplicity_plot_result != 0) { gSystem->Exit(__multiplicity_plot_result); }
 .q
 ROOTCMDS
 }

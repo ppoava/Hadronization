@@ -212,7 +212,18 @@ std::vector<PercentileClass> ReadPercentileClasses(const json& config)
 std::string FirstOSFileName(const json& config, const char* key, const char* fallback)
 {
     if (config.contains(key) && config[key].is_array() && !config[key].empty()) {
-        return config[key][0]["OS"].get<std::string>();
+        for (const auto& entry : config[key]) {
+            if (entry.contains("OS") && entry["OS"].is_string()) {
+                return entry["OS"].get<std::string>();
+            }
+
+            if (!entry.contains("configs") || !entry["configs"].is_array()) continue;
+            for (const auto& correlationConfig : entry["configs"]) {
+                if (correlationConfig.contains("OS") && correlationConfig["OS"].is_string()) {
+                    return correlationConfig["OS"].get<std::string>();
+                }
+            }
+        }
     }
     return fallback;
 }
